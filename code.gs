@@ -176,7 +176,7 @@ function selectUniqueAmbassadors(
 		// or has already been selected for this submission
 		var availableAmbassadors = potentialEvaluators.filter(
 			(ambassador) =>
-				ambassador[2] !== discordHandle &&
+				ambassador[1] !== discordHandle &&
 				(ambassadorCount[ambassador[1]] || 0) < 3 &&
 				!selectedAmbassadors.includes(ambassador)
 		);
