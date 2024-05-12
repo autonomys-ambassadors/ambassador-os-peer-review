@@ -16,6 +16,7 @@ function addAmbassadorPeerReviewMenus() {
 	ui.createMenu("Ambassador OS")
 		.addItem("Request Submissions", "requestSubmissions")
 		.addItem("Request Evaluations", "requestEvaluations")
+		.addItem("Select Conflict Resolution Team", "selectCRT")
 		.addToUi();
 }
 
@@ -161,6 +162,87 @@ function requestEvaluations() {
 		});
 		reviewLogSheet.appendRow(logRow);
 	}
+}
+
+// 'Select Conflict Resolution Team' button handler
+function selectCRT() {
+	var config = getConfiguration();
+	var ambassadorRegistrySpreadsheet = SpreadsheetApp.openByUrl(
+		config.ambassadorRegistrySpreadsheet
+	);
+	var ambassadorRegistry = ambassadorRegistrySpreadsheet.getSheetByName(
+		config.ambassadorRegistrySheet
+	);
+	var ambassadors = ambassadorRegistry
+		.getRange(2, 1, ambassadorRegistry.getLastRow() - 1, 2)
+		.getValues();
+	ambassadors.sort();
+
+	var CRTRegistry = ambassadorRegistrySpreadsheet.getSheetByName(
+		"Conflict Resolution Team"
+	);
+	if (!CRTRegistry) {
+		CRTRegistry = ambassadorRegistrySpreadsheet.insertSheet(
+			"Conflict Resolution Team"
+		);
+		CRTRegistry.appendRow([
+			"Selection Date",
+			"Ambassador 1",
+			"Ambassador 2",
+			"Ambassador 3",
+			"Ambassador 4",
+			"Ambassador 5",
+		]);
+	}
+	var lastRow = CRTRegistry.getLastRow();
+	if (lastRow > 1) {
+		if (lastRow < 4) {
+			var lastRows = CRTRegistry.getRange(2, 2, lastRow - 1, 5).getValues();
+		} else {
+			var lastRows = CRTRegistry.getRange(lastRow - 3, 2, 4, 5).getValues();
+		}
+	}
+
+	var recentAmbassadors = [].concat.apply([], lastRows);
+	ambassadors = ambassadors.filter(function (ambassador) {
+		return !recentAmbassadors.includes(ambassador[0]);
+	});
+
+	if (ambassadors.length < 5) {
+		SpreadsheetApp.getUi().alert(
+			"There are fewer than 5 ambassadors to choose from - selection is failed."
+		);
+		return;
+	}
+	var selectedAmbassadors = [];
+	for (var i = 0; i < 5; i++) {
+		var randomIndex = Math.floor(Math.random() * ambassadors.length);
+		selectedAmbassadors.push(ambassadors[randomIndex][0]);
+		sendCRTElectionEmail(
+			ambassadors[randomIndex][0],
+			ambassadors[randomIndex][1]
+		);
+		ambassadors.splice(randomIndex, 1);
+	}
+
+	var currentTime = new Date();
+	selectedAmbassadors.unshift(currentTime);
+	CRTRegistry.appendRow(selectedAmbassadors);
+}
+
+function sendCRTElectionEmail(email, discordHandle) {
+	var subject = "Subspace Ambassadors Conflict Resolution Team selection";
+	var body =
+		"Dear " +
+		discordHandle +
+		",\n\n" +
+		"You have been selected to serve on the Conflict Resolution Team for 3 months.\n\n" +
+		"Please review the How To Participate guide here: https://coda.io/d/_dORJu5J0YW4/Participate-on-Conflict-Resolution-Team_suVvl .\n\n" +
+		"If there is some reason you think you must be excused from this service, please notify the Sponsor or the Governance Team as soon as possible.\n\n" +
+		"Thank You,\n\n" +
+		"Fradique";
+	MailApp.sendEmail(email, subject, body);
+	return;
 }
 
 // Function to select three unique ambassadors from each list
