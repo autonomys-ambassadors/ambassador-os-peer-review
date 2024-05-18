@@ -127,6 +127,7 @@ function requestEvaluations() {
 	for (var i = 1; i < submissions.length; i++) {
 		var discordHandle = submissions[i][2];
 		var contribution = submissions[i][3];
+		var links = submissions[i][4];
 
 		var subject = "Request for Evaluation";
 		var body =
@@ -137,6 +138,8 @@ function requestEvaluations() {
 			discordHandle +
 			"\n\n" +
 			contribution +
+			"\n\n" +
+			links +
 			"\n\n" +
 			"Please assign a grade on a scale of 1 to 5 in the form linked below.\n\n" +
 			config.evaluationsForm;
