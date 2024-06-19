@@ -344,7 +344,7 @@ function getDeliverableYear() {
 
 function getExpectedResponseDate() {
 	var date = new Date();
-	date.setDate(date.getDate() + 10);
+	date.setDate(date.getDate() + 7);
 	return Utilities.formatDate(
 		date,
 		Session.getScriptTimeZone(),
