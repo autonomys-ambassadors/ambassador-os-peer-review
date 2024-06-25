@@ -1,21 +1,42 @@
-// Hard code the references to the forms and sheets
-const evaluationForm = "https://forms.gle/i89pkwmJeMcCWGvo7";
+/********** PROD SPREADSHEET CONFIG **************/
+const testing = false;
+const evaluationForm = "https://forms.gle/csM5LCRt3cvGDvuf7";
 
 const RegistrySheetName = "Registry";
 const RegistrySpreadsheet =
-	"https://docs.google.com/spreadsheets/d/1FSTQKb9_GWQ7HxuwKlwrv6yRf68yjaqeE8zrEbL8btU/edit#gid=146718602";
+	"https://docs.google.com/spreadsheets/d/1YtE-b7088aV3zi0eyFaGMyA7Nvo3bf9dnl0xzH3BTdA/edit#gid=0";
 const RegistryEmailColumn = 0;
 const RegistryDiscordHandleColumn = 1;
 
-const submissionForm = "https://forms.gle/74kT61GGWHfAjfT6A";
+const submissionForm = "https://forms.gle/SPkEE6mk4Tipjeq7A";
 
 const SubmissionsSheetName = "Responses";
 const SubmissionsSpreadsheet =
-	"https://docs.google.com/spreadsheets/d/1FSTQKb9_GWQ7HxuwKlwrv6yRf68yjaqeE8zrEbL8btU/edit#gid=146718602";
+	"https://docs.google.com/spreadsheets/d/1YtE-b7088aV3zi0eyFaGMyA7Nvo3bf9dnl0xzH3BTdA/edit#gid=0";
 const SubmissionEmailAddressColumn = 1;
 const SubmissionDiscordHandleColumn = 2;
 const SubmissionConstributionColumn = 3;
 const SubmissionLinksColumn = 4;
+
+/********** DEBUG SPREADSHEET CONFIG **************/
+// const testing = true;
+// const evaluationForm = "https://forms.gle/i89pkwmJeMcCWGvo7";
+
+// const RegistrySheetName = "Registry";
+// const RegistrySpreadsheet =
+// 	"https://docs.google.com/spreadsheets/d/1FSTQKb9_GWQ7HxuwKlwrv6yRf68yjaqeE8zrEbL8btU/edit#gid=146718602";
+// const RegistryEmailColumn = 0;
+// const RegistryDiscordHandleColumn = 1;
+
+// const submissionForm = "https://forms.gle/74kT61GGWHfAjfT6A";
+
+// const SubmissionsSheetName = "Responses";
+// const SubmissionsSpreadsheet =
+// 	"https://docs.google.com/spreadsheets/d/1FSTQKb9_GWQ7HxuwKlwrv6yRf68yjaqeE8zrEbL8btU/edit#gid=146718602";
+// const SubmissionEmailAddressColumn = 1;
+// const SubmissionDiscordHandleColumn = 2;
+// const SubmissionConstributionColumn = 3;
+// const SubmissionLinksColumn = 4;
 
 function addAmbassadorPeerReviewMenus() {
 	var ui = SpreadsheetApp.getUi();
@@ -59,12 +80,11 @@ function requestSubmissions() {
 	);
 
 	SpreadsheetApp.setActiveSheet(ambassadorRegistry);
-	var data = ambassadorRegistry.getDataRange().getValues();
+	var data = ambassadorRegistry.getDataRange().getValues().slice(1);
 
 	validateEmails(data, RegistryEmailColumn);
 
-	// assumes that the first row is the header row starting with i=1 instaed of 0
-	for (var i = 1; i < data.length; i++) {
+	for (var i = 0; i < data.length; i++) {
 		var email = data[i][RegistryEmailColumn];
 		var discordHandle = data[i][RegistryDiscordHandleColumn];
 		var subject = "Request for Submissions";
@@ -84,7 +104,7 @@ function requestSubmissions() {
 			".\n\n" +
 			"Thank You,\n\n" +
 			"Fradique";
-		MailApp.sendEmail(email, subject, body);
+		if (!testing) MailApp.sendEmail(email, subject, body);
 		console.log("RFS Email sent to " + email + " for " + discordHandle);
 	}
 }
@@ -100,23 +120,8 @@ function requestEvaluations() {
 	var ambassadorRegistry = ambassadorRegistrySpreadsheet.getSheetByName(
 		config.ambassadorRegistrySheet
 	);
-	var leftColumn = 0;
-	var rightColumn = 0;
-	var tempRegistryEmailColumn = 0;
-	if (RegistryEmailColumn < RegistryDiscordHandleColumn) {
-		leftColumn = RegistryEmailColumn + 1;
-		tempRegistryEmailColumn = 1;
-		rightColumn = RegistryDiscordHandleColumn + 1;
-	} else {
-		leftColumn = RegistryDiscordHandleColumn + 1;
-		rightColumn = RegistryEmailColumn + 1;
-		tempRegistryEmailColumn =
-			RegistryEmailColumn - RegistryDiscordHandleColumn + 1;
-	}
-	var ambassadors = ambassadorRegistry
-		//assumes first row is header (get range is 1-indexed not 0-indexed)
-		.getRange(2, leftColumn, ambassadorRegistry.getLastRow() - 1, rightColumn)
-		.getValues();
+	SpreadsheetApp.setActiveSheet(ambassadorRegistry);
+	var ambassadors = ambassadorRegistry.getDataRange().getValues().slice(1);
 
 	// Triple the list of ambassadors to select from
 	var potentialEvaluators = [...ambassadors, ...ambassadors, ...ambassadors];
@@ -127,7 +132,7 @@ function requestEvaluations() {
 	var submissionSheet = submissionSpreadsheet.getSheetByName(
 		config.submissionsSheet
 	);
-	var submissions = submissionSheet.getDataRange().getValues();
+	var submissions = submissionSheet.getDataRange().getValues().slice(1);
 
 	// Create a new sheet for logging the reviewers
 	var reviewLogSheet = submissionSpreadsheet.getSheetByName("Review Log");
@@ -140,11 +145,9 @@ function requestEvaluations() {
 			"Reviewer 3",
 		]);
 	}
-	// temp registry email is 1-indexed, array is 0-indexed
-	validateEmails(ambassadors, tempRegistryEmailColumn - 1);
+	validateEmails(ambassadors, RegistryEmailColumn);
 
-	// start at index 1 to skip the header row
-	for (var i = 1; i < submissions.length; i++) {
+	for (var i = 0; i < submissions.length; i++) {
 		var discordHandle = submissions[i][SubmissionDiscordHandleColumn];
 		var submitterEmail = submissions[i][SubmissionEmailAddressColumn];
 		var contribution = submissions[i][SubmissionConstributionColumn];
@@ -168,7 +171,7 @@ function requestEvaluations() {
 		// Select three unique ambassadors from each list
 		var selectedAmbassadors = selectUniqueAmbassadors(
 			potentialEvaluators,
-			tempRegistryEmailColumn - 1,
+			RegistryEmailColumn,
 			submitterEmail,
 			ambassadorCount
 		);
@@ -176,7 +179,7 @@ function requestEvaluations() {
 		// Send the email to each selected ambassador
 		selectedAmbassadors.forEach((ambassador) => {
 			var email = ambassador[0]; // Assuming emails are in the first column
-			MailApp.sendEmail(email, subject, body);
+			if (!testing) MailApp.sendEmail(email, subject, body);
 			console.log("RFE Email sent to " + email + " for " + discordHandle);
 		});
 
@@ -198,7 +201,7 @@ function selectCRT() {
 	var ambassadorRegistry = ambassadorRegistrySpreadsheet.getSheetByName(
 		config.ambassadorRegistrySheet
 	);
-	var ambassadors = ambassadorRegistry.getDataRange().getValues();
+	var ambassadors = ambassadorRegistry.getDataRange().getValues().slice(1);
 	ambassadors.sort();
 
 	var CRTRegistry = ambassadorRegistrySpreadsheet.getSheetByName(
@@ -226,9 +229,13 @@ function selectCRT() {
 		}
 	}
 
-	var recentAmbassadors = [].concat.apply([], lastRows);
+	var recentAmbassadors = lastRows
+		.flat()
+		.map((value) => value.toString().toLowerCase());
 	ambassadors = ambassadors.filter(function (ambassador) {
-		return !recentAmbassadors.includes(ambassador[RegistryEmailColumn]);
+		return !recentAmbassadors.includes(
+			ambassador[RegistryEmailColumn].toLowerCase()
+		);
 	});
 
 	if (ambassadors.length < 5) {
@@ -264,7 +271,7 @@ function sendCRTElectionEmail(email, discordHandle) {
 		"If there is some reason you think you must be excused from this service, please notify the Sponsor or the Governance Team as soon as possible.\n\n" +
 		"Thank You,\n\n" +
 		"Fradique";
-	MailApp.sendEmail(email, subject, body);
+	if (!testing) MailApp.sendEmail(email, subject, body);
 	console.log("CRT Email sent to " + email + " for " + discordHandle);
 	return;
 }
@@ -283,7 +290,7 @@ function selectUniqueAmbassadors(
 		// or has already been selected for this submission
 		var availableAmbassadors = potentialEvaluators.filter(
 			(ambassador) =>
-				ambassador[emailColumn] !== revieweeEmail &&
+				ambassador[emailColumn].toLowerCase() !== revieweeEmail.toLowerCase() &&
 				(ambassadorCount[ambassador[emailColumn]] || 0) < 3 &&
 				!selectedAmbassadors.includes(ambassador)
 		);
@@ -323,6 +330,8 @@ function validateEmails(listOfEmails, emailColumn = 0) {
 		var email = listOfEmails[i][emailColumn];
 		if (!isValidEmail(email)) {
 			throw new Error("Invalid email: " + email);
+		} else {
+			listOfEmails[i][emailColumn] = email.toLowerCase();
 		}
 	}
 }
