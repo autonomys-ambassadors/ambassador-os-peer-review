@@ -11,7 +11,7 @@ function runComplianceAudit() {
   // Note: Even if Evaluations came late, they anyway helpful for accountability, while those evaluators are fined.
   copyFinalScoresToOverallScore()
 
-  // Step 4: [⚠️DESIGNED TO RUN ONLY ONCE)] - Calculates penalty points for past months violations, colors events, adds PP to PP column.
+  // Step 4: [⚠️DESIGNED TO RUN ONLY ONCE] - Calculates penalty points for past months violations, colors events, adds PP to PP column.
   detectNonRespondersPastMonths();
 
   // Step 2: Calculate penalty points for missing Submissions for the current month
@@ -82,7 +82,7 @@ function copyFinalScoresToOverallScore() {
   try {
     Logger.log('Starting copy of Final Scores to Overall Score sheet.');
 
-    // Открываем таблицу "Ambassadors' Scores" и нужные листы
+    // open table "Ambassadors' Scores" and needed sheets
     const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
     const overallScoreSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
 
@@ -92,7 +92,7 @@ function copyFinalScoresToOverallScore() {
     }
 
     const spreadsheetTimeZone = scoresSpreadsheet.getSpreadsheetTimeZone();
-    const currentMonthDate = getPreviousMonthDate(spreadsheetTimeZone); // Получаем отчетный месяц
+    const currentMonthDate = getPreviousMonthDate(spreadsheetTimeZone); // getting reporting month
     Logger.log(`Current month date for copying scores: ${currentMonthDate.toISOString()}`);
 
     const monthSheetName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
@@ -103,7 +103,7 @@ function copyFinalScoresToOverallScore() {
       return;
     }
 
-    // Поиск индекса колонки в "Overall score" по дате
+    // Searching column index in "Overall score" by date
     const existingColumns = overallScoreSheet.getRange(1, 1, 1, overallScoreSheet.getLastColumn()).getValues()[0];
     const monthColumnIndex = existingColumns.findIndex(header => 
       header instanceof Date && header.getTime() === currentMonthDate.getTime()
@@ -114,13 +114,13 @@ function copyFinalScoresToOverallScore() {
       return;
     }
 
-    // Извлекаем данные Final Score с month sheet
+    // Fetch data from Final Score on month sheet
     const finalScores = monthSheet.getRange(2, 1, monthSheet.getLastRow() - 1, 11).getValues()
                         .map(row => ({ handle: row[0], score: row[10] }));
     
     Logger.log(`Retrieved ${finalScores.length} scores from "${monthSheetName}" sheet.`);
 
-    // Копируем значения Final Score в нужные строки "Overall score" по Discord Handles
+    //Copy Final Score values to proper rows Overall score" by Discord Handles
     const overallHandles = overallScoreSheet.getRange(2, 1, overallScoreSheet.getLastRow() - 1, 1).getValues().flat();
     finalScores.forEach(({ handle, score }) => {
       const rowIndex = overallHandles.findIndex(overallHandle => overallHandle === handle) + 2;
