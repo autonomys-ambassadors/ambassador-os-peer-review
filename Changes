@@ -1,0 +1,38 @@
+The script is splitted to 5 files-modules and 1 file with variables and common functions
+
+1. module 1
+-----------
+
+No changes
+
+
+2. module 2
+-----------
+
+- CHECK more simple guessing machanisms (will be in next PR)
+✔️ Max 6-Month PP column displaying maximal PP withing any 6-month time span possible among all month columns.
+✔️ Added function to process all past months and calculate all Submission non-respond events for each ambassador. Note: this function can be ran only one (saves it's ran status in script properties as true or false)
+✔️ added past month processing to onOpen menu.
+✔️ reminders are sent to evaluators who missed at least one submitter
+✔️ Calculated date of the previous month: Sun Sep 01 2024 07:00:00 GMT-0000 (Pacific Daylight Time) (ISO: 2024-09-01T07:00:00.000Z)
+✔️ added remarks to month sheet's last three columns
+✔️ in month-sheet column Final Score will be erased if new matrix is created and current reporting month-sheet already exists. (in case "Request Evaluation" is ran repeatedly in the same month)
+✔️ The submitters column in month-sheet sorted alphabetically
+✔️ send exemption notification to those who aren't assigned a submitter for evaluating. (need more tests)
+
+MODULE 3
+--------
+- evaluationStartTime & evaluationWindowStart ---- two same variables! (NEED TO COMBINE EM)
+✔️ if calculatePenaltyPointsForSubmissions function could'nt find email of an ambassador it processes - it should skip it and move on to next ambassador etc.
+✔️ expelled ambassadors should be processed with their new email (which already includes '(EXPELLED) ' string in their e-mail by some module 3's functions... 
+++++++ later its better to concatenate EXPELL to their DH , instead of email, and so to display em in Overall score if needed.
+✔️ It turns out that running module 3 functions one by one from script editing works normally, while from menu it uses outdated variables saved in cache. To solve this issue many tricks were aplied in SharedUtilities file.
+✔️ colors for all types of violations are customizable in SharedUtilities.gs (But it may lead to caching issues! , and explicitly reinitializing color variables or other crucial variables in each module 3 function to avoid any caching issues!)
+If you want to customize colors , templates or any other variables, you will have to run clearCache function from menu.
+✔️ added Warning and limitation for processing past months function, as each run adds penalty points incrementally (to run again need to change true to false in script properties)
+
+
+Modules 4,5
+-----------
+
+Added modules 4,5.

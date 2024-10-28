@@ -1,0 +1,278 @@
+											FUNCTIONS  MODULE 1
+
+
+a. requestSubmissionsModule()
+
+		This is the main function that triggers the submission request process.
+		It sends emails to all ambassadors, requesting them to submit their deliverables for the previous month.
+		It logs key actions and sets up a reminder trigger (setupSubmissionReminderTrigger) to notify non-respondents after 6 days.
+
+b. setupSubmissionReminderTrigger(submissionStartTime)
+
+    Sets a time-based trigger to remind non-respondents 6 days after the submission window starts.
+    Calls the checkNonRespondents() function at the appropriate time.
+
+c. checkNonRespondents()
+
+    This function checks which ambassadors have not responded within the submission window.
+    It compares the emails in the Registry sheet with the valid submissions from the Form Responses sheet.
+    The non-respondents are identified, and reminder emails are sent using sendReminderEmails().
+
+d. getFormResponseSheet()
+
+    A helper function that fetches the "Form Responses" sheet.
+    Ensures that the system can retrieve form responses for further processing.
+
+e. sendReminderEmails(nonRespondents)
+
+    Sends reminder emails to all non-respondents identified in checkNonRespondents().
+
+f. collectSubmissions()
+
+    This function is designed to collect submissions within a specific time window, defined by SUBMISSION_WINDOW_MINUTES.
+    It retrieves the form responses and checks whether the submissions were made within the window.
+    This is mostly a data processing function but could be linked with the rest of the flow for processing valid responses.
+
+g. getSubmissionWindowStart()
+
+    Retrieves the start time of the submission window from the script's properties.
+
+
+---
+
+
+
+### Module 2 Functions Overview
+
+#### 1. `createMonthSheetAndOverallColumn()`
+   - **Purpose**: Creates a monthly sheet and updates the "Overall Scores" sheet as step 1 in the sequence.
+   - **Related Functions**:
+      - `getPreviousMonthDate`: Retrieves the first day of the previous month considering the spreadsheet's timezone.
+      - `isMonthColumn`: Checks if a cell value represents a month column.
+      - `doesColumnExist`: Verifies if columns for a specific date exist.
+      - `findInsertIndexForMonth`: Determines the index for inserting a new column after the latest existing month column.
+      - `findInsertIndexForMonthSheet`: Finds the correct index to insert a new month sheet before all existing month sheets.
+
+   - **Objectives**:
+      - Add detailed logging for tracking each step.
+      - Calculate the first day of the previous month accurately (using America/Los_Angeles timezone).
+      - Ensure correct date values by setting dates accurately across timezones.
+      - Create a new column and sheet with the correct title and format.
+      - Resolve any "out of bounds" errors for columns.
+
+---
+
+#### 2. `generateReviewMatrix()`
+   - **Purpose**: Creates a review matrix in the "Review Log" sheet, mapping submitters to evaluators (step 2 in the sequence).
+   - **Details**:
+      - **Submitters**: Pulled from Submission Form responses within a 7-day submission window.
+      - **Evaluators**: Taken from the "Registry" sheet, including all registered ambassadors without `(EXPELLED)` in their emails. Evaluators are randomly assigned to submitters, ensuring they do not evaluate their own work.
+      - **Assignments**: Each submitter is assigned 3 evaluators (or fewer if there are insufficient evaluators).
+   - **Helper Functions**:
+      - `getRandomEvaluators()`: Assigns evaluators randomly to each submitter.
+      - `submissionWindowStart`, `submissionWindowEnd`: Defines the valid time window for submission responses.
+
+---
+
+#### 3. `sendEvaluationRequests()`
+   - **Purpose**: Sends email requests to evaluators based on the review matrix, included as step 3.
+   - **Helper Functions**:
+      - `getContributionDetails()`, `getEmailFromDiscordHandle()`: Gathers information needed for sending requests.
+      - `getPreviousMonthDate`: Retrieves the previous month’s name for request emails.
+      - `getDiscordHandleFromEmail`: Fetches the submitter’s Discord handle.
+      - `getContributionDetailsByEmail`: Fetches contribution details for evaluators.
+      - `processEvaluationResponse`: Processes responses from the Evaluation Form by extracting the evaluator’s email, the submitter’s Discord handle, and the grade, updating the month sheet accordingly.
+
+---
+
+#### 4. `sendExemptionEmails()`
+   - **Purpose**: Sends notifications to evaluators exempted from evaluations for the month (no assigned submitters).
+
+---
+
+#### 5. `collectEvaluationsInMonthSheet()`
+   - **Purpose**: Copies responses from the evaluation form into the appropriate monthly sheet, included as step 4.
+   - **Helper Functions**:
+      - `getExpectedSubmittersForEvaluator`: Identifies the submitters assigned to a given evaluator by reading from the Review Log and Registry sheets.
+      - `bruteforceDiscordHandle`: Matches Discord handles with expected ones to correct typing errors.
+      - `getDiscordHandleFromEmail`: Converts an evaluator’s email to a Discord handle using the Registry sheet.
+      - `getPreviousMonthDate`: Determines the evaluation month for the sheet.
+
+---
+
+#### 6. `setupEvaluationTriggers()`
+   - **Purpose**: Sets two time triggers: 
+      1. `evaluationStartTime`: Stored in `ScriptProperties` for reference, used for checking response timeframes.
+      2. `setupEvaluationReminderTrigger(evaluationStartTime)`: Sets a reminder trigger to send reminders 6 days after evaluations start.
+
+---
+
+#### 7. `setupEvaluationResponseTrigger()`
+   - **Purpose**: Sets an `onFormSubmit` trigger to call `processEvaluationResponse()` whenever a form is submitted. This allows responses to the evaluation form to update the month sheet immediately.
+
+---
+
+#### 8. `checkEvaluationNonRespondents()`
+   - **Purpose**: Checks if evaluators responded within the given timeframe. Triggered by `setupEvaluationReminderTrigger()`.
+
+---
+
+#### 9. `finalizeEvaluationProcess()`
+   - **Purpose**: Cleans up and removes triggers at the end of the evaluation process, ensuring only active evaluation triggers remain.
+
+---
+
+#### 10. `updateOverallScoreSheet()`
+   - **Purpose**: Updates the "Overall Scores" sheet with final scores from the month sheet.
+   - **Process**:
+      - Maps Discord handles to row numbers in the "Overall Scores" sheet.
+      - Iterates over the month sheet, updating the "Overall Scores" sheet with the final scores.
+      - Matches ambassadors by Discord handle, as emails are not present in the "Overall Scores" sheet.
+
+---
+
+### Helper Functions
+
+- **`getExpectedSubmittersForEvaluator(evaluatorEmail)`**: Retrieves submitters assigned to an evaluator using the Review Log and Registry.
+- **`processEvaluationResponse(e)`**: Retrieves details from Evaluation Form responses, including the evaluator’s email and submitter's Discord handle. Matches the handle using `bruteforceDiscordHandle()` and updates the month sheet with the evaluator’s grade if a match is found.
+- **`bruteforceDiscordHandle(providedHandle, expectedHandles)`**: Uses Levenshtein distance to find the closest expected handle to the provided handle, ensuring evaluator responses are recorded accurately.
+- **`levenshteinDistance()`**: Calculates the Levenshtein distance for correcting Discord handles.
+- **`populateMonthSheetWithEvaluators`**: Fills the month sheet with evaluators' Discord handles and grades.
+- **`sendEvaluationReminderEmails`**: Sends reminders to evaluators who haven't responded within 6 days.
+
+
+----
+
+
+### Module 3 Functions Overview
+
+
+++ Checking 
+
+
+#### 1. `calculatePenaltyPointsForSubmissions()`
+   - **Purpose**: Calculates and adds penalty points for ambassadors who fail to submit within the required window in the current reporting month.
+   - **Details**:
+      - Fetches all submission responses within the designated submission window.
+      - Identifies ambassadors who missed the submission deadline and assigns penalty points to them.
+      - Marks missed submissions by setting cell background colors in the "Overall Scores" sheet.
+
+---
+
+#### 2. `calculateMaxPenaltyPointsForSixMonths()`
+   - **Purpose**: Calculates the maximum penalty points accumulated over any six-month contiguous period for each ambassador.
+   - **Details**:
+      - Iterates over month columns in the "Overall Scores" sheet.
+      - Checks each six-month period, adding points based on missed submission or evaluation markers.
+      - Updates the "Max 6-Month PP" column with the highest penalty point value for each ambassador.
+      - Sets the background color to red for ambassadors with a max penalty score of 3 or more.
+
+---
+
+#### 3. `expelAmbassadors()`
+   - **Purpose**: Marks ambassadors for expulsion if their "Max 6-Month PP" score reaches or exceeds the expulsion threshold.
+   - **Details**:
+      - Finds the "Max 6-Month PP" column in the "Overall Scores" sheet.
+      - If an ambassador's penalty points meet the expulsion threshold, their email address in the "Registry" sheet is updated to include "(EXPELLED)".
+      - Logs each expulsion to track which ambassadors are flagged.
+
+---
+
+#### 4. `sendExpulsionNotifications(ambassadorEmail, expelledEmail)`
+   - **Purpose**: Sends expulsion notifications via email to ambassadors and sponsors.
+   - **Details**:
+      - Uses a predefined expulsion email template.
+      - Sends a customized email to the expelled ambassador and another to the sponsor, informing them of the expulsion.
+      - Logs each email sent to confirm delivery.
+
+---
+
+#### 5. `detectNonRespondersPastMonths()`
+   - **Purpose**: Identifies ambassadors who missed submission or evaluation deadlines in past months and retroactively applies penalty points.
+   - **Details**:
+      - Iterates through all previous month columns in the "Overall Scores" sheet.
+      - Checks each column for submission or evaluation markers to detect missed deadlines.
+      - Applies penalties for missed submissions or evaluations and updates the ambassador’s record accordingly.
+
+---
+
+#### 6. `updateExpelledEmailsInRecords()`
+   - **Purpose**: Ensures all instances of expelled ambassadors' emails are updated in relevant sheets for accurate record-keeping.
+   - **Details**:
+      - Searches for and updates all references to expelled ambassadors’ emails across various sheets.
+      - Ensures consistency in email address formatting for expelled ambassadors (i.e., including "(EXPELLED)" where relevant).
+
+---
+
+#### 7. `sendPenaltyWarningEmails()`
+   - **Purpose**: Sends penalty warning emails to ambassadors who have been penalized but have not yet reached the expulsion threshold.
+   - **Details**:
+      - Gathers all ambassadors with non-zero penalty points under the threshold.
+      - Sends a penalty warning email using a predefined template.
+      - Logs each email sent to ensure correct notifications were delivered.
+
+---
+
+#### 8. `setupLateResponseTrigger()`
+   - **Purpose**: Sets a time-based trigger to finalize penalty and score calculations after the submission window closes.
+   - **Details**:
+      - Creates a trigger to run after a specified delay, handling any final penalties for late submissions.
+      - Ensures accurate record-keeping by closing the submission window and marking all penalties by the end of the specified period.
+
+---
+
+### Additional Functions for Module 3 (Supporting Functions)
+
+Here are the function descriptions and explanations for the additional functions you provided:
+
+---
+
+### Additional Module 3 Functions Overview
+
+#### `checkEvaluationWindowStart()`
+   - **Purpose**: Checks if 7 days have passed since the start of the evaluation window.
+   - **Details**:
+      - Retrieves the evaluation start date from `ScriptProperties`.
+      - Compares the start date with the current date to calculate the number of days passed.
+      - If fewer than 7 days have passed, displays a warning dialog for the user with "OK" to proceed or "Cancel" to exit.
+      - If the user selects "OK," the function continues; otherwise, it exits.
+
+---
+
+#### `copyFinalScoresToOverallScore()`
+   - **Purpose**: Copies the "Final Score" from the month sheet to the corresponding month column in the "Overall Scores" sheet.
+   - **Details**:
+      - Retrieves the current month’s sheet and finds the "Final Score" values.
+      - Looks up the corresponding month column in the "Overall Scores" sheet.
+      - Copies each ambassador's score based on their Discord handle, matching entries in the "Overall Scores" sheet.
+      - Logs all actions to confirm which scores are copied and where.
+
+---
+
+#### `checkAndCreateColumns()`
+   - **Purpose**: Checks for and creates the "Penalty Points" and "Max 6-Month PP" columns in the "Overall Scores" sheet if they are missing.
+   - **Details**:
+      - Scans the headers in the "Overall Scores" sheet to determine if the "Penalty Points" and "Max 6-Month PP" columns exist.
+      - If missing, creates these columns at the end of the sheet and labels them accordingly.
+      - Logs the creation of each column to ensure they are correctly added if absent.
+
+
+
+#### 9. `refreshScriptState()`
+   - **Purpose**: Resets any cached or outdated values across functions in the module.
+   - **Details**:
+      - Clears caches, refreshes global variables, and performs a `SpreadsheetApp.flush()` to ensure data and settings are up-to-date.
+      - Often called via the custom menu for easy access, allowing users to reset and refresh the script state.
+
+#### 10. `clearCache()`
+   - **Purpose**: Clears the Google Apps Script cache to avoid issues with outdated values or settings.
+   - **Details**:
+      - Used to reset the cached state, particularly when issues with outdated values arise in the script.
+      - Typically included in `refreshScriptState()` to ensure smooth functionality.
+
+#### 11. `bruteforceDiscordHandle(providedHandle, expectedHandles)`
+   - **Purpose**: Matches the provided Discord handle to an expected handle using Levenshtein distance.
+   - **Details**:
+      - A utility to assist in mapping input values with potential typos to expected data in the sheet.
+      - Helps in situations where a submitted handle may have small errors.
+

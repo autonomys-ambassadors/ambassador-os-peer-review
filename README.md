@@ -1,44 +1,72 @@
 # Ambassador OS Peer Review
 
-This app script code can be added to a google sheet to run the Ambassador OS.
+This app script code (6 filesis) to be added to a google sheet to run the Ambassador OS.
 
 ## Some assumptions:
 
-1. You have a google sheet with a list of ambassadors with two columns, Ambassador Email Address, and Ambassador Discord Handle.
-2. You have a google sheet with a list of ambassador contributions with 4 columns: Timestamp, Email Address, Your Discord Handle, "Dear Ambassador,
-   Please add text, inputs or links to your contributions during the month of February, 2024:"
+1. You have spreadsheet "Ambassador Registry" with sheets: Review Log, Registry, Conflict Resolution Team.
+	"Registry" is a list of all ambassadors (columns: "Ambassador Email Address" , "Ambassador Discord Handle").
+2. You have spreadsheet "Ambassadors' Scores" with sheets: Overall score, month-sheets.
+	The "Ambassadors' Discord Handles" column of the "Overall score" sheet is a dynamically linked column that gets data from the Registry, sorted alphabetically by the "Ambassador Discord Handle" column. (In other words there should be the same list of ambassadors as in Registry).
 
-Note that column headings are not verified, but **column order is assumed**.
 
 ## To install the Ambassador OS Peer Review process script:
 
 In a google sheet, On the Extensions menu, choose Apps Script.
 
-Copy and paste in the contents of the code.gs file.
+in the Google Script Editor manu create files and paste the content of this repository files in to them correspondingly:
+ SharedUtilities 
+ Module1
+ Module2
+ Module3
+ Module4
+ Module5
+Google will automatically create a .gs extension for them.
 
-Edit these values at the top of the script to refer to your spreadsheets and forms. You can get the sheet urls from url bar when browsing the relevant sheet, and the sheet names are the tab names.
 
-```
-// Hard code the references to the forms and sheets
-const evaluationForm = "https://forms.gle/i89pkwmJeMcCWGvo7";
+  ## Recommendations to installing and using the script.
 
-const RegistrySheetName = "Registry";
-const RegistrySpreadsheet =
-	"https://docs.google.com/spreadsheets/d/1FSTQKb9_GWQ7HxuwKlwrv6yRf68yjaqeE8zrEbL8btU/edit#gid=146718602";
+Backup Ambassadors' Scores spreadsheet.
+Rename sheet 'Overall score ' to 'Overall score' (remove space at the end).
+To work ideally "Ambassadors' Discord Handles" column in Overall score sheet should be an exact copy of "Ambassador Discord Handle" column in Registry sheet. Note: If you need, it could be done programmatically in nearest update.
+Delete "Sheet 1" sheet in Ambassadors' Scores sprdsht, if you don't rly need it, to ease calculations.
+Ensure JS version compatibility:
+    Go Settings->"edit appsscript.json" tick = ON,
+    Open appsscript.json 
+	it should look similar to:
+	{
+	  "timeZone": "America/Los_Angeles",
+	  "exceptionLogging": "STACKDRIVER",
+	  "runtimeVersion": "V8",
+	  "oauthScopes": [
+	    "https://www.googleapis.com/auth/spreadsheets",
+	    "https://www.googleapis.com/auth/script.send_mail",
+	    "https://www.googleapis.com/auth/forms",
+	    "https://www.googleapis.com/auth/script.external_request",
+	    "https://www.googleapis.com/auth/script.scriptapp"
+	  ]
+	}
 
-const submissionForm = "https://forms.gle/74kT61GGWHfAjfT6A";
 
-const SubmissionsSheetName = "Responses";
-const SubmissionsSpreadsheet =
-	"https://docs.google.com/spreadsheets/d/1FSTQKb9_GWQ7HxuwKlwrv6yRf68yjaqeE8zrEbL8btU/edit#gid=146718602";
-```
+For installing the script in your environment you have to replace all letted variables in SharedUtilities.gs Global Variables section (and in the following refreshGlobalVariables function, to prevent Google cache problems. May be more simple way will be found in next update).
+For production mode ensure const testing = false.
+Through all the code the setMinutes and getMinutes are used. Edit Triggers and Delays section, using minutes. For ex. 7 days is 10080 minutes , possible can use format like: 60*24*7.
+Columns "Penalty Points" and "Max 6-Month PP" will be added automatically if don't exist.
+Every month current reporting month column will be added automatically.
+If everything is working as expected - no any manually editions will be needed.
+Expelled ambassadors are not deleted from Registry - their e-mail address string is concatenated with '(EXPELLED)' string.
+Expelled ambassadors should be removed from Registry though, but not necessary, they anyway will not be added to next cycles.
+⚠️ Use "Processing past months" option only if you want to count all "didn't submit" and "later submissoin" events in calculating total penalty points based on past months violations (already included in automatic batch).
+If "too many triggers" error happens, use "Delete existing triggers" menu item to resolve this (already implemented in code). Still the option can be helpful is some cases.
+Do not allow multi selecting options in Evaluation Form. Limit submitting to only one time. Editing in fact creates two forms (can lead to errors too).
+Recomendation to ensure formula for "Average Score" column covers the entire range of column-months from the first to the last, adapting as new columns are added "Cummulative Score". Can be done programmatically, if needed.
 
-In the header run menu, choose function addAmbassadorPeerReviewMenus and click run.
+## TESTING NOTES:
+The script has huge size preliminary due to excessive logging and comments. It should be reduced and only important steps logging left as we progressing in testing.
 
-## To run the process:
+The full description of all functions is in the functions_descr file.
 
-From the spreadsheet, you should now see a menu called "Ambassador OS" with menu items for Request Submissions and Request Evaluations.
+There are 2 objects in the script properties evaluationStartTime and evaluationWindowStart. This will be optimized in the next update. However, it is not critical for operation.
 
-Choose the relevant menu option to send out emails requesting evaluations or submissions.
 
-When requesting Evaluations, the script will add a new sheet to the Submissions spreadsheet called Review Log to record which ambassadors received which evaluation request.
+## CHANGES - pls refer to "Changes" file
