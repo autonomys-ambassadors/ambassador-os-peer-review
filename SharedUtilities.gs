@@ -1,5 +1,4 @@
-// (( Global Variables )) 
-// many tricks are applied for preventing outdated Google cache retaining (subject to improving)
+// (( Global Variables ))
 
 const testing = false;  // Set to true for testing (logs instead of sending emails)
 
@@ -39,7 +38,7 @@ let EVALUATION_WINDOW_REMINDER_MINUTES = 6;   // how many minutes after Evaluati
 // Colors for highlighting cells
 let COLOR_MISSED_SUBMISSION = '#f5eee6' ; // (or'#e2e5db');  // for missed submission
 let COLOR_MISSED_EVALUATION = '#e6d6c1' ; // (or'#b4b7af');  // for missed evaluation
-let COLOR_EXPELLED = '#FF0000';           // Red, for alarming
+let COLOR_EXPELLED = '#FF0000';           // for candidate to expell
 let COLOR_MISSED_SUBM_AND_EVAL = '#ceae83' ; //or('#71726d');  // missed both submission and evaluation
 let COLOR_OLD_MISSED_SUBMISSION = '#f5eee6' ; //or('#FFD580');  // for old "din't submitters"
 
@@ -110,10 +109,9 @@ function onOpen() {
     .addItem('Compliance Audit', 'runComplianceAudit')           // Process Scores and Penalties
     .addItem('Notify Upcoming Peer Review', 'notifyUpcomingPeerReview')  // Peer Review notifications
     .addItem('Select CRT members', 'selectCRTMembers')           // CRT
-    .addItem('Force Authorization', 'forceAuthorization')        // Authorization trigger
-    .addItem('Delete Existing Triggers', 'deleteExistingTriggers')  // Optional item
-    .addItem('Refresh Script State', 'refreshScriptState') // Add this for easy access
-    .addItem('Temporary Refresh', 'refreshScriptState')
+    .addItem('🔧️Force Authorization', 'forceAuthorization')        // Authorization trigger
+    .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers')  // Optional item
+    .addItem('🔧️Refresh Script State', 'refreshScriptState') // Add this for easy access
     .addToUi();
   Logger.log('Menu initialized.');
 }
@@ -129,7 +127,7 @@ function refreshScriptState() {
 }
 function clearCache() {
   const cache = CacheService.getScriptCache();
-  cache.removeAll();
+  cache.removeAll([]);
   Logger.log("Cache cleared.");
 }
 function refreshGlobalVariables() {

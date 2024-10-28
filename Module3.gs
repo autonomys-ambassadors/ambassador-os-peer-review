@@ -1,33 +1,36 @@
 // MODULE 3
 
 function runComplianceAudit() {
-  // 7 days Warning
-  checkEvaluationWindowStart();
-  
+  // Run evaluation window check and exit if the user presses "Cancel"
+  if (!checkEvaluationWindowStart()) {
+    Logger.log("runComplianceAudit process stopped by user.");
+    return;
+  }
   // Step 1: Check and create Penalty Points and Max 6-Month PP columns, if they do not exist
   checkAndCreateColumns();
-  
+  SpreadsheetApp.flush();
   // Copying all Final Score values to month column in Overall score. 
   // Note: Even if Evaluations came late, they anyway helpful for accountability, while those evaluators are fined.
   copyFinalScoresToOverallScore()
-
+  SpreadsheetApp.flush();
   // Step 4: [⚠️DESIGNED TO RUN ONLY ONCE] - Calculates penalty points for past months violations, colors events, adds PP to PP column.
   detectNonRespondersPastMonths();
-
+  SpreadsheetApp.flush();
   // Step 2: Calculate penalty points for missing Submissions for the current month
   calculatePenaltyPointsForSubmissions();
-  
+  SpreadsheetApp.flush();
   // Step 3: Calculate penalty points for missing Evaluations for the current month
   calculatePenaltyPointsForEvaluations();
-    
+  SpreadsheetApp.flush();
   // Step 5: Calculate the maximum number of penalty points for any continuous 6-month period
   calculateMaxPenaltyPointsForSixMonths();
-  
+  SpreadsheetApp.flush();
   // Step 6: Check for ambassadors eligible for expulsion
   expelAmbassadors();
-  
+  SpreadsheetApp.flush();
   // Step 7: Send expulsion notifications
   sendExpulsionNotifications();
+  SpreadsheetApp.flush();
    
   Logger.log('Compliance Audit process completed.');
 }
@@ -35,7 +38,7 @@ function runComplianceAudit() {
 /**
  * Checks if 7 days have passed since the start of the evaluation window.
  * If not, displays a warning to the user with an "OK, I understand" button.
- * Proceeds only if the button is pressed; otherwise, exits.
+ * Returns true if the user chooses to proceed, and false if the user presses "Cancel."
  */
 function checkEvaluationWindowStart() {
   const startDateProperty = PropertiesService.getScriptProperties().getProperty('evaluationWindowStart');
@@ -43,7 +46,7 @@ function checkEvaluationWindowStart() {
   if (!startDateProperty) {
     Logger.log("Error: Evaluation window start date is not set.");
     SpreadsheetApp.getUi().alert("Error: Evaluation window start date is not set.");
-    return;
+    return false;
   }
 
   const startDate = new Date(startDateProperty);
@@ -60,19 +63,20 @@ function checkEvaluationWindowStart() {
       ui.ButtonSet.OK_CANCEL
     );
 
-    // Proceed only if the user clicked "OK"
+    // Return true to proceed if the user clicked "OK"; return false to exit
     if (response == ui.Button.OK) {
       Logger.log("User acknowledged the warning and chose to proceed.");
-      // Add the main functionality to proceed here if needed.
+      return true;
     } else {
       Logger.log("User chose to exit after warning.");
-      return; // Exit if user pressed "Cancel" or closed the dialog
+      return false;
     }
   } else {
     Logger.log("7 days have passed since the evaluation window started; no warning needed.");
-    // Proceed with the main functionality here if needed.
+    return true; // No warning needed, proceed with the audit
   }
 }
+
 
 /**
  * Copies Final Score from the current month sheet to the current month column in the Overall score sheet.
@@ -456,8 +460,6 @@ function calculateMaxPenaltyPointsForSixMonths() {
   Logger.log('Completed calculating Max Penalty Points for all rows.');
 }
 
-
-
 // Expel ambassadors based on Max 6-Month PP
 function expelAmbassadors() {
   Logger.log('Starting expelAmbassadors process.');
@@ -472,33 +474,46 @@ function expelAmbassadors() {
   Logger.log(`Registry Headers: ${registryHeaders.join(", ")}`); // Log headers to verify
 
   const emailColIndex = registryHeaders.indexOf(AMBASSADOR_EMAIL_COLUMN) + 1;
-  if (emailColIndex === 0) {
-    Logger.log(`Error: Column '${AMBASSADOR_EMAIL_COLUMN}' not found in registry headers.`);
+  const discordHandleColIndex = registryHeaders.indexOf(AMBASSADOR_DISCORD_HANDLE_COLUMN) + 1;
+
+  if (emailColIndex === 0 || discordHandleColIndex === 0) {
+    Logger.log(`Error: Column '${AMBASSADOR_EMAIL_COLUMN}' or '${AMBASSADOR_DISCORD_HANDLE_COLUMN}' not found in registry headers.`);
     return;
   }
-  overallScoresSheet.getRange(2, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn()).getValues().forEach((row, i) => {
+
+  // Retrieve ambassador data starting from the second row (row 2, excluding headers)
+  const ambassadorData = overallScoresSheet.getRange(2, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn()).getValues();
+
+  ambassadorData.forEach((row, i) => {
     const discordHandle = row[0];
     const maxPenaltyPoints = row[maxPenaltyPointsIndex - 1];
 
     if (maxPenaltyPoints >= 3) {
-      const registryRowIndex = registrySheet.getRange(2, 2, registrySheet.getLastRow() - 1, 1)
+      const registryRowIndex = registrySheet.getRange(2, discordHandleColIndex, registrySheet.getLastRow() - 1, 1)
         .getValues()
-        .findIndex(regRow => regRow[0] === discordHandle) + 2;
+        .findIndex(regRow => regRow[0] === discordHandle) + 2; // Adding 2 to account for header row
 
-      if (registryRowIndex) {
+      if (registryRowIndex > 1) { // Avoid processing headers by ensuring registryRowIndex is > 1
+        // Send expulsion notifications first
+        sendExpulsionNotifications(discordHandle);
+
         const currentEmail = registrySheet.getRange(registryRowIndex, emailColIndex).getValue();
-        
+        const currentDiscordHandle = registrySheet.getRange(registryRowIndex, discordHandleColIndex).getValue();
+
+        // Update the email and Discord handle to include '(EXPELLED)'
         if (!currentEmail.startsWith('(EXPELLED) ')) {
           registrySheet.getRange(registryRowIndex, emailColIndex).setValue(`(EXPELLED) ${currentEmail}`);
-          Logger.log(`Ambassador ${discordHandle} marked as expelled.`);
-        } else {
-          Logger.log(`Ambassador ${discordHandle} is already marked as expelled.`);
         }
+        
+        if (!currentDiscordHandle.startsWith('(EXPELLED) ')) {
+          registrySheet.getRange(registryRowIndex, discordHandleColIndex).setValue(`(EXPELLED) ${currentDiscordHandle}`);
+        }
+
+        Logger.log(`Ambassador ${discordHandle} marked as expelled.`);
       }
     }
   });
 }
-
 
 /**
  * Sends expulsion notifications to the expelled ambassador and sponsor.
@@ -509,7 +524,7 @@ function sendExpulsionNotifications(discordHandle) {
 
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
   const registryHeaders = registrySheet.getRange(1, 1, 1, registrySheet.getLastColumn()).getValues()[0];
-  const emailColIndex = registryHeaders.indexOf('Ambassadors\' Email') + 1;
+  const emailColIndex = registryHeaders.indexOf(AMBASSADOR_EMAIL_COLUMN) + 1;
 
   // Find ambassador's row by discord handle
   const registryRowIndex = registrySheet.getRange(2, 2, registrySheet.getLastRow() - 1, 1)
@@ -537,5 +552,3 @@ function sendExpulsionNotifications(discordHandle) {
     Logger.log(`Error: Ambassador with discord handle ${discordHandle} not found in the registry.`);
   }
 }
-
-

@@ -1,4 +1,4 @@
-											FUNCTIONS  MODULE 1
+										               	FUNCTIONS  MODULE 1
 
 
 a. requestSubmissionsModule()
@@ -42,7 +42,9 @@ g. getSubmissionWindowStart()
 
 
 
-### Module 2 Functions Overview
+                                                  MODULE 2 
+
+
 
 #### 1. `createMonthSheetAndOverallColumn()`
    - **Purpose**: Creates a monthly sheet and updates the "Overall Scores" sheet as step 1 in the sequence.
@@ -144,10 +146,9 @@ g. getSubmissionWindowStart()
 ----
 
 
-### Module 3 Functions Overview
+                                                            MODULE 3
 
 
-++ Checking 
 
 
 #### 1. `calculatePenaltyPointsForSubmissions()`
