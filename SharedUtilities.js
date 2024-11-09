@@ -2,20 +2,20 @@
 
 const testing = false; // Set to true for testing (logs instead of sending emails)
 
+// Spreadsheets:
+// Wilyam test sheets
+// const AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1AIMD61YKfk-JyP6Aia3UWke9pW15bPYTvWc1C46ofkU';  //"Ambassador Registry"
+// const AMBASSADORS_SCORES_SPREADSHEET_ID = '1RJzCo1FgGWkx0UCYhaY3SIOR0sl7uD6vCUFw55BX0iQ';   // "Ambassadors' Scores"
+
+// Jonathan test sheets
+//const AMBASSADOR_REGISTRY_SPREADSHEET_ID = "15J5-F2_FxNJf6X2P7umiwOxJN9FckJYjIzDp3ydtZf8"; //"Ambassador Registry"
+//const AMBASSADORS_SCORES_SPREADSHEET_ID = "1p6SUyoinRl9DtQ5ESQZz-wb5PpdNL6wtucrVOf20vVM"; // "Ambassadors' Scores"
+
 // Google Forms IDs:
 let SUBMISSION_FORM_ID = "1SV5rJbzPv6BQgDZkC_xgrauWgoKPcEmtk3aKY6f4ZC8"; // ID for Submission form
 let EVALUATION_FORM_ID = "15UXnrpOOoZPO7XCP2TV7mwezewHY6UIsYAU_W_aoMwo"; // ID for Evaluation form
 let SUBMISSION_FORM_URL = "https://forms.gle/beZrwuP9Zs1HvUY49"; // Submission Form URL for mailing
 let EVALUATION_FORM_URL = "https://forms.gle/kndReXQqXT6JyKX68"; // Evaluation Form URL for mailing
-
-// Spreadsheets:
-// WILYAM TEST SHEETS: const AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1AIMD61YKfk-JyP6Aia3UWke9pW15bPYTvWc1C46ofkU';  //"Ambassador Registry"
-// WILYAM TEST SHEETS: const AMBASSADORS_SCORES_SPREADSHEET_ID = '1RJzCo1FgGWkx0UCYhaY3SIOR0sl7uD6vCUFw55BX0iQ';   // "Ambassadors' Scores"
-
-const AMBASSADOR_REGISTRY_SPREADSHEET_ID =
-	"15J5-F2_FxNJf6X2P7umiwOxJN9FckJYjIzDp3ydtZf8"; //"Ambassador Registry"
-const AMBASSADORS_SCORES_SPREADSHEET_ID =
-	"1p6SUyoinRl9DtQ5ESQZz-wb5PpdNL6wtucrVOf20vVM"; // "Ambassadors' Scores"
 
 // ==="Ambassador Registry" spreadsheet sheets' names:===
 let REGISTRY_SHEET_NAME = "Registry"; // Registry sheet in Ambassador Registry
