@@ -1,6 +1,6 @@
 // (( Global Variables ))
 
-const testing = false;  // Set to true for testing (logs instead of sending emails)
+const testing = false; // Set to true for testing (logs instead of sending emails)
 
 // Spreadsheets:
 // Wilyam test sheets
@@ -12,44 +12,44 @@ const testing = false;  // Set to true for testing (logs instead of sending emai
 //const AMBASSADORS_SCORES_SPREADSHEET_ID = "1p6SUyoinRl9DtQ5ESQZz-wb5PpdNL6wtucrVOf20vVM"; // "Ambassadors' Scores"
 
 // Wilyam Google Forms IDs:
-let SUBMISSION_FORM_ID = '1SV5rJbzPv6BQgDZkC_xgrauWgoKPcEmtk3aKY6f4ZC8';  // ID for Submission form
-let EVALUATION_FORM_ID = '15UXnrpOOoZPO7XCP2TV7mwezewHY6UIsYAU_W_aoMwo';  // ID for Evaluation form
-let SUBMISSION_FORM_URL = 'https://forms.gle/beZrwuP9Zs1HvUY49';          // Submission Form URL for mailing
-let EVALUATION_FORM_URL = 'https://forms.gle/kndReXQqXT6JyKX68';          // Evaluation Form URL for mailing
+let SUBMISSION_FORM_ID = '1SV5rJbzPv6BQgDZkC_xgrauWgoKPcEmtk3aKY6f4ZC8'; // ID for Submission form
+let EVALUATION_FORM_ID = '15UXnrpOOoZPO7XCP2TV7mwezewHY6UIsYAU_W_aoMwo'; // ID for Evaluation form
+let SUBMISSION_FORM_URL = 'https://forms.gle/beZrwuP9Zs1HvUY49'; // Submission Form URL for mailing
+let EVALUATION_FORM_URL = 'https://forms.gle/kndReXQqXT6JyKX68'; // Evaluation Form URL for mailing
 
 // Spreadsheets:
 let AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1AIMD61YKfk-JyP6Aia3UWke9pW15bPYTvWc1C46ofkU'; //"Ambassador Registry"
-let AMBASSADORS_SCORES_SPREADSHEET_ID = '1RJzCo1FgGWkx0UCYhaY3SIOR0sl7uD6vCUFw55BX0iQ';  // "Ambassadors' Scores"
+let AMBASSADORS_SCORES_SPREADSHEET_ID = '1RJzCo1FgGWkx0UCYhaY3SIOR0sl7uD6vCUFw55BX0iQ'; // "Ambassadors' Scores"
 
 // ==="Ambassador Registry" spreadsheet sheets' names:===
-let REGISTRY_SHEET_NAME = 'Registry';                 // Registry sheet in Ambassador Registry
-let FORM_RESPONSES_SHEET_NAME = 'Form Responses 14';  // Explicit name for 'Form Responses' sheet
-let REVIEW_LOG_SHEET_NAME = 'Review Log';             // Review Log sheet for evaluations
-let CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';  // CRT sheet
+let REGISTRY_SHEET_NAME = 'Registry'; // Registry sheet in Ambassador Registry
+let FORM_RESPONSES_SHEET_NAME = 'Form Responses 14'; // Explicit name for 'Form Responses' sheet
+let REVIEW_LOG_SHEET_NAME = 'Review Log'; // Review Log sheet for evaluations
+let CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team'; // CRT sheet
 
 // Columns in 'Registry' sheet:
-let AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';            // Email addresses column, column A
-let AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';  // Discord handles column, column B
+let AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address'; // Email addresses column, column A
+let AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle'; // Discord handles column, column B
 
 // ==="Ambassadors' Scores" spreadsheet sheets' names:===
-let OVERALL_SCORE_SHEET_NAME = 'Overall score';  // Overall score sheet in Ambassadors' Scores
-let EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 2';  // Evaluation Form responses sheet
+let OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
+let EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 2'; // Evaluation Form responses sheet
 
 // Sponsor Email (for notifications when ambassadors are expelled)
-let SPONSOR_EMAIL = "economicsilver@starmail.net";  // Sponsor's email
+let SPONSOR_EMAIL = 'economicsilver@starmail.net'; // Sponsor's email
 
-// Triggers and Delays 
+// Triggers and Delays
 let SUBMISSION_WINDOW_MINUTES = 7;
-let SUBMISSION_WINDOW_REMINDER_MINUTES = 6;   // how many minutes after Submission Requests sent to remind
+let SUBMISSION_WINDOW_REMINDER_MINUTES = 6; // how many minutes after Submission Requests sent to remind
 let EVALUATION_WINDOW_MINUTES = 10;
-let EVALUATION_WINDOW_REMINDER_MINUTES = 9;   // how many minutes after Evaluation Requests sent to remind
+let EVALUATION_WINDOW_REMINDER_MINUTES = 9; // how many minutes after Evaluation Requests sent to remind
 
 // Colors for highlighting cells
-let COLOR_MISSED_SUBMISSION = '#f5eee6' ; // (or'#e2e5db');  // for missed submission
-let COLOR_MISSED_EVALUATION = '#e6d6c1' ; // (or'#b4b7af');  // for missed evaluation
-let COLOR_EXPELLED = '#FF0000';           // for candidate to expell
-let COLOR_MISSED_SUBM_AND_EVAL = '#ceae83' ; //or('#71726d');  // missed both submission and evaluation
-let COLOR_OLD_MISSED_SUBMISSION = '#f5eee6' ; //or('#FFD580');  // for old "din't submitters"
+let COLOR_MISSED_SUBMISSION = '#f5eee6'; // (or'#e2e5db');  // for missed submission
+let COLOR_MISSED_EVALUATION = '#e6d6c1'; // (or'#b4b7af');  // for missed evaluation
+let COLOR_EXPELLED = '#FF0000'; // for candidate to expell
+let COLOR_MISSED_SUBM_AND_EVAL = '#ceae83'; //or('#71726d');  // missed both submission and evaluation
+let COLOR_OLD_MISSED_SUBMISSION = '#f5eee6'; //or('#FFD580');  // for old "din't submitters"
 
 //		 ======= 	 Email Content Templates 	=======
 
@@ -79,9 +79,6 @@ let REQUEST_EVALUATION_EMAIL_TEMPLATE = `
 
 <p>Thank you,<br>Ambassador Program Team</p>
 `;
-
-
-
 
 // Reminder Email Template
 let REMINDER_EMAIL_TEMPLATE = `
@@ -121,13 +118,13 @@ function onOpen() {
   const ui = SpreadsheetApp.getUi();
   Logger.log('Initializing menu on spreadsheet open.');
   ui.createMenu('Ambassador Program')
-    .addItem('Request Submissions', 'requestSubmissionsModule')  // Request Submissions
-    .addItem('Request Evaluations', 'requestEvaluationsModule')  // Request Evaluations
-    .addItem('Compliance Audit', 'runComplianceAudit')           // Process Scores and Penalties
-    .addItem('Notify Upcoming Peer Review', 'notifyUpcomingPeerReview')  // Peer Review notifications
-    .addItem('Select CRT members', 'selectCRTMembers')           // CRT
-    .addItem('🔧️Force Authorization', 'forceAuthorization')        // Authorization trigger
-    .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers')  // Optional item
+    .addItem('Request Submissions', 'requestSubmissionsModule') // Request Submissions
+    .addItem('Request Evaluations', 'requestEvaluationsModule') // Request Evaluations
+    .addItem('Compliance Audit', 'runComplianceAudit') // Process Scores and Penalties
+    .addItem('Notify Upcoming Peer Review', 'notifyUpcomingPeerReview') // Peer Review notifications
+    .addItem('Select CRT members', 'selectCRTMembers') // CRT
+    .addItem('🔧️Force Authorization', 'forceAuthorization') // Authorization trigger
+    .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers') // Optional item
     .addItem('🔧️Refresh Script State', 'refreshScriptState') // Add this for easy access
     .addToUi();
   Logger.log('Menu initialized.');
@@ -135,23 +132,23 @@ function onOpen() {
 
 // ⚠️ functions to prevent Google's use of cached outdated variables when run from GUI.
 function refreshScriptState() {
-  Logger.log("Starting Refresh Script State");
+  Logger.log('Starting Refresh Script State');
 
   clearCache();
   refreshGlobalVariables();
   SpreadsheetApp.flush();
-  Logger.log("Script state refreshed: cache cleared, variables refreshed, and flush completed.");
+  Logger.log('Script state refreshed: cache cleared, variables refreshed, and flush completed.');
 }
 function clearCache() {
   const cache = CacheService.getScriptCache();
   cache.removeAll([]);
-  Logger.log("Cache cleared.");
+  Logger.log('Cache cleared.');
 }
 function refreshGlobalVariables() {
   Logger.log('Refreshing global variables.');
-  
-    // Google Forms
-  SUBMISSION_FORM_ID = '1SV5rJbzPv6BQgDZkC_xgrauWgoKPcEmtk3aKY6f4ZC8';  
+
+  // Google Forms
+  SUBMISSION_FORM_ID = '1SV5rJbzPv6BQgDZkC_xgrauWgoKPcEmtk3aKY6f4ZC8';
   EVALUATION_FORM_ID = '15UXnrpOOoZPO7XCP2TV7mwezewHY6UIsYAU_W_aoMwo';
   SUBMISSION_FORM_URL = 'https://forms.gle/beZrwuP9Zs1HvUY49';
   EVALUATION_FORM_URL = 'https://forms.gle/kndReXQqXT6JyKX68';
@@ -165,19 +162,19 @@ function refreshGlobalVariables() {
   FORM_RESPONSES_SHEET_NAME = 'Form Responses 14';
   REVIEW_LOG_SHEET_NAME = 'Review Log';
   CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
-  OVERALL_SCORE_SHEET_NAME = 'Overall score';  // Overall score sheet in Ambassadors' Scores
-  EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 2';  // Evaluation Form responses sheet
+  OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
+  EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 2'; // Evaluation Form responses sheet
 
   // Columns
   AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
   AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
 
   // Sponsor Email (for notifications when ambassadors are expelled)
-  SPONSOR_EMAIL = "economicsilver@starmail.net";  // Sponsor's email
-  
+  SPONSOR_EMAIL = 'economicsilver@starmail.net'; // Sponsor's email
+
   // Reinitialize color variables to ensure consistency in color-based logic.
-  COLOR_MISSED_SUBMISSION = '#f5eee6'; 
-  COLOR_MISSED_EVALUATION = '#e6d6c1';  
+  COLOR_MISSED_SUBMISSION = '#f5eee6';
+  COLOR_MISSED_EVALUATION = '#e6d6c1';
   COLOR_EXPELLED = '#FF0000';
   COLOR_MISSED_SUBM_AND_EVAL = '#ceae83';
   COLOR_OLD_MISSED_SUBMISSION = '#f5eee6';
@@ -190,13 +187,12 @@ function refreshGlobalVariables() {
 
   // Log the reinitialization of templates
   Logger.log('Templates and constants reinitialized to ensure accurate processing.');
-  
-  Logger.log("Color for missed submission: " + COLOR_MISSED_SUBMISSION);
-  Logger.log("Color for missed submission: " + COLOR_OLD_MISSED_SUBMISSION);
-  Logger.log("Color for missed evaluation: " + COLOR_MISSED_EVALUATION);
-  Logger.log("Color for missed submiss and eval: " + COLOR_MISSED_SUBM_AND_EVAL);
-  Logger.log("Color for expelled: " + COLOR_EXPELLED);
 
+  Logger.log('Color for missed submission: ' + COLOR_MISSED_SUBMISSION);
+  Logger.log('Color for missed submission: ' + COLOR_OLD_MISSED_SUBMISSION);
+  Logger.log('Color for missed evaluation: ' + COLOR_MISSED_EVALUATION);
+  Logger.log('Color for missed submiss and eval: ' + COLOR_MISSED_SUBM_AND_EVAL);
+  Logger.log('Color for expelled: ' + COLOR_EXPELLED);
 }
 
 // ===== Generic function to send email =====
@@ -225,7 +221,6 @@ function getEvaluationWindowStart() {
   const timeStr = PropertiesService.getScriptProperties().getProperty('evaluationWindowStart');
   return timeStr ? new Date(timeStr) : null;
 }
-
 
 function getSubmissionWindowStart() {
   Logger.log('Getting submission window start time.');
@@ -264,7 +259,6 @@ function getValidEvaluationResponses() {
 //  return reviewLogSheet.getRange(2, 1, reviewLogSheet.getLastRow() - 1, reviewLogSheet.getLastColumn()).getValues();
 //}
 
-
 /**
  * Extracts the list of valid evaluator emails from the evaluation responses sheet within the evaluation time window.
  * @param {Sheet} evaluationResponsesSheet - The sheet containing evaluation form responses.
@@ -272,7 +266,7 @@ function getValidEvaluationResponses() {
  */
 function getValidEvaluationEmails(evaluationResponsesSheet) {
   Logger.log('Extracting valid evaluation emails.');
-  
+
   const lastRow = evaluationResponsesSheet.getLastRow();
   if (lastRow < 2) {
     Logger.log('No evaluation responses found.');
@@ -281,7 +275,7 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
 
   // Get the evaluation time window from the stored properties
   const evaluationWindowStart = getEvaluationWindowStart();
-  
+
   if (!evaluationWindowStart) {
     Logger.log('Error: Evaluation window start time not found.');
     return [];
@@ -292,30 +286,35 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
   Logger.log(`Evaluation window: ${evaluationWindowStart} - ${evaluationWindowEnd}`);
 
   // Extract valid responses within the evaluation time window
-  const validEvaluators = evaluationResponsesSheet.getRange(2, 1, lastRow - 1, 2).getValues().filter(row => {
-    const responseTimestamp = new Date(row[0]);  // Assuming the first column is the timestamp
-    const email = row[1].trim().toLowerCase();   // Assuming the second column is the evaluator's email
+  const validEvaluators = evaluationResponsesSheet
+    .getRange(2, 1, lastRow - 1, 2)
+    .getValues()
+    .filter((row) => {
+      const responseTimestamp = new Date(row[0]); // Assuming the first column is the timestamp
+      const email = row[1].trim().toLowerCase(); // Assuming the second column is the evaluator's email
 
-    // Check if the response is within the evaluation time window
-    const isWithinWindow = responseTimestamp >= evaluationWindowStart && responseTimestamp <= evaluationWindowEnd;
+      // Check if the response is within the evaluation time window
+      const isWithinWindow = responseTimestamp >= evaluationWindowStart && responseTimestamp <= evaluationWindowEnd;
 
-    if (isWithinWindow) {
-      Logger.log(`Valid evaluator found: ${email} (Response time: ${responseTimestamp})`);
-      return true;
-    }
-    return false;
-  }).map(row => row[1].trim().toLowerCase());  // Extracting the evaluator email
+      if (isWithinWindow) {
+        Logger.log(`Valid evaluator found: ${email} (Response time: ${responseTimestamp})`);
+        return true;
+      }
+      return false;
+    })
+    .map((row) => row[1].trim().toLowerCase()); // Extracting the evaluator email
 
   Logger.log(`Valid evaluators (within time window): ${validEvaluators.join(', ')}`);
   return validEvaluators;
 }
 
-
 // Fetches and returns the submitter-evaluator assignments from the Review Log
 function getReviewLogAssignments() {
   Logger.log('Fetching submitter-evaluator assignments from Review Log.');
 
-  const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REVIEW_LOG_SHEET_NAME);
+  const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
+    REVIEW_LOG_SHEET_NAME
+  );
   const lastRow = reviewLogSheet.getLastRow();
 
   if (lastRow < 2) {
@@ -327,16 +326,15 @@ function getReviewLogAssignments() {
 
   // Structure the data as { submitter: [evaluators] }
   const assignments = {};
-  reviewData.forEach(row => {
+  reviewData.forEach((row) => {
     const submitterEmail = row[0];
-    const evaluators = [row[1], row[2], row[3]].filter(email => email);  // Collect evaluators' emails
+    const evaluators = [row[1], row[2], row[3]].filter((email) => email); // Collect evaluators' emails
     assignments[submitterEmail] = evaluators;
   });
 
   Logger.log(`Review Log assignments: ${JSON.stringify(assignments)}`);
   return assignments;
 }
-
 
 //////////// DATE UTILITS
 
@@ -361,7 +359,7 @@ function getMonthNameForDate(date, timeZone) {
 
 /**
  * A helper function to retrieve the first day of the previous month based on time zone.
- * This function returns a Date object that represents the first day of the previous month. 
+ * This function returns a Date object that represents the first day of the previous month.
  * The time is set to 7:00 (feel free to adjust as needed) to match the time set in the previous columns.
  * @param {string} timeZone - The time zone of the table.
  * @returns {Date} - The date of the first day of the previous month.
@@ -391,8 +389,14 @@ function getPreviousMonthDate(timeZone) {
 
 function getDiscordHandleFromEmail(email) {
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const emailColumn = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 1).getValues().flat();
-  const discordColumn = registrySheet.getRange(2, 2, registrySheet.getLastRow() - 1, 1).getValues().flat();
+  const emailColumn = registrySheet
+    .getRange(2, 1, registrySheet.getLastRow() - 1, 1)
+    .getValues()
+    .flat();
+  const discordColumn = registrySheet
+    .getRange(2, 2, registrySheet.getLastRow() - 1, 1)
+    .getValues()
+    .flat();
 
   const index = emailColumn.indexOf(email);
   return index !== -1 ? discordColumn[index] : null;
@@ -401,8 +405,12 @@ function getDiscordHandleFromEmail(email) {
 // Main function to update the form titles based on the current reporting month
 function updateFormTitlesWithCurrentReportingMonth() {
   // Retrieve the reporting month in "MMMM yyyy" format, e.g., "August 2024"
-  const reportingMonth = Utilities.formatDate(getPreviousMonthDate(Session.getScriptTimeZone()), Session.getScriptTimeZone(), 'MMMM yyyy');
-  
+  const reportingMonth = Utilities.formatDate(
+    getPreviousMonthDate(Session.getScriptTimeZone()),
+    Session.getScriptTimeZone(),
+    'MMMM yyyy'
+  );
+
   // Open each form by its ID
   const submissionForm = FormApp.openById(SUBMISSION_FORM_ID);
   const evaluationForm = FormApp.openById(EVALUATION_FORM_ID);
@@ -419,11 +427,7 @@ function updateFormTitlesWithCurrentReportingMonth() {
   Logger.log(`Updated Evaluation Form title to: ${newEvaluationTitle}`);
 }
 
-
-
-
-
-/////////////  INDEX UTILITIES for COLUMNS and SHEETS 
+/////////////  INDEX UTILITIES for COLUMNS and SHEETS
 
 function getColumnIndexByName(sheet, columnName) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
@@ -443,7 +447,7 @@ function getColumnIndexByName(sheet, columnName) {
 function doesColumnExist(existingColumns, targetDate, timeZone) {
   const targetMonthName = Utilities.formatDate(targetDate, timeZone, 'MMMM yyyy');
   Logger.log(`Checking the existence of the column: "${targetMonthName}"`);
-  return existingColumns.some(column => {
+  return existingColumns.some((column) => {
     if (column instanceof Date) {
       const columnMonthName = Utilities.formatDate(column, timeZone, 'MMMM yyyy');
       return columnMonthName === targetMonthName;
@@ -474,7 +478,7 @@ function findInsertIndexForMonth(existingColumns) {
 
 /**
  * Checks if the cell value is a month-column value.
- * This function is used to check if the cell value in "Overall score" is the date corresponding to the first day of the month. 
+ * This function is used to check if the cell value in "Overall score" is the date corresponding to the first day of the month.
  * @param {string|Date} columnValue - Field value.
  * @returns {boolean} - Returns true, if this is a month-column, otherwise false.
  */
@@ -540,25 +544,28 @@ function isMonthSheet(sheetName) {
 }
 
 function findRowByDiscordHandle(discordHandle) {
-  const overallScoresSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID).getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  const handlesColumn = overallScoresSheet.getRange(2, 1, overallScoresSheet.getLastRow() - 1, 1).getValues().flat(); // Assuming Discord handle is in the first column
-  
-  const rowIndex = handlesColumn.findIndex(handle => handle === discordHandle);
-  
+  const overallScoresSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID).getSheetByName(
+    OVERALL_SCORE_SHEET_NAME
+  );
+  const handlesColumn = overallScoresSheet
+    .getRange(2, 1, overallScoresSheet.getLastRow() - 1, 1)
+    .getValues()
+    .flat(); // Assuming Discord handle is in the first column
+
+  const rowIndex = handlesColumn.findIndex((handle) => handle === discordHandle);
+
   // Since findIndex returns 0-based index, we add 2 to get the actual row in the sheet (1-based index, plus header row).
   return rowIndex !== -1 ? rowIndex + 2 : null;
 }
 
-
 ////// TRIGGERS
-
 
 // Function to delete all existing triggers
 function deleteExistingTriggers() {
   try {
     Logger.log('Deleting existing triggers.');
     const triggers = ScriptApp.getProjectTriggers();
-    triggers.forEach(trigger => {
+    triggers.forEach((trigger) => {
       ScriptApp.deleteTrigger(trigger);
       Logger.log(`Deleted trigger: ${trigger.getHandlerFunction()}`);
     });
@@ -576,9 +583,8 @@ function forceAuthorization() {
   try {
     // Access a protected service to prompt authorization. DriveApp is used as an example.
     DriveApp.getRootFolder();
-    Logger.log("Authorization confirmed.");
+    Logger.log('Authorization confirmed.');
   } catch (e) {
-    Logger.log("Authorization required. Please reauthorize the script.");
+    Logger.log('Authorization required. Please reauthorize the script.');
   }
 }
-

@@ -1,0 +1,12 @@
+root = true
+
+[*]
+indent_style = space        # Use spaces instead of tabs
+indent_size = 2             # Set indentation to 2 spaces
+end_of_line = lf            # Use LF for line endings
+charset = utf-8             # Use UTF-8 encoding
+trim_trailing_whitespace = true  # Remove trailing whitespace
+insert_final_newline = true      # Insert a newline at the end of files
+
+[*.js, *.ts]
+quote_type = single         # Prefer single quotes
