@@ -12,7 +12,7 @@ Note that column headings are not verified, but **column order is assumed**.
 
 ## To install the Ambassador OS Peer Review process script:
 
-### Clone the porject
+### Clone the project
 
 Git clone this project `git clone https://github.com/autonomys-ambassadors/ambassador-os-peer-review.git`
 
