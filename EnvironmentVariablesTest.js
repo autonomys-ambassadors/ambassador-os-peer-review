@@ -9,10 +9,15 @@ function setTestVariables() {
   // Wilyam test sheets
   //AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1AIMD61YKfk-JyP6Aia3UWke9pW15bPYTvWc1C46ofkU';  //"Ambassador Registry"
   //AMBASSADORS_SCORES_SPREADSHEET_ID = '1RJzCo1FgGWkx0UCYhaY3SIOR0sl7uD6vCUFw55BX0iQ';   // "Ambassadors' Scores"
+  //AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = 'JyP6Aia3UWke9pW15bPYTvWc1C46ofkU'; // "Ambassador Submission Responses"
+  //EVALUATION_RESPONSES_SPREADSHEET_ID = 'JyP6Aia3UWke9pW15bPYTvWc1C46ofkU'; // "Ambassador Evaluations' Responses"
+
   //
   // Jonathan test sheets
   AMBASSADOR_REGISTRY_SPREADSHEET_ID = '14aHm1EiK48RoclGYydI7OzcFcExYUr9tdQ6PlhjCbAg'; //"Ambassador Registry"
   AMBASSADORS_SCORES_SPREADSHEET_ID = '1lVUaCGCCbfD3l9e8MEfQVBKaljm7A5aKX7RJAsUrWfA'; // "Ambassadors' Scores"
+  AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1lVUaCGCCbfD3l9e8MEfQVBKaljm7A5aKX7RJAsUrWfA'; // "Ambassador Submission Responses"
+  EVALUATION_RESPONSES_SPREADSHEET_ID = '1lVUaCGCCbfD3l9e8MEfQVBKaljm7A5aKX7RJAsUrWfA'; // "Ambassador Evaluations' Responses"
 
   // Google Forms
   //

@@ -6,7 +6,9 @@ function setProductionVariables() {
   //
   // Provide the Id of the google sheet for the registry and scoreing sheets:
   AMBASSADOR_REGISTRY_SPREADSHEET_ID = ''; //"Ambassador Registry"
-  AMBASSADORS_SCORES_SPREADSHEET_ID = ''; // "Ambassadors' Scores"
+  AMBASSADORS_SCORES_SPREADSHEET_ID = ''; // "Ambassadors Scores"
+  AMBASSADORS_RESPONSES_SPREADSHEET_ID = ''; // "Ambassador Submission Responses"
+  EVALUATION_RESPONSES_SPREADSHEET_ID = ''; // "Ambassador Evaluations' Responses"
 
   // Provide the Id and submission URL for the submission and evaluation google forms:
   SUBMISSION_FORM_ID = ''; // ID for Submission form
