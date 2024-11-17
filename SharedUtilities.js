@@ -8,6 +8,8 @@ var SEND_EMAIL = true; // Will control whether emails are sent - must be true fo
 // Provide the Id of the google sheet for the registry and scoreing sheets:
 var AMBASSADOR_REGISTRY_SPREADSHEET_ID = ''; //"Ambassador Registry"
 var AMBASSADORS_SCORES_SPREADSHEET_ID = ''; // "Ambassadors' Scores"
+var AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = ''; // "Ambassador Submission Responses"
+var EVALUATION_RESPONSES_SPREADSHEET_ID = ''; // "Evaluation Responses"
 
 // Provide the Id and submission URL for the submission and evaluation google forms:
 var SUBMISSION_FORM_ID = ''; // ID for Submission form
