@@ -1,55 +1,59 @@
 // (( Global Variables ))
+// Declare & initialize global variables; these will be updated by the setProductionVariables() or setTestVariables() functions
 
-const testing = false; // Set to true for testing (logs instead of sending emails)
+// testing constant will be used to load production vs. test values for the global variables
+const testing = true; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
+var SEND_EMAIL = true; // Will control whether emails are sent - must be true for production; may be true or false for testing depending on testing needs.
 
-// Spreadsheets:
-// Wilyam test sheets
-// const AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1AIMD61YKfk-JyP6Aia3UWke9pW15bPYTvWc1C46ofkU';  //"Ambassador Registry"
-// const AMBASSADORS_SCORES_SPREADSHEET_ID = '1RJzCo1FgGWkx0UCYhaY3SIOR0sl7uD6vCUFw55BX0iQ';   // "Ambassadors' Scores"
+// Provide the Id of the google sheet for the registry and scoreing sheets:
+var AMBASSADOR_REGISTRY_SPREADSHEET_ID = ''; //"Ambassador Registry"
+var AMBASSADORS_SCORES_SPREADSHEET_ID = ''; // "Ambassadors' Scores"
 
-// Jonathan test sheets
-//const AMBASSADOR_REGISTRY_SPREADSHEET_ID = "15J5-F2_FxNJf6X2P7umiwOxJN9FckJYjIzDp3ydtZf8"; //"Ambassador Registry"
-//const AMBASSADORS_SCORES_SPREADSHEET_ID = "1p6SUyoinRl9DtQ5ESQZz-wb5PpdNL6wtucrVOf20vVM"; // "Ambassadors' Scores"
-
-// Wilyam Google Forms IDs:
-let SUBMISSION_FORM_ID = '1SV5rJbzPv6BQgDZkC_xgrauWgoKPcEmtk3aKY6f4ZC8'; // ID for Submission form
-let EVALUATION_FORM_ID = '15UXnrpOOoZPO7XCP2TV7mwezewHY6UIsYAU_W_aoMwo'; // ID for Evaluation form
-let SUBMISSION_FORM_URL = 'https://forms.gle/beZrwuP9Zs1HvUY49'; // Submission Form URL for mailing
-let EVALUATION_FORM_URL = 'https://forms.gle/kndReXQqXT6JyKX68'; // Evaluation Form URL for mailing
-
-// Spreadsheets:
-let AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1AIMD61YKfk-JyP6Aia3UWke9pW15bPYTvWc1C46ofkU'; //"Ambassador Registry"
-let AMBASSADORS_SCORES_SPREADSHEET_ID = '1RJzCo1FgGWkx0UCYhaY3SIOR0sl7uD6vCUFw55BX0iQ'; // "Ambassadors' Scores"
-
-// ==="Ambassador Registry" spreadsheet sheets' names:===
-let REGISTRY_SHEET_NAME = 'Registry'; // Registry sheet in Ambassador Registry
-let FORM_RESPONSES_SHEET_NAME = 'Form Responses 14'; // Explicit name for 'Form Responses' sheet
-let REVIEW_LOG_SHEET_NAME = 'Review Log'; // Review Log sheet for evaluations
-let CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team'; // CRT sheet
-
-// Columns in 'Registry' sheet:
-let AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address'; // Email addresses column, column A
-let AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle'; // Discord handles column, column B
-
-// ==="Ambassadors' Scores" spreadsheet sheets' names:===
-let OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
-let EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 2'; // Evaluation Form responses sheet
-
-// Sponsor Email (for notifications when ambassadors are expelled)
-let SPONSOR_EMAIL = 'economicsilver@starmail.net'; // Sponsor's email
+// Provide the Id and submission URL for the submission and evaluation google forms:
+var SUBMISSION_FORM_ID = ''; // ID for Submission form
+var EVALUATION_FORM_ID = ''; // ID for Evaluation form
+var SUBMISSION_FORM_URL = ''; // Submission Form URL for mailing
+var EVALUATION_FORM_URL = ''; // Evaluation Form URL for mailing
+var FORM_RESPONSES_SHEET_NAME = ''; // Explicit name for 'Form Responses' sheet
+var EVAL_FORM_RESPONSES_SHEET_NAME = ''; // Evaluation Form responses sheet
 
 // Triggers and Delays
-let SUBMISSION_WINDOW_MINUTES = 7;
-let SUBMISSION_WINDOW_REMINDER_MINUTES = 6; // how many minutes after Submission Requests sent to remind
-let EVALUATION_WINDOW_MINUTES = 10;
-let EVALUATION_WINDOW_REMINDER_MINUTES = 9; // how many minutes after Evaluation Requests sent to remind
+// These values will set the due date and reminder schedule for Submissions and Evaluations.
+// The Submission or Evaluation will be due ofter the relevant WINDOW_MINUTES,
+// and each ambassador will receive a reminder after the relevant WINDOW_REMINDER_MINUTES.
+// specifies as days * hours * minutes
+var SUBMISSION_WINDOW_MINUTES = 0;
+var SUBMISSION_WINDOW_REMINDER_MINUTES = 0; // how many minutes after Submission Requests sent to remind
+var EVALUATION_WINDOW_MINUTES = 0;
+var EVALUATION_WINDOW_REMINDER_MINUTES = 0; // how many minutes after Evaluation Requests sent to remind
 
-// Colors for highlighting cells
-let COLOR_MISSED_SUBMISSION = '#f5eee6'; // (or'#e2e5db');  // for missed submission
-let COLOR_MISSED_EVALUATION = '#e6d6c1'; // (or'#b4b7af');  // for missed evaluation
-let COLOR_EXPELLED = '#FF0000'; // for candidate to expell
-let COLOR_MISSED_SUBM_AND_EVAL = '#ceae83'; //or('#71726d');  // missed both submission and evaluation
-let COLOR_OLD_MISSED_SUBMISSION = '#f5eee6'; //or('#FFD580');  // for old "din't submitters"
+// Sheet names
+var REGISTRY_SHEET_NAME = '';
+var FORM_RESPONSES_SHEET_NAME = '';
+var REVIEW_LOG_SHEET_NAME = '';
+var CONFLICT_RESOLUTION_TEAM_SHEET_NAME = '';
+var OVERALL_SCORE_SHEET_NAME = ''; // Overall score sheet in Ambassadors' Scores
+var EVAL_FORM_RESPONSES_SHEET_NAME = ''; // Evaluation Form responses sheet
+
+// Columns
+var AMBASSADOR_EMAIL_COLUMN = '';
+var AMBASSADOR_DISCORD_HANDLE_COLUMN = '';
+
+// Sponsor Email (for notifications when ambassadors are expelled)
+var SPONSOR_EMAIL = ''; // Sponsor's email
+
+// Color variables
+var COLOR_MISSED_SUBMISSION = '';
+var COLOR_MISSED_EVALUATION = '';
+var COLOR_EXPELLED = '';
+var COLOR_MISSED_SUBM_AND_EVAL = '';
+var COLOR_OLD_MISSED_SUBMISSION = '';
+
+if (testing) {
+  setTestVariables();
+} else {
+  setProductionVariables();
+}
 
 //		 ======= 	 Email Content Templates 	=======
 
@@ -88,7 +92,7 @@ Hi there! Just a friendly reminder that we’re still waiting for your response 
 // Penalty Warning Email Template
 let PENALTY_WARNING_EMAIL_TEMPLATE = `
 Dear Ambassador,
-You have been assessed one penalty point for failing to meet deadlines. Further penalties may result in expulsion from the program. Please be vigillant.
+You have been assessed one penalty point for failing to meet Submission or Evaluation deadlines. Further penalties may result in expulsion from the program. Please be vigillant.
 `;
 
 // Expulsion Email Template
@@ -96,6 +100,7 @@ let EXPULSION_EMAIL_TEMPLATE = `
 Dear Ambassador,
 We regret to inform you that you have been expelled from the program due to multiple missed deadlines.
 `;
+
 // Notify Upcoming Peer Review Email Template
 let NOTIFY_UPCOMING_PEER_REVIEW = `
 Dear Ambassador,
@@ -139,51 +144,21 @@ function refreshScriptState() {
   SpreadsheetApp.flush();
   Logger.log('Script state refreshed: cache cleared, variables refreshed, and flush completed.');
 }
+
 function clearCache() {
   const cache = CacheService.getScriptCache();
   cache.removeAll([]);
   Logger.log('Cache cleared.');
 }
+
 function refreshGlobalVariables() {
   Logger.log('Refreshing global variables.');
 
-  // Google Forms
-  SUBMISSION_FORM_ID = '1SV5rJbzPv6BQgDZkC_xgrauWgoKPcEmtk3aKY6f4ZC8';
-  EVALUATION_FORM_ID = '15UXnrpOOoZPO7XCP2TV7mwezewHY6UIsYAU_W_aoMwo';
-  SUBMISSION_FORM_URL = 'https://forms.gle/beZrwuP9Zs1HvUY49';
-  EVALUATION_FORM_URL = 'https://forms.gle/kndReXQqXT6JyKX68';
-
-  // Spreadsheets
-  AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1AIMD61YKfk-JyP6Aia3UWke9pW15bPYTvWc1C46ofkU';
-  AMBASSADORS_SCORES_SPREADSHEET_ID = '1RJzCo1FgGWkx0UCYhaY3SIOR0sl7uD6vCUFw55BX0iQ';
-
-  // Sheet names
-  REGISTRY_SHEET_NAME = 'Registry';
-  FORM_RESPONSES_SHEET_NAME = 'Form Responses 14';
-  REVIEW_LOG_SHEET_NAME = 'Review Log';
-  CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
-  OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
-  EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 2'; // Evaluation Form responses sheet
-
-  // Columns
-  AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
-  AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
-
-  // Sponsor Email (for notifications when ambassadors are expelled)
-  SPONSOR_EMAIL = 'economicsilver@starmail.net'; // Sponsor's email
-
-  // Reinitialize color variables to ensure consistency in color-based logic.
-  COLOR_MISSED_SUBMISSION = '#f5eee6';
-  COLOR_MISSED_EVALUATION = '#e6d6c1';
-  COLOR_EXPELLED = '#FF0000';
-  COLOR_MISSED_SUBM_AND_EVAL = '#ceae83';
-  COLOR_OLD_MISSED_SUBMISSION = '#f5eee6';
-
-  // Reinitialize constants for submission and evaluation windows
-  SUBMISSION_WINDOW_MINUTES = 7;
-  SUBMISSION_WINDOW_REMINDER_MINUTES = 6;
-  EVALUATION_WINDOW_MINUTES = 10;
-  EVALUATION_WINDOW_REMINDER_MINUTES = 9;
+  if (testing) {
+    setTestVariables();
+  } else {
+    setProductionVariables();
+  }
 
   // Log the reinitialization of templates
   Logger.log('Templates and constants reinitialized to ensure accurate processing.');
@@ -198,11 +173,17 @@ function refreshGlobalVariables() {
 // ===== Generic function to send email =====
 function sendEmailNotification(recipientEmail, subject, body) {
   try {
-    if (!testing) {
+    if (SEND_EMAIL) {
       MailApp.sendEmail(recipientEmail, subject, body);
       Logger.log(`Email sent to: ${recipientEmail}, Subject: ${subject}`);
     } else {
-      Logger.log(`Test mode: Email to be sent to: ${recipientEmail}, Subject: ${subject}`);
+      if (!testing) {
+        Logger.log(
+          `WARNING: Production mode with email disabled. Email logged but NOT SENT to: ${recipientEmail}, Subject: ${subject}`
+        );
+      } else {
+        Logger.log(`Test mode with email disabled: Email to be sent to: ${recipientEmail}, Subject: ${subject}`);
+      }
     }
   } catch (error) {
     Logger.log(`Failed to send email to ${recipientEmail}: ${error.message}`);
@@ -416,8 +397,8 @@ function updateFormTitlesWithCurrentReportingMonth() {
   const evaluationForm = FormApp.openById(EVALUATION_FORM_ID);
 
   // Define the titles based on the reporting month
-  const newSubmissionTitle = `Submitter's ScoreCard - ${reportingMonth}`;
-  const newEvaluationTitle = `Your Contributions in ${reportingMonth}`;
+  const newSubmissionTitle = `Your Contributions in ${reportingMonth}`;
+  const newEvaluationTitle = `Submitter's ScoreCard - ${reportingMonth}`;
 
   // Update the form titles
   submissionForm.setTitle(newSubmissionTitle);

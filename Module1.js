@@ -47,7 +47,7 @@ function requestSubmissionsModule() {
 
     Logger.log(`Email message created for ${email}`);
 
-    if (!testing) {
+    if (SEND_EMAIL) {
       MailApp.sendEmail({
         to: email,
         subject: '☑️Request for Submission',
@@ -55,7 +55,13 @@ function requestSubmissionsModule() {
       });
       Logger.log(`Email sent to ${email}`);
     } else {
-      Logger.log(`Testing mode: Submission request email logged for ${email}`);
+      if (!testing) {
+        Logger.log(
+          `WARNING: Production mode with email disabled. Submission request email logged but NOT SENT for ${email}`
+        );
+      } else {
+        Logger.log(`Testing mode: Submission request email logged for ${email}`);
+      }
     }
   });
 
@@ -161,11 +167,15 @@ function sendReminderEmails(nonRespondents) {
       // Create the reminder email message
       const message = REMINDER_EMAIL_TEMPLATE.replace('{AmbassadorName}', discordHandle);
 
-      if (!testing) {
+      if (SEND_EMAIL) {
         MailApp.sendEmail(email, '🕚Reminder to Submit', message); // Send the reminder email
         Logger.log(`Reminder email sent to: ${email} (Discord: ${discordHandle})`);
       } else {
-        Logger.log(`Testing mode: Reminder email logged for ${email}`);
+        if (!testing) {
+          Logger.log(`WARNING: Production mode with email disabled. Reminder email logged but NOT SENT for ${email}`);
+        } else {
+          Logger.log(`Testing mode: Reminder email logged for ${email}`);
+        }
       }
     } else {
       Logger.log(`Error: Could not find the ambassador with email ${email}`);
