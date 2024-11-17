@@ -85,14 +85,13 @@ Create a new form, with the following questions (all should be required):
 - "Dear Ambassador,
   Please add links your contributions during the month"
 
-Click on the "Responses" tab to change the form Responses to write to your test submission sheet by choosing Select destination for responses (and choosing your submission sheet cloned above) form the ellipsis menu.
-
+Click on the "Responses" tab to change the form Responses to write to your test submission sheet by choosing Select destination for responses (and choosing your Registry sheet cloned above, or another sheet based on your testing needs) from the ellipsis menu.
 Update EnvironmentVariablesTest.js with your form ids and links:
 
 Again, the form id is after /forms/d in the url - for example: https://docs.google.com/forms/d/**13oDRgD2qjryfhv992ZS99zCTOHPXBxsqKAXijupHbfE**/edit
 You can get the submitter links by clicking Send then the Send Via Link option. You may want to select the "shorten url" chekbox for a shorter link. (e.g. https://forms.gle/44BW8t2aWhLTrS7i6)
 
-The Id and Link should be put in the `SUBMISSION_FORM_ID` and `SUBMISSION_FORM_URL` in EnvironmentVariablesTest.js. You can open the sheet you are writing to to get the sheet name for the response data. It will be something like `Form Response 1`, and the sheet name shoudl be populated in `FORM_RESPONSES_SHEET_NAME`
+The Id and Link should be put in the `SUBMISSION_FORM_ID` and `SUBMISSION_FORM_URL` in EnvironmentVariablesTest.js. You can open the sheet you are writing to to get the sheet name for the response data. It will be something like `Form Response 1`, and the sheet name shoudl be populated in `FORM_RESPONSES_SHEET_NAME`. The worksheet the responses are written to should be updated in `AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID`.
 
 #### Evaluator Form
 
@@ -103,7 +102,7 @@ Create a new form, with the following questions (all but the last should be requ
 - Please assign a grade on a scale of 0 to 5
 - Remarks (optional)
 
-Update EnvironmentVariablesTest.js with your form ids and links for `EVALUATION_FORM_ID` and `EVALUATION_FORM_URL`. You can open the sheet you are writing to to get the sheet name for the response data. It will be something like `Form Response 2`, and the sheet name should be populated in `EVAL_FORM_RESPONSES_SHEET_NAME`
+Update EnvironmentVariablesTest.js with your form ids and links for `EVALUATION_FORM_ID` and `EVALUATION_FORM_URL`. You can open the sheet you are writing to to get the sheet name for the response data. It will be something like `Form Response 2`, and the sheet name should be populated in `EVAL_FORM_RESPONSES_SHEET_NAME`. The worksheet the responses are written to should be updated in `EVALUATION_RESPONSES_SPREADSHEET_ID`.
 
 ### Prepare test data
 
