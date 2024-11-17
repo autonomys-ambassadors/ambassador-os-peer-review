@@ -15,8 +15,8 @@ function setProductionVariables() {
   EVALUATION_FORM_ID = ''; // ID for Evaluation form
   SUBMISSION_FORM_URL = ''; // Submission Form URL for mailing
   EVALUATION_FORM_URL = ''; // Evaluation Form URL for mailing
-  FORM_RESPONSES_SHEET_NAME = 'Form Responses'; // Explicit name for 'Form Responses' sheet
-  EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 2'; // Evaluation Form responses sheet
+  FORM_RESPONSES_SHEET_NAME = ''; // Explicit name for 'Form Responses' sheet
+  EVAL_FORM_RESPONSES_SHEET_NAME = ''; // Evaluation Form responses sheet
 
   // Triggers and Delays
   // These values will set the due date and reminder schedule for Submissions and Evaluations.
@@ -30,11 +30,9 @@ function setProductionVariables() {
 
   // Sheet names
   REGISTRY_SHEET_NAME = 'Registry';
-  FORM_RESPONSES_SHEET_NAME = 'Form Responses';
   REVIEW_LOG_SHEET_NAME = 'Review Log';
   CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
   OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
-  EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 2'; // Evaluation Form responses sheet
 
   // Columns
   AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
