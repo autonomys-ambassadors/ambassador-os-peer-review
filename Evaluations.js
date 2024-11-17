@@ -376,7 +376,7 @@ function sendEvaluationRequests() {
 
 // Function to get contribution details by email within the submission window
 function getContributionDetailsByEmail(email) {
-  const formResponseSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
+  const formResponseSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(
     FORM_RESPONSES_SHEET_NAME
   );
 
@@ -696,7 +696,7 @@ function sendEvaluationReminderEmails() {
     const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
       REVIEW_LOG_SHEET_NAME
     );
-    const formResponseSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID).getSheetByName(
+    const formResponseSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(
       EVAL_FORM_RESPONSES_SHEET_NAME
     );
 
