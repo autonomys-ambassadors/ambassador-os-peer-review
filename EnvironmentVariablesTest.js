@@ -41,9 +41,9 @@ function setTestVariables() {
   SPONSOR_EMAIL = 'xyzed@xyzed.xyz'; // Sponsor's email
 
   // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
-  SUBMISSION_WINDOW_MINUTES = 20;
+  SUBMISSION_WINDOW_MINUTES = 15;
   SUBMISSION_WINDOW_REMINDER_MINUTES = 5; // how many minutes after Submission Requests sent to remind
-  EVALUATION_WINDOW_MINUTES = 20;
+  EVALUATION_WINDOW_MINUTES = 15;
   EVALUATION_WINDOW_REMINDER_MINUTES = 5; // how many minutes after Evaluation Requests sent to remind
 
   // Sheet names
