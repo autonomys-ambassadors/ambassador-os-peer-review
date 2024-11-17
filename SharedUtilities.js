@@ -480,9 +480,9 @@ function isMonthColumn(columnValue) {
 }
 
 // Function to explicitly get the "Form Responses" sheet based on the defined name
-function getFormResponseSheet() {
-  Logger.log('Fetching "Form Responses" sheet.');
-  const ss = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID); // Open the "Ambassador Registry" spreadsheet
+function getSubmissionFormResponseSheet() {
+  Logger.log('Fetching "Submissions Form Responses" sheet.');
+  const ss = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID); // Open the "Ambassador Registry" spreadsheet
   const formResponseSheet = ss.getSheetByName(FORM_RESPONSES_SHEET_NAME); // Get the "Form Responses" sheet by name
   if (formResponseSheet) {
     Logger.log('"Form Responses" sheet found.');

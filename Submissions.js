@@ -109,7 +109,7 @@ function checkNonRespondents() {
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
   Logger.log('Opened "Registry" sheet.');
 
-  const formResponseSheet = getFormResponseSheet(); // Call from SharedUtilities.gs
+  const formResponseSheet = getSubmissionFormResponseSheet(); // Call from SharedUtilities.gs
   if (!formResponseSheet) {
     Logger.log('Error: Form Response sheet not found.');
     return;
