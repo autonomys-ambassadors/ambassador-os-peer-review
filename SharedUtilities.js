@@ -21,7 +21,7 @@ var EVAL_FORM_RESPONSES_SHEET_NAME = ''; // Evaluation Form responses sheet
 
 // Triggers and Delays
 // These values will set the due date and reminder schedule for Submissions and Evaluations.
-// The Submission or Evaluation will be due ofter the relevant WINDOW_MINUTES,
+// The Submission or Evaluation will be due after the relevant WINDOW_MINUTES,
 // and each ambassador will receive a reminder after the relevant WINDOW_REMINDER_MINUTES.
 // specifies as days * hours * minutes
 var SUBMISSION_WINDOW_MINUTES = 0;
