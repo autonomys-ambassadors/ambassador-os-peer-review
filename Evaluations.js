@@ -145,7 +145,6 @@ function generateReviewMatrix() {
     const registrySheet = registrySpreadsheet.getSheetByName(REGISTRY_SHEET_NAME);
     const formResponseSheet = getSubmissionFormResponseSheet(); // Use common function for getting Form Responses sheet
     const reviewLogSheet = registrySpreadsheet.getSheetByName(REVIEW_LOG_SHEET_NAME);
-    const spreadsheetTimeZone = registrySpreadsheet.getSpreadsheetTimeZone();
 
     Logger.log('Accessed Registry, Form Responses, and Review Log sheets.');
 
