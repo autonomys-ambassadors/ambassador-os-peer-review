@@ -170,7 +170,7 @@ function generateReviewMatrix() {
 
     Logger.log(`Submission window is from ${submissionWindowStart} to ${submissionWindowEnd}`);
 
-    // Получаем ответы из Submission формы
+    // Get responses from Submission form
     const lastRow = formResponseSheet.getLastRow();
     if (lastRow < 2) {
       Logger.log('No submissions found in Form Responses sheet.');
@@ -193,18 +193,18 @@ function generateReviewMatrix() {
       return;
     }
 
-    // Получаем email submitters
+    // Getting email of submitters
     const submittersEmails = validResponses.map((row) => row[1]); // Assuming Email is in column 2
     Logger.log(`Submitters Emails: ${JSON.stringify(submittersEmails)}`);
 
-    // Получаем все emails из Registry
+    // Get all ambassaor emails from the registry
     const allAmbassadorsEmails = registrySheet
       .getRange(2, 1, registrySheet.getLastRow() - 1, 1)
       .getValues()
       .flat();
     Logger.log(`All Ambassadors Emails: ${JSON.stringify(allAmbassadorsEmails)}`);
 
-    // Назначаем evaluators submitters
+    // Assign evaluators to submissions
     const evaluatorQueue = [...allAmbassadorsEmails];
     evaluatorQueue.sort(() => Math.random() - 0.5); // Shaffle evaluators pool
     Logger.log('Shuffled evaluator pool.');
@@ -229,7 +229,7 @@ function generateReviewMatrix() {
         }
       }
 
-      // Добавляем назначения в список
+      // Store reviewer assignments
       assignments.push({ submitter, reviewers });
     });
 
