@@ -149,8 +149,9 @@ function generateReviewMatrix() {
 
     Logger.log('Accessed Registry, Form Responses, and Review Log sheets.');
 
-    // Инициализируем Review Log
+    // Initializing Review Log
     Logger.log('Before clearing Review Log.');
+    //TODO: Discuss saving this instead of clearing content - may need to have the log for the future?
     reviewLogSheet.clearContents(); // Clear data, leaving formatting
     Logger.log('After clearing Review Log.');
     reviewLogSheet.getRange(1, 1).setValue('Submitter');
@@ -352,7 +353,7 @@ function sendEvaluationRequests() {
             .replace('{EvaluationFormURL}', EVALUATION_FORM_URL)
             .replace('{EVALUATION_DEADLINE_DATE}', evaluationDeadlineDate);
 
-          if (!testing) {
+          if (SEND_EMAIL) {
             MailApp.sendEmail({
               to: reviewerEmail,
               subject: '⚖️Request for Evaluation',
@@ -362,7 +363,13 @@ function sendEvaluationRequests() {
               `Evaluation request sent to ${reviewerEmail} (Discord: ${evaluatorDiscordHandle}) for submitter: ${submitterDiscordHandle}`
             );
           } else {
-            Logger.log(`Test mode: The evaluation request must be sent to ${reviewerEmail}`);
+            if (!testing) {
+              Logger.log(
+                `WARNING: Production mode with email disabled. Evaluation request email logged but NOT SENT for ${reviewerEmail}`
+              );
+            } else {
+              Logger.log(`Test mode: The evaluation request must be sent to ${reviewerEmail}`);
+            }
           }
         } catch (error) {
           Logger.log(`Error sending evaluation request to ${reviewerEmail}: ${error}`);
