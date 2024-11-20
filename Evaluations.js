@@ -197,43 +197,56 @@ function generateReviewMatrix() {
     const submittersEmails = validResponses.map((row) => row[1]); // Assuming Email is in column 2
     Logger.log(`Submitters Emails: ${JSON.stringify(submittersEmails)}`);
 
-    // Get all ambassaor emails from the registry
+    // Get all ambassador emails from the registry
     const allAmbassadorsEmails = registrySheet
       .getRange(2, 1, registrySheet.getLastRow() - 1, 1)
       .getValues()
       .flat();
     Logger.log(`All Ambassadors Emails: ${JSON.stringify(allAmbassadorsEmails)}`);
 
-    // Assign evaluators to submissions
-    const evaluatorQueue = [...allAmbassadorsEmails];
-    evaluatorQueue.sort(() => Math.random() - 0.5); // Shaffle evaluators pool
-    Logger.log('Shuffled evaluator pool.');
+    // Create a pool of potential evaluators, allowing each evaluator to be picked up to 3 times
+    const potentialEvaluators = [...allAmbassadorsEmails, ...allAmbassadorsEmails, ...allAmbassadorsEmails];
+    const ambassadorCount = {};
 
+    // Initialize assignments
     const assignments = [];
-    const assignedEvaluators = [];
 
-    submittersEmails.forEach((submitter) => {
-      // Exclude current submitter from list of available evaluators (they do not evaluate themselves)
-      const availableEvaluators = evaluatorQueue.filter((email) => email !== submitter);
-      Logger.log(`Available evaluators for ${submitter}: ${JSON.stringify(availableEvaluators)}`);
-
-      // Assing up to 3 unique evaluators
+    // Assign evaluators to submissions
+    submittersEmails.forEach(submitter => {
       const reviewers = [];
+
       for (let i = 0; i < 3; i++) {
+        const availableEvaluators = potentialEvaluators.filter(
+          evaluator =>
+            evaluator !== submitter && // Exclude the submitter themselves
+            (ambassadorCount[evaluator] || 0) < 3 && // Ensure no evaluator is assigned more than 3 times
+            !reviewers.includes(evaluator) // Ensure unique evaluators for the same submitter
+        );
+
         if (availableEvaluators.length === 0) {
           reviewers.push('Has No Evaluator');
-        } else {
-          const evaluator = availableEvaluators.shift(); // Take evaluator from the beginning of queue
-          reviewers.push(evaluator);
-          assignedEvaluators.push(evaluator); // Track assigned evaluators
+          Logger.log(`No available evaluators for ${submitter} in round ${i + 1}`);
+          continue;
         }
+
+        // Select a random evaluator
+        const randomIndex = Math.floor(Math.random() * availableEvaluators.length);
+        const selectedEvaluator = availableEvaluators[randomIndex];
+
+        // Assign the evaluator
+        reviewers.push(selectedEvaluator);
+        ambassadorCount[selectedEvaluator] = (ambassadorCount[selectedEvaluator] || 0) + 1;
+        Logger.log(`Assigned ${selectedEvaluator} to ${submitter} in round ${i + 1}`);
       }
 
-      // Store reviewer assignments
+      // Add assignment to the list
       assignments.push({ submitter, reviewers });
     });
 
-    Logger.log(`Final evaluator assignments: ${JSON.stringify(assignments)}`);
+    // Send exemption notification to evaluators who were not assigned to submit anyone
+    const assignedEvaluators = Object.keys(ambassadorCount);
+    const unassignedEvaluators = allAmbassadorsEmails.filter(email => !assignedEvaluators.includes(email));
+    sendExemptionEmails(allAmbassadorsEmails, unassignedEvaluators);
 
     // Fill Review Log
     assignments.forEach((assignment, index) => {
@@ -242,9 +255,6 @@ function generateReviewMatrix() {
         reviewLogSheet.getRange(index + 2, idx + 2).setValue(reviewer || 'Has No Evaluator');
       });
     });
-
-    // Send exemption notification to evaluators who were not assigned to submit anyone.
-    sendExemptionEmails(allAmbassadorsEmails, assignedEvaluators); // Используем внешнюю функцию для отправки писем
 
     Logger.log('generateReviewMatrix completed.');
   } catch (error) {
@@ -345,7 +355,7 @@ function sendEvaluationRequests() {
           Logger.log(`Discord Evaluator: ${evaluatorDiscordHandle}`);
 
           // Forming a message for evaluation
-          const message = REQUEST_EVALUATION_EMAIL_TEMPLATE.replace('{AmbassadorName}', evaluatorDiscordHandle)
+          const message = REQUEST_EVALUATION_EMAIL_TEMPLATE.replace('{AmbassadorDiscordHandle}', evaluatorDiscordHandle)
             .replace('{Month}', deliverableMonthName) // Use string name of the month
             .replace('{AmbassadorSubmitter}', submitterDiscordHandle)
             .replace('{SubmissionsList}', contributionDetails)
@@ -771,7 +781,7 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
         const discordHandle = registrySheet.getRange(row, 2).getValue(); // Get Discord handle
         const email = registrySheet.getRange(row, 1).getValue(); // Get email
 
-        const message = REMINDER_EMAIL_TEMPLATE.replace('{AmbassadorName}', discordHandle);
+        const message = REMINDER_EMAIL_TEMPLATE.replace('{AmbassadorDiscordHandle}', discordHandle);
 
         if (!testing) {
           MailApp.sendEmail(email, '🕚Reminder to Submit Evaluation', message);

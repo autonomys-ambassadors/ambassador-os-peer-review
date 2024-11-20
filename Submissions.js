@@ -39,7 +39,7 @@ function requestSubmissionsModule() {
     const discordHandle = registrySheet.getRange(index + 2, 2).getValue();
 
     // Prepare the email message with the deadline date
-    const message = REQUEST_SUBMISSION_EMAIL_TEMPLATE.replace('{AmbassadorName}', discordHandle)
+    const message = REQUEST_SUBMISSION_EMAIL_TEMPLATE.replace('{AmbassadorDiscordHandle}', discordHandle)
       .replace('{Month}', month)
       .replace('{Year}', year)
       .replace('{SubmissionFormURL}', SUBMISSION_FORM_URL)
@@ -165,7 +165,7 @@ function sendReminderEmails(nonRespondents) {
       Logger.log(`Discord handle found for ${email}: ${discordHandle}`);
 
       // Create the reminder email message
-      const message = REMINDER_EMAIL_TEMPLATE.replace('{AmbassadorName}', discordHandle);
+      const message = REMINDER_EMAIL_TEMPLATE.replace('{AmbassadorDiscordHandle}', discordHandle);
 
       if (SEND_EMAIL) {
         MailApp.sendEmail(email, '🕚Reminder to Submit', message); // Send the reminder email
