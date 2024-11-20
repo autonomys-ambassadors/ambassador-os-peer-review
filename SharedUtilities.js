@@ -61,7 +61,7 @@ if (testing) {
 
 // Request Submission Email Template
 let REQUEST_SUBMISSION_EMAIL_TEMPLATE = `
-<p>Dear {AmbassadorDiscordHandle},</p>
+<p>Dear {AmbassadorName},</p>
 
 <p>Please submit your deliverables for {Month} {Year} using the link below:</p>
 <p><a href="{SubmissionFormURL}">Submission Form</a></p>
@@ -74,7 +74,7 @@ Ambassador Program Team</p>
 
 // Request Evaluation Email Template
 let REQUEST_EVALUATION_EMAIL_TEMPLATE = `
-<p>Dear {AmbassadorDiscordHandle},</p>
+<p>Dear {AmbassadorName},</p>
 <p>Please review the following deliverables for the month of {Month} by {AmbassadorSubmitter}:</p>
 <p>{SubmissionsList}</p>
 
