@@ -22,6 +22,7 @@ If you are not running node, you'll need to install it. You can google, or use n
 
 ```
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+source ~/.bashrc
 nvm install node
 ```
 
@@ -42,6 +43,15 @@ You should see output similar to this, with references to the new sheet:
 Created new Google Sheet: https://drive.google.com/open?id=1eNXOCChZ7nvETE4mvBwi9nYairnP6DJwu50VkB-ppB4
 Created new Google Sheets Add-on script: https://script.google.com/d/16Sp1Jg9hKZWi7bwuQKtRKLlWibiyqOCptNomLvAzK93ngHm1dT3fzD4t/edit
 ```
+
+### Enable API in your Google Apps Interface
+
+https://script.google.com/home/usersettings
+
+Your Project's ID is the string between the 'project/' and '/settings' (or '/edit'):
+
+https://script.google.com/home/projects/<span style="color:blue">16Sp1Jg9hKZWi7bwuQKtRKLlWibiyqOCptNomLvAzK93ngHm1dT3fzD4t</span>
+/settings
 
 ### Push Ambassador OS Peer Review to your new sheet
 
