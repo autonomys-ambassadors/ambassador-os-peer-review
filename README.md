@@ -26,7 +26,7 @@ source ~/.bashrc
 nvm install node
 ```
 
-### Install clasp and create a project
+### Install clasp
 
 Clasp is a google project that can push and pull scripts to sheets.
 https://github.com/google/clasp
@@ -34,6 +34,36 @@ https://github.com/google/clasp
 ```
 npm install -g @google/clasp
 clasp login
+```
+
+### If You Already Have Google Apps Script Project
+
+Enable API in your Google Apps Interface:
+
+https://script.google.com/home/usersettings
+
+1. Убедитесь, что у вас есть scriptId существующего проекта
+
+   open your project in Google Apps Script Editor:
+   File > Project Settings.
+   Copy Script ID.
+
+2. Link your local directory \*where you pulled the repository to) with your Google Apps Script
+
+cd <path-to-local-procet-dir>
+clasp settings set scriptId <SCRIPT_ID>
+Manually create .clasp.json:
+nano .clasp.json
+{
+"scriptId": "<your script ID>",
+"rootDir": "./"
+}
+
+3. clasp push
+
+### if You Haven't Project yet - Create a Project
+
+```
 clasp create --type sheets --title "Autonomys Ambassador OS Peer Review" --rootDir "./"
 ```
 
@@ -44,15 +74,6 @@ Created new Google Sheet: https://drive.google.com/open?id=1eNXOCChZ7nvETE4mvBwi
 Created new Google Sheets Add-on script: https://script.google.com/d/16Sp1Jg9hKZWi7bwuQKtRKLlWibiyqOCptNomLvAzK93ngHm1dT3fzD4t/edit
 ```
 
-### Enable API in your Google Apps Interface
-
-https://script.google.com/home/usersettings
-
-Your Project's ID is the string between the 'project/' and '/settings' (or '/edit'):
-
-https://script.google.com/home/projects/<span style="color:blue">16Sp1Jg9hKZWi7bwuQKtRKLlWibiyqOCptNomLvAzK93ngHm1dT3fzD4t</span>
-/settings
-
 ### Push Ambassador OS Peer Review to your new sheet
 
 `clasp push`
@@ -61,7 +82,7 @@ Open your sheet to verify it is setup correctly.
 Your sheet should be named "Autonomys Ambassador OS Peer Review" and you should have a menu labeled "Ambassador Program" on the menu bar.
 You can verify the code is present by choosing Apps Script from the Extensions menu to enter the apps script editor.
 
-### Clone the prototype sheets and update your sheet ids:
+### Clone the prototype sheets and update your sheet ids (if you already have Google Apps Project):
 
 Make a copy of the google sheets for your own testing - e.g. open the example testing Registry and Scoring sheets below and choose File/Make a copy to create your own copy of the testing sheets.
 
