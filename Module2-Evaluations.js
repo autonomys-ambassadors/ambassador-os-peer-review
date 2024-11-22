@@ -35,7 +35,7 @@ function createMonthSheetAndOverallColumn() {
   try {
     Logger.log('Execution started');
 
-    // Открываем таблицу "Ambassadors' Scores" и лист "Overall score"
+    // Opening "Ambassadors' Scores" spreadsheet and "Overall score" sheet
     const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
     const overallScoreSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
 
@@ -196,7 +196,7 @@ function generateReviewMatrix() {
     const submittersEmails = validResponses.map((row) => row[1]); // Assuming Email is in column 2
     Logger.log(`Submitters Emails: ${JSON.stringify(submittersEmails)}`);
 
-    // Get all ambassador emails from the registry, excluding those with 'Expelled' status
+    // Get all ambassador emails from the registry, excluding those with 'Expelled' data in their status
     const ambassadorData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Assuming columns: Email, Discord Handle, Status
     const allAmbassadorsEmails = ambassadorData
       .filter(row => !row[2].includes('Expelled')) // Exclude those marked as 'Expelled'
