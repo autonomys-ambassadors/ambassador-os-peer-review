@@ -3,12 +3,12 @@
 
 // testing constant will be used to load production vs. test values for the global variables
 const testing = true; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
-var SEND_EMAIL = true; // Will control whether emails are sent - must be true for production; may be true or false for testing depending on testing needs.
+// var SEND_EMAIL = false;// (DUPLICATE!) // Will control whether emails are sent - must be true for production; may be true or false for testing depending on testing needs.
 
 // Provide the Id of the google sheet for the registry and scoreing sheets:
 var AMBASSADOR_REGISTRY_SPREADSHEET_ID = ''; //"Ambassador Registry"
 var AMBASSADORS_SCORES_SPREADSHEET_ID = ''; // "Ambassadors' Scores"
-var AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1AIMD61YKfk-'; // "Ambassador Submission Responses"
+var AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = ''; // "Ambassador Submission Responses"
 var EVALUATION_RESPONSES_SPREADSHEET_ID = ''; // "Evaluation Responses"
 
 // Provide the Id and submission URL for the submission and evaluation google forms:

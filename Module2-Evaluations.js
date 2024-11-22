@@ -197,12 +197,12 @@ function generateReviewMatrix() {
     const submittersEmails = validResponses.map((row) => row[1]); // Assuming Email is in column 2
     Logger.log(`Submitters Emails: ${JSON.stringify(submittersEmails)}`);
 
-    // Get all ambassador emails from the registry
-    const allAmbassadorsEmails = registrySheet
-      .getRange(2, 1, registrySheet.getLastRow() - 1, 1)
-      .getValues()
-      .flat();
-    Logger.log(`All Ambassadors Emails: ${JSON.stringify(allAmbassadorsEmails)}`);
+    // Get all ambassador emails from the registry, excluding those with 'Expelled' status
+    const ambassadorData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Columns: Email, Discord, Status
+    const allAmbassadorsEmails = ambassadorData
+      .filter(row => !row[2].includes('Expelled')) // Exclude those with 'Expelled' in status
+      .map(row => row[0]); // Extract email addresses
+    Logger.log(`Eligible Ambassadors Emails: ${JSON.stringify(allAmbassadorsEmails)}`);
 
     // Create a pool of potential evaluators, allowing each evaluator to be picked up to 3 times
     const potentialEvaluators = [...allAmbassadorsEmails, ...allAmbassadorsEmails, ...allAmbassadorsEmails];
@@ -283,8 +283,16 @@ function sendExemptionEmails(allEvaluators, assignedEvaluators) {
       const subject = 'Exemption from Evaluation';
       const body = EXEMPTION_FROM_EVALUATION_TEMPLATE;
 
-      MailApp.sendEmail(evaluator, subject, body);
-      Logger.log(`Exemption email sent to: ${evaluator}`);
+      if (SEND_EMAIL) {
+        MailApp.sendEmail({
+          to: evaluator,
+          subject: subject,
+          htmlBody: body,
+        });
+        Logger.log(`Exemption email sent to: ${evaluator}`);
+      } else {
+        Logger.log(`Test mode: Exemption email must be sent to ${evaluator}`);
+      }
     } catch (error) {
       Logger.log(`Failed to send email to: ${evaluator}. Error: ${error}`);
     }
