@@ -510,12 +510,14 @@ function calculateMaxPenaltyPointsForSixMonths() {
 }
 
 // Expel ambassadors based on Max 6-Month PP
+// Modified to concatenate 'Expelled [DD MMM YY]' to the current status.
 function expelAmbassadors() {
   Logger.log('Starting expelAmbassadors process.');
 
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
 
+  // Get headers for column indices
   const headers = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
   const maxPenaltyPointsIndex = headers.indexOf('Max 6-Month PP') + 1;
 
@@ -524,15 +526,16 @@ function expelAmbassadors() {
 
   const emailColIndex = registryHeaders.indexOf(AMBASSADOR_EMAIL_COLUMN) + 1;
   const discordHandleColIndex = registryHeaders.indexOf(AMBASSADOR_DISCORD_HANDLE_COLUMN) + 1;
+  const statusColIndex = registryHeaders.indexOf(AMBASSADOR_STATUS_COLUMN) + 1;
 
-  if (emailColIndex === 0 || discordHandleColIndex === 0) {
+  if (emailColIndex === 0 || discordHandleColIndex === 0 || statusColIndex === 0) {
     Logger.log(
-      `Error: Column '${AMBASSADOR_EMAIL_COLUMN}' or '${AMBASSADOR_DISCORD_HANDLE_COLUMN}' not found in registry headers.`
+      `Error: Column '${AMBASSADOR_EMAIL_COLUMN}', '${AMBASSADOR_DISCORD_HANDLE_COLUMN}', or '${AMBASSADOR_STATUS_COLUMN}' not found in registry headers.`
     );
     return;
   }
 
-  // Retrieve ambassador data starting from the second row (row 2, excluding headers)
+  // Retrieve ambassador data from the Overall Scores sheet
   const ambassadorData = overallScoresSheet
     .getRange(2, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn())
     .getValues();
@@ -553,21 +556,20 @@ function expelAmbassadors() {
         // Send expulsion notifications first
         sendExpulsionNotifications(discordHandle);
 
-        const currentEmail = registrySheet.getRange(registryRowIndex, emailColIndex).getValue();
-        const currentDiscordHandle = registrySheet.getRange(registryRowIndex, discordHandleColIndex).getValue();
-
-        // Update the email and Discord handle to include '(EXPELLED)'
-        if (!currentEmail.startsWith('(EXPELLED) ')) {
-          registrySheet.getRange(registryRowIndex, emailColIndex).setValue(`(EXPELLED) ${currentEmail}`);
+        const currentStatus = registrySheet.getRange(registryRowIndex, statusColIndex).getValue();
+        // Check if 'Expelled' is already in the status
+        if (currentStatus.includes('Expelled')) {
+          Logger.log(`Error: This ambassador's status is already 'Expelled': "${currentStatus}"`);
+          return;
         }
 
-        if (!currentDiscordHandle.startsWith('(EXPELLED) ')) {
-          registrySheet
-            .getRange(registryRowIndex, discordHandleColIndex)
-            .setValue(`(EXPELLED) ${currentDiscordHandle}`);
-        }
+        const currentDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd MMM yy');
 
-        Logger.log(`Ambassador ${discordHandle} marked as expelled.`);
+        // Concatenate 'Expelled [DD MMM YY]' to the current status
+        const updatedStatus = `${currentStatus} Expelled [${currentDate}].`;
+        registrySheet.getRange(registryRowIndex, statusColIndex).setValue(updatedStatus);
+
+        Logger.log(`Ambassador ${discordHandle} status updated to: "${updatedStatus}"`);
       }
     }
   });
