@@ -17,11 +17,15 @@ function requestSubmissionsModule() {
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME); // Open the "Registry" sheet
   Logger.log('Opened "Registry" sheet from "Ambassador Registry" spreadsheet.');
 
-  const emails = registrySheet
-    .getRange(2, 1, registrySheet.getLastRow() - 1, 1)
-    .getValues()
-    .flat(); // Fetch all emails from the Registry sheet
-  Logger.log(`Fetched emails from "Registry" sheet: ${emails}`);
+  // Fetch data from Registry sheet (Emails and Status)
+  const registryData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Fetch Emails, Discord Handles, and Status
+  Logger.log(`Fetched data from "Registry" sheet: ${JSON.stringify(registryData)}`);
+
+  // Filter out ambassadors with 'Expelled' in their status
+  const eligibleEmails = registryData
+    .filter(row => !row[2].includes('Expelled')) // Exclude expelled ambassadors
+    .map(row => row[0]); // Extract only emails
+  Logger.log(`Eligible ambassadors emails: ${JSON.stringify(eligibleEmails)}`);
 
   const deliverableDate = getPreviousMonthDate(spreadsheetTimeZone); // Call from SharedUtilities.gs
   Logger.log(`Deliverable date: ${deliverableDate}`);
@@ -35,8 +39,12 @@ function requestSubmissionsModule() {
   const submissionDeadline = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES); // Adjust as needed
   const submissionDeadlineDate = Utilities.formatDate(submissionDeadline, spreadsheetTimeZone, 'MMMM dd, yyyy');
 
-  emails.forEach((email, index) => {
-    const discordHandle = registrySheet.getRange(index + 2, 2).getValue();
+  eligibleEmails.forEach((email) => {
+    const discordHandle = getDiscordHandleFromEmail(email); // Use helper function to get Discord handle
+    if (!discordHandle) {
+      Logger.log(`Error: Discord handle not found for email: ${email}`);
+      return; // Skip this email if no Discord handle found
+    }
 
     // Prepare the email message with the deadline date
     const message = REQUEST_SUBMISSION_EMAIL_TEMPLATE.replace('{AmbassadorDiscordHandle}', discordHandle)
@@ -45,7 +53,7 @@ function requestSubmissionsModule() {
       .replace('{SubmissionFormURL}', SUBMISSION_FORM_URL)
       .replace('{SUBMISSION_DEADLINE_DATE}', submissionDeadlineDate); // Insert the calculated deadline date
 
-    Logger.log(`Email message created for ${email}`);
+    Logger.log(`Email message created for ${email} with Discord handle: ${discordHandle}`);
 
     if (SEND_EMAIL) {
       MailApp.sendEmail({
@@ -116,11 +124,13 @@ function checkNonRespondents() {
   }
   Logger.log('Form Response sheet found.');
 
-  const allEmails = registrySheet
-    .getRange(2, 1, registrySheet.getLastRow() - 1, 1)
-    .getValues()
-    .flat();
-  Logger.log(`All emails from registry: ${allEmails}`);
+  // Fetch emails and statuses from Registry
+  const registryData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Columns: Email, Discord, Status
+  Logger.log(`Registry data fetched: ${registryData.length} rows`);
+
+  // Filter eligible ambassadors (exclude those with 'Expelled' in status)
+  const eligibleEmails = registryData.filter(row => !row[2].includes('Expelled')).map(row => row[0]);
+  Logger.log(`Eligible emails (excluding Expelled): ${eligibleEmails}`);
 
   const responseData = formResponseSheet
     .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())
@@ -137,9 +147,9 @@ function checkNonRespondents() {
   const respondedEmails = validResponses.map((row) => row[1]); // Assuming email is in the second column
   Logger.log(`Responded emails: ${respondedEmails}`);
 
-  // Find non-respondents by comparing 'Registry' emails with emails of valid responses
-  const nonRespondents = allEmails.filter((email) => !respondedEmails.includes(email));
-  Logger.log(`Non-respondents: ${nonRespondents}`);
+  // Find non-respondents among eligible ambassadors by comparing 'Registry' emails with emails of valid responses
+  const nonRespondents = eligibleEmails.filter((email) => !respondedEmails.includes(email));
+  Logger.log(`Non-respondents (eligible only): ${nonRespondents}`);
 
   // Send reminder emails to non-respondents
   sendReminderEmails(nonRespondents); // Call from SharedUtilities.gs

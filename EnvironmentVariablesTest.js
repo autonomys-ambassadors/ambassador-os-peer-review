@@ -1,6 +1,6 @@
 function setTestVariables() {
   // controls wether email will be sent or just logged for troubleshooting - should always be true for production.
-  SEND_EMAIL = false;
+  SEND_EMAIL = true;
 
   // Specify your testing sheets/forms/etc. here:
 

@@ -319,6 +319,37 @@ function getReviewLogAssignments() {
   return assignments;
 }
 
+
+/**
+ * Returns a list of eligible ambassador emails from the Registry sheet.
+ * Excludes ambassadors with "Expelled" status.
+ */
+function getEligibleAmbassadorsEmails() {
+  try {
+    Logger.log('Fetching eligible ambassador emails.');
+
+    const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
+    if (!registrySheet) {
+      Logger.log('Registry sheet not found.');
+      return [];
+    }
+
+    const registryData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Columns: Email, Discord Handle, Status
+    const eligibleEmails = registryData
+      .filter(row => !row[2].includes('Expelled')) // Exclude those marked as 'Expelled'
+      .map(row => row[0]); // Extract emails
+
+    Logger.log(`Eligible emails (excluding 'Expelled'): ${JSON.stringify(eligibleEmails)}`);
+    return eligibleEmails;
+  } catch (error) {
+    Logger.log(`Error in getEligibleAmbassadorsEmails: ${error}`);
+    return [];
+  }
+}
+
+
+
+
 //////////// DATE UTILITS
 
 /**

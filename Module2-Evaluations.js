@@ -150,7 +150,6 @@ function generateReviewMatrix() {
 
     // Initializing Review Log
     Logger.log('Before clearing Review Log.');
-    //TODO: Discuss saving this instead of clearing content - may need to have the log for the future?
     reviewLogSheet.clearContents(); // Clear data, leaving formatting
     Logger.log('After clearing Review Log.');
     reviewLogSheet.getRange(1, 1).setValue('Submitter');
@@ -198,9 +197,9 @@ function generateReviewMatrix() {
     Logger.log(`Submitters Emails: ${JSON.stringify(submittersEmails)}`);
 
     // Get all ambassador emails from the registry, excluding those with 'Expelled' status
-    const ambassadorData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Columns: Email, Discord, Status
+    const ambassadorData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Assuming columns: Email, Discord Handle, Status
     const allAmbassadorsEmails = ambassadorData
-      .filter(row => !row[2].includes('Expelled')) // Exclude those with 'Expelled' in status
+      .filter(row => !row[2].includes('Expelled')) // Exclude those marked as 'Expelled'
       .map(row => row[0]); // Extract email addresses
     Logger.log(`Eligible Ambassadors Emails: ${JSON.stringify(allAmbassadorsEmails)}`);
 
@@ -267,18 +266,12 @@ function generateReviewMatrix() {
  * @param {Array} allEvaluators - List of all possible evaluators.
  * @param {Array} assignedEvaluators - List of evaluators who have been assigned submitters.
  */
-function sendExemptionEmails(allEvaluators, assignedEvaluators) {
+function sendExemptionEmails(allEvaluators, unassignedEvaluators) {
   Logger.log('Starting sendExemptionEmails.');
 
-  // Create a set of assigned evaluators for efficient lookup
-  const assignedEvaluatorsSet = new Set(assignedEvaluators);
+  Logger.log(`Unassigned evaluators: ${JSON.stringify(unassignedEvaluators)}`);
 
-  // Filter out exempted evaluators (those who are not in the assignedEvaluators list)
-  const exemptedEvaluators = allEvaluators.filter((evaluator) => !assignedEvaluatorsSet.has(evaluator));
-
-  Logger.log(`Exempted evaluators: ${JSON.stringify(exemptedEvaluators)}`);
-
-  exemptedEvaluators.forEach((evaluator) => {
+  unassignedEvaluators.forEach((evaluator) => {
     try {
       const subject = 'Exemption from Evaluation';
       const body = EXEMPTION_FROM_EVALUATION_TEMPLATE;
@@ -291,7 +284,7 @@ function sendExemptionEmails(allEvaluators, assignedEvaluators) {
         });
         Logger.log(`Exemption email sent to: ${evaluator}`);
       } else {
-        Logger.log(`Test mode: Exemption email must be sent to ${evaluator}`);
+        Logger.log(`Warning! Sending email disabled: Exemption email must be sent to ${evaluator}`);
       }
     } catch (error) {
       Logger.log(`Failed to send email to: ${evaluator}. Error: ${error}`);
@@ -720,7 +713,7 @@ function sendEvaluationReminderEmails() {
     const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
       REVIEW_LOG_SHEET_NAME
     );
-    const formResponseSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(
+    const formResponseSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID).getSheetByName(
       EVAL_FORM_RESPONSES_SHEET_NAME
     );
 
@@ -774,6 +767,9 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
   try {
     Logger.log('Sending reminder emails.');
 
+    // Fetch eligible ambassador emails excluding those with "Expelled" status
+    const eligibleEmails = getEligibleAmbassadorsEmails(); // Fetch eligible emails from SharedUtilities
+
     const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
       REGISTRY_SHEET_NAME
     );
@@ -783,6 +779,12 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
     }
 
     nonRespondents.forEach((evaluatorEmail) => {
+      // Skip ambassadors who are not eligible (marked as 'Expelled' or not found)
+      if (!eligibleEmails.includes(evaluatorEmail)) {
+        Logger.log(`Skipping evaluator ${evaluatorEmail} (marked as 'Expelled' or not eligible).`);
+        return;
+      }
+
       const result = registrySheet.createTextFinder(evaluatorEmail).findNext(); // Find evaluator's row by email
       if (result) {
         const row = result.getRow();
@@ -791,11 +793,11 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
 
         const message = REMINDER_EMAIL_TEMPLATE.replace('{AmbassadorDiscordHandle}', discordHandle);
 
-        if (!testing) {
+        if (SEND_EMAIL) {
           MailApp.sendEmail(email, '🕚Reminder to Submit Evaluation', message);
           Logger.log(`Reminder email sent to: ${email} (Discord: ${discordHandle})`);
         } else {
-          Logger.log(`Testing mode: Reminder email logged for ${email}`);
+          Logger.log(`Warning! Sending email disabled: Reminder email logged for ${email}`);
         }
       } else {
         Logger.log(`Error: Could not find the ambassador with email ${evaluatorEmail}`);
@@ -835,29 +837,6 @@ function setupEvaluationResponseTrigger() {
   }
 }
 
-// Sets up the evaluation reminder trigger and updates Script Properties
-function setupEvaluationReminderTrigger(evaluationWindowStart) {
-  try {
-    Logger.log('Setting up evaluation reminder trigger.');
-
-    // Calculate reminder time by adding EVALUATION_WINDOW_REMINDER_MINUTES to evaluationWindowStart
-    const reminderTime = new Date(evaluationWindowStart);
-    reminderTime.setMinutes(reminderTime.getMinutes() + EVALUATION_WINDOW_REMINDER_MINUTES);
-
-    // Create a new trigger for sending evaluation reminder emails
-    ScriptApp.newTrigger('sendEvaluationReminderEmails').timeBased().at(reminderTime).create();
-
-    Logger.log(`Reminder trigger for evaluation set for: ${reminderTime}`);
-
-    // Update the reminderTriggerSetupDate in Script Properties immediately after setting the trigger
-    const setupDate = new Date().toISOString();
-    PropertiesService.getScriptProperties().setProperty('reminderTriggerSetupDate', setupDate);
-    Logger.log(`Updated reminderTriggerSetupDate in Script Properties: ${setupDate}`);
-  } catch (error) {
-    Logger.log(`Error in setupEvaluationReminderTrigger: ${error}`);
-  }
-}
-
 // Sets up all triggers needed for evaluation process and logs evaluation start time
 function setupEvaluationTriggers(evaluationWindowStart) {
   try {
@@ -874,5 +853,40 @@ function setupEvaluationTriggers(evaluationWindowStart) {
     setupEvaluationReminderTrigger(evaluationWindowStart);
   } catch (error) {
     Logger.log(`Error in setupEvaluationTriggers: ${error}`);
+  }
+}
+
+// Sets up the evaluation reminder trigger and updates Script Properties
+function setupEvaluationReminderTrigger(evaluationWindowStart) {
+  try {
+    Logger.log('Setting up evaluation reminder trigger.');
+
+    // Calculate reminder time by adding EVALUATION_WINDOW_REMINDER_MINUTES to evaluationWindowStart
+    const reminderTime = new Date(evaluationWindowStart);
+    reminderTime.setMinutes(reminderTime.getMinutes() + EVALUATION_WINDOW_REMINDER_MINUTES);
+
+    // Create a new trigger for sending evaluation reminder emails
+    ScriptApp.newTrigger('sendEvaluationReminderEmails').timeBased().at(reminderTime).create();
+
+    Logger.log(`Reminder trigger for evaluation set for: ${reminderTime}`);
+
+    // Get the spreadsheet's timezone for consistent formatting
+    const timeZone = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID).getSpreadsheetTimeZone();
+
+    // Format current time (trigger setup time) in Pacific Time
+    const setupTime = new Date(); // Time when the trigger is set up
+    const formattedSetupTime = Utilities.formatDate(setupTime, timeZone, 'yyyy-MM-dd HH:mm:ss z');
+
+    // Format reminder time (trigger fire time) in Pacific Time
+    const formattedReminderTime = Utilities.formatDate(reminderTime, timeZone, 'yyyy-MM-dd HH:mm:ss z');
+
+    // Update the reminderTriggerSetupDate and triggerFireTime in Script Properties
+    PropertiesService.getScriptProperties().setProperty('reminderTriggerSetupDate', formattedSetupTime);
+    PropertiesService.getScriptProperties().setProperty('reminderTriggerFireTime', formattedReminderTime);
+
+    Logger.log(`Updated reminderTriggerSetupDate in Script Properties: ${formattedSetupTime}`);
+    Logger.log(`Updated reminderTriggerFireTime in Script Properties: ${formattedReminderTime}`);
+  } catch (error) {
+    Logger.log(`Error in setupEvaluationReminderTrigger: ${error}`);
   }
 }
