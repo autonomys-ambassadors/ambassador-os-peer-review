@@ -4,11 +4,11 @@ This app script code can be added to a google sheet to run the Ambassador OS.
 
 ## Some assumptions:
 
-1. You have a google sheet with a list of ambassadors with two columns, Ambassador Email Address, and Ambassador Discord Handle.
-2. You have a google sheet with a list of ambassador contributions with 4 columns: Timestamp, Email Address, Your Discord Handle, "Dear Ambassador,
+1. You have a google sheet with a list of ambassadors with three columns, Ambassador Email Address, Ambassador Discord Handle, and Ambassador Status.
+2. You have a google sheet with a list of ambassador contributions with columns: Timestamp, Email Address, Your Discord Handle, "Dear Ambassador,
    Please add text, inputs or links to your contributions during the month:"
 
-Note that column headings are not verified, but **column order is assumed**.
+Note that <span style="color:#475594">column headings and column order is assumed</span>
 
 ## To install the Ambassador OS Peer Review process script:
 
@@ -36,32 +36,45 @@ npm install -g @google/clasp
 clasp login
 ```
 
-### If You Already Have Google Apps Script Project
+<div style="color:#778ef7">
+### If You Have Google Apps Script Project
+</div>
 
-Enable API in your Google Apps Interface:
+1. <span style="color:#778ef7">Git pull this repo into your local dir</span>
+
+2. <span style="color:#778ef7">Enable API in your Google Apps Interface:</span>
 
 https://script.google.com/home/usersettings
 
-1. Убедитесь, что у вас есть scriptId существующего проекта
+3. <span style="color:#778ef7">Open your project in Google Apps Script Editor:</span>
 
-   open your project in Google Apps Script Editor:
-   File > Project Settings.
-   Copy Script ID.
+   <span style="color:#778ef7">File > Project Settings.</span>
+   <span style="color:#778ef7">Copy Script ID.</span>
 
-2. Link your local directory \*where you pulled the repository to) with your Google Apps Script
+4. <span style="color:#778ef7">Link your local directory where you pulled the repository to with your Google Apps Script</span>
 
-cd <path-to-local-procet-dir>
-clasp settings set scriptId <SCRIPT_ID>
-Manually create .clasp.json:
-nano .clasp.json
+   cd <path-to-local-procet-dir>
+   clasp settings set scriptId <SCRIPT_ID>
+
+5. <span style="color:#778ef7">Manually create .clasp.json:</span>
+
+   nano .clasp.json
+
+<span style="color:#778ef7">Paste this code in it:</span>
+
+```bash
 {
 "scriptId": "<your script ID>",
 "rootDir": "./"
 }
+```
 
-3. clasp push
+6.  clasp push
 
-### if You Haven't Project yet - Create a Project
+<span style="color:#778ef7">You got the repository files in your Google Apps script interface!</span>
+<span style="color:#778ef7">Test or work.</span>
+
+## If You Haven't Project yet - Create a Project
 
 ```
 clasp create --type sheets --title "Autonomys Ambassador OS Peer Review" --rootDir "./"
@@ -149,3 +162,25 @@ From the spreadsheet, that was created on your initial clasp setup, you should n
 Choose the relevant menu option to send out emails requesting evaluations or submissions.
 
 When requesting Evaluations, the script will add a new sheet to the Submissions spreadsheet called Review Log to record which ambassadors received which evaluation request.
+
+<span style="color:blue">NOTES:</span>
+
+<div style="background-color:#bccfb0; padding:10px;">
+	Installing script notes:
+Backup your current "Ambassadors' Scores" spreadsheet.
+In Registry add 3-rd column. Name it "Ambassador Status". Manually write onboarding date of all ambassadors.
+Rename sheet 'Overall score ' to 'Overall score' (remove the last space symbol).
+Delete "Sheet 1" sheet in Ambassadors' Scores sprdsht, (if you forget and don't rly need it).
+Ensure "Ambassadors' Discord Handles" column in Overall score sheet is an exact copy of "Ambassador Discord Handle" column in Registry sheet. (could be made programmatically)
+Check vars: testing = false. SEMD_EMAIL = true.
+⚠️ Use "Processing past months" option only once, to count all "didn't submit" and "later submissoin" events in past.
+Through all the code the setMinutes and getMinutes methods are used. Edit Triggers and Delays section, using minutes. For ex. 7 days is 10080 minutes, possibly you can use em in format like: 60*24*7.
+
+Notes:
+If too-many-triggers error happens, use "Delete existing triggers" menu item for this (but it's already implemented in code).
+Do not allow multi selecting options in Evaluation Form. Limit submitting to only one time. Editing in fact creates two forms (can lead to errors too).
+Columns "Penalty Points" and "Max 6-Month PP" are added automatically if don't exist.
+Current reporting month column is added automatically.
+Expelled ambassadors are not deleted from Registry. Rather, their status in new column "Ambassador Status" will be updated with expulsion information.
+
+</div>
