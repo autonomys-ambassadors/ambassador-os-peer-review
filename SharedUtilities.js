@@ -133,6 +133,7 @@ function onOpen() {
     .addItem('🔧️Force Authorization', 'forceAuthorization') // Authorization trigger
     .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers') // Optional item
     .addItem('🔧️Refresh Script State', 'refreshScriptState') // Add this for easy access
+    .addItem('🔧️Create/Check and Sync Columns', 'syncRegistryColumnsToOverallScore') // May be worth to create all necessary service columns in all sheets (Ambassador Status in Registry and Overall score; Penalty Points, Max 6-Month PP; Sync Ambassadors' Discord Handles column) with this separate modul.
     .addToUi();
   Logger.log('Menu initialized.');
 }
@@ -219,9 +220,9 @@ function getSubmissionWindowStart() {
   Logger.log(`Submission window started at: ${startDate}`);
   return startDate;
 }
-
-////// VALID RESPONSES
-
+                     
+//     VALID RESPONSES
+//
 function setValidSubmissionResponses(emails) {
   PropertiesService.getScriptProperties().setProperty('validSubmissionResponses', JSON.stringify(emails));
 }
@@ -237,6 +238,7 @@ function getValidEvaluationResponses() {
   const emailsStr = PropertiesService.getScriptProperties().getProperty('validEvaluationResponses');
   return emailsStr ? JSON.parse(emailsStr) : [];
 }
+
 //function getReviewLogData() {
 // const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REVIEW_LOG_SHEET_NAME);
 //  return reviewLogSheet.getRange(2, 1, reviewLogSheet.getLastRow() - 1, reviewLogSheet.getLastColumn()).getValues();
@@ -349,8 +351,7 @@ function getEligibleAmbassadorsEmails() {
 
 
 
-
-//////////// DATE UTILITS
+//    DATE UTILITS
 
 /**
  * Get the time zone of the given spreadsheet.
@@ -399,7 +400,10 @@ function getPreviousMonthDate(timeZone) {
   return targetDate;
 }
 
-// ======= email-Discord Handle Converters =======
+
+
+
+//       Email-Discord Handle Convertor =======
 
 function getDiscordHandleFromEmail(email) {
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
@@ -416,6 +420,9 @@ function getDiscordHandleFromEmail(email) {
   return index !== -1 ? discordColumn[index] : null;
 }
 
+
+//      FORMS' TITLES
+//
 // Main function to update the form titles based on the current reporting month
 function updateFormTitlesWithCurrentReportingMonth() {
   // Retrieve the reporting month in "MMMM yyyy" format, e.g., "August 2024"
@@ -441,7 +448,9 @@ function updateFormTitlesWithCurrentReportingMonth() {
   Logger.log(`Updated Evaluation Form title to: ${newEvaluationTitle}`);
 }
 
-/////////////  INDEX UTILITIES for COLUMNS and SHEETS
+
+
+//        INDEX UTILITIES for COLUMNS and SHEETS
 
 function getColumnIndexByName(sheet, columnName) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
