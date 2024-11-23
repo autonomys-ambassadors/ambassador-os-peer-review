@@ -39,37 +39,45 @@ function requestSubmissionsModule() {
   const submissionDeadline = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES); // Adjust as needed
   const submissionDeadlineDate = Utilities.formatDate(submissionDeadline, spreadsheetTimeZone, 'MMMM dd, yyyy');
 
-  eligibleEmails.forEach((email) => {
-    const discordHandle = getDiscordHandleFromEmail(email); // Use helper function to get Discord handle
-    if (!discordHandle) {
-      Logger.log(`Error: Discord handle not found for email: ${email}`);
-      return; // Skip this email if no Discord handle found
+  eligibleEmails.forEach((email, index) => {
+    const discordHandle = registryData[index][1]; // Извлекаем Discord Handle из Registry
+
+    // Validating email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Простое регулярное выражение для email
+    if (!emailRegex.test(email)) {
+      const warningMessage = `Warning: Invalid or missing email for Discord Handle "${discordHandle}". Skipping.`;
+      Logger.log(warningMessage);
+      return; // Пропускаем, если email не прошёл проверку
     }
 
-    // Prepare the email message with the deadline date
+    if (!discordHandle) {
+      Logger.log(`Error: Discord handle not found for email: ${email}`);
+      return; // Пропускаем, если Discord Handle отсутствует
+    }
+
+    // Composing email body
     const message = REQUEST_SUBMISSION_EMAIL_TEMPLATE.replace('{AmbassadorDiscordHandle}', discordHandle)
       .replace('{Month}', month)
       .replace('{Year}', year)
       .replace('{SubmissionFormURL}', SUBMISSION_FORM_URL)
-      .replace('{SUBMISSION_DEADLINE_DATE}', submissionDeadlineDate); // Insert the calculated deadline date
+      .replace('{SUBMISSION_DEADLINE_DATE}', submissionDeadlineDate); // Подставляем дедлайн
 
     Logger.log(`Email message created for ${email} with Discord handle: ${discordHandle}`);
 
+    // email sending logic
     if (SEND_EMAIL) {
-      MailApp.sendEmail({
-        to: email,
-        subject: '☑️Request for Submission',
-        htmlBody: message, // Use htmlBody to ensure clickable link
-      });
-      Logger.log(`Email sent to ${email}`);
-    } else {
-      if (!testing) {
-        Logger.log(
-          `WARNING: Production mode with email disabled. Submission request email logged but NOT SENT for ${email}`
-        );
-      } else {
-        Logger.log(`Testing mode: Submission request email logged for ${email}`);
+      try {
+        MailApp.sendEmail({
+          to: email,
+          subject: '☑️Request for Submission',
+          htmlBody: message, // Используем htmlBody для отправки HTML-сообщения
+        });
+        Logger.log(`Email sent to ${email}`);
+      } catch (error) {
+        Logger.log(`Failed to send email to ${email}. Error: ${error}`);
       }
+    } else {
+      Logger.log(`Testing mode: Submission request email logged for ${email}`);
     }
   });
 
@@ -96,6 +104,12 @@ function setupSubmissionReminderTrigger(submissionStartTime) {
   }
 
   Logger.log(`Trigger date for reminder set to: ${triggerDate}`);
+  
+  const submissionWindowStart = new Date(submissionWindowStartStr);
+  const submissionWindowEnd = new Date(submissionWindowStart);
+  submissionWindowEnd.setMinutes(submissionWindowStart.getMinutes() + SUBMISSION_WINDOW_MINUTES);
+  Logger.log(`Submission window is from ${submissionWindowStart} to ${submissionWindowEnd}`);
+  
   ScriptApp.newTrigger('checkNonRespondents').timeBased().at(triggerDate).create();
   Logger.log('Reminder trigger created.');
 }
@@ -166,8 +180,17 @@ function sendReminderEmails(nonRespondents) {
     return; // Exit if there are no non-respondents
   }
 
-  nonRespondents.forEach((email) => {
-    const result = registrySheet.createTextFinder(email).findNext(); // Find the row with the given email
+  nonRespondents.forEach((email, index) => {
+    // Validating emails
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Simple regex for validating email
+    if (!emailRegex.test(email)) {
+      const discordHandle = registrySheet.getRange(index + 2, 2).getValue(); // getting Discord Handle from Registry
+      Logger.log(`Warning: Invalid or missing email for Discord Handle "${discordHandle}". Skipping.`);
+      return; // skipping incorrect or empty email
+    }
+
+    // Finding row with given email in Registry
+    const result = registrySheet.createTextFinder(email).findNext();
     if (result) {
       const row = result.getRow(); // Get the row number
       Logger.log(`Non-respondent found at row: ${row}`);
@@ -178,14 +201,14 @@ function sendReminderEmails(nonRespondents) {
       const message = REMINDER_EMAIL_TEMPLATE.replace('{AmbassadorDiscordHandle}', discordHandle);
 
       if (SEND_EMAIL) {
-        MailApp.sendEmail(email, '🕚Reminder to Submit', message); // Send the reminder email
-        Logger.log(`Reminder email sent to: ${email} (Discord: ${discordHandle})`);
-      } else {
-        if (!testing) {
-          Logger.log(`WARNING: Production mode with email disabled. Reminder email logged but NOT SENT for ${email}`);
-        } else {
-          Logger.log(`Testing mode: Reminder email logged for ${email}`);
+        try {
+          MailApp.sendEmail(email, '🕚Reminder to Submit', message); // Send the reminder email
+          Logger.log(`Reminder email sent to: ${email} (Discord: ${discordHandle})`);
+        } catch (error) {
+          Logger.log(`Failed to send reminder email to ${email}. Error: ${error}`);
         }
+      } else {
+        Logger.log(`Testing mode: Reminder email logged for ${email}`);
       }
     } else {
       Logger.log(`Error: Could not find the ambassador with email ${email}`);

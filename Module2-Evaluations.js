@@ -140,7 +140,8 @@ function createMonthSheetAndOverallColumn() {
 function generateReviewMatrix() {
   try {
     Logger.log('Starting generateReviewMatrix.');
-
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const registrySpreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
     const registrySheet = registrySpreadsheet.getSheetByName(REGISTRY_SHEET_NAME);
     const formResponseSheet = getSubmissionFormResponseSheet(); // Use common function for getting Form Responses sheet
@@ -196,10 +197,17 @@ function generateReviewMatrix() {
     const submittersEmails = validResponses.map((row) => row[1]); // Assuming Email is in column 2
     Logger.log(`Submitters Emails: ${JSON.stringify(submittersEmails)}`);
 
-    // Get all ambassador emails from the registry, excluding those with 'Expelled' data in their status
+    // Get all ambassador emails from the registry, excluding those with 'Expelled' status
     const ambassadorData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Assuming columns: Email, Discord Handle, Status
     const allAmbassadorsEmails = ambassadorData
       .filter(row => !row[2].includes('Expelled')) // Exclude those marked as 'Expelled'
+      .filter(row => {
+        if (!emailRegex.test(row[0])) {
+          Logger.log(`Invalid email for Discord Handle ${row[1]}: "${row[0]}". Skipping.`);
+          return false; // Exclude invalid emails
+        }
+        return true;
+      })
       .map(row => row[0]); // Extract email addresses
     Logger.log(`Eligible Ambassadors Emails: ${JSON.stringify(allAmbassadorsEmails)}`);
 
@@ -778,11 +786,20 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
       return;
     }
 
+    // Define regex for email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     nonRespondents.forEach((evaluatorEmail) => {
       // Skip ambassadors who are not eligible (marked as 'Expelled' or not found)
       if (!eligibleEmails.includes(evaluatorEmail)) {
         Logger.log(`Skipping evaluator ${evaluatorEmail} (marked as 'Expelled' or not eligible).`);
         return;
+      }
+
+      // Validate email format
+      if (!emailRegex.test(evaluatorEmail)) {
+       Logger.log(`Invalid email format for evaluator: "${evaluatorEmail}". Skipping.`);
+       return;
       }
 
       const result = registrySheet.createTextFinder(evaluatorEmail).findNext(); // Find evaluator's row by email
@@ -807,6 +824,7 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
     Logger.log(`Error in sendReminderEmailsToUniqueEvaluators: ${error}`);
   }
 }
+
 
 // Sets up the evaluation response trigger based on the form's submission
 function setupEvaluationResponseTrigger() {

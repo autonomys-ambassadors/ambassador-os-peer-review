@@ -6,32 +6,34 @@ function runComplianceAudit() {
     Logger.log('runComplianceAudit process stopped by user.');
     return;
   }
-  // Step 1: Check and create Penalty Points and Max 6-Month PP columns, if they do not exist
+  // Check and create Penalty Points and Max 6-Month PP columns, if they do not exist
   checkAndCreateColumns();
   SpreadsheetApp.flush();
   // Copying all Final Score values to month column in Overall score.
   // Note: Even if Evaluations came late, they anyway helpful for accountability, while those evaluators are fined.
   copyFinalScoresToOverallScore();
   SpreadsheetApp.flush();
-  // Step 4: [⚠️DESIGNED TO RUN ONLY ONCE] - Calculates penalty points for past months violations, colors events, adds PP to PP column.
+  // [⚠️DESIGNED TO RUN ONLY ONCE] - Calculates penalty points for past months violations, colors events, adds PP to PP column.
   detectNonRespondersPastMonths();
   SpreadsheetApp.flush();
-  // Step 2: Calculate penalty points for missing Submissions for the current month
+  // Calculate penalty points for missing Submissions for the current month
   calculatePenaltyPointsForSubmissions();
   SpreadsheetApp.flush();
-  // Step 3: Calculate penalty points for missing Evaluations for the current month
+  // Calculate penalty points for missing Evaluations for the current month
   calculatePenaltyPointsForEvaluations();
   SpreadsheetApp.flush();
-  // Step 5: Calculate the maximum number of penalty points for any continuous 6-month period
+  // Calculate the maximum number of penalty points for any continuous 6-month period
   calculateMaxPenaltyPointsForSixMonths();
   SpreadsheetApp.flush();
-  // Step 6: Check for ambassadors eligible for expulsion
+  // Check for ambassadors eligible for expulsion
   expelAmbassadors();
   SpreadsheetApp.flush();
-  // Step 7: Send expulsion notifications
+  // Send expulsion notifications
   sendExpulsionNotifications();
   SpreadsheetApp.flush();
-
+  // Calling function to sync Ambassador Status columns in Overall score and Registry to display updated statuses
+  syncRegistryColumnsToOverallScore();
+  SpreadsheetApp.flush();
   Logger.log('Compliance Audit process completed.');
 }
 

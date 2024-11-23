@@ -220,9 +220,12 @@ function getSubmissionWindowStart() {
   Logger.log(`Submission window started at: ${startDate}`);
   return startDate;
 }
-                     
-//     VALID RESPONSES
+
+
 //
+//                      
+////// VALID RESPONSES///
+
 function setValidSubmissionResponses(emails) {
   PropertiesService.getScriptProperties().setProperty('validSubmissionResponses', JSON.stringify(emails));
 }
@@ -238,7 +241,6 @@ function getValidEvaluationResponses() {
   const emailsStr = PropertiesService.getScriptProperties().getProperty('validEvaluationResponses');
   return emailsStr ? JSON.parse(emailsStr) : [];
 }
-
 //function getReviewLogData() {
 // const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REVIEW_LOG_SHEET_NAME);
 //  return reviewLogSheet.getRange(2, 1, reviewLogSheet.getLastRow() - 1, reviewLogSheet.getLastColumn()).getValues();
@@ -350,8 +352,9 @@ function getEligibleAmbassadorsEmails() {
 }
 
 
-
-//    DATE UTILITS
+//
+//
+//////////// DATE UTILITS
 
 /**
  * Get the time zone of the given spreadsheet.
@@ -400,10 +403,10 @@ function getPreviousMonthDate(timeZone) {
   return targetDate;
 }
 
-
-
-
-//       Email-Discord Handle Convertor =======
+//
+//
+// 
+// ======= email-Discord Handle Converters =======
 
 function getDiscordHandleFromEmail(email) {
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
@@ -421,7 +424,8 @@ function getDiscordHandleFromEmail(email) {
 }
 
 
-//      FORMS' TITLES
+
+//    FORMS' TITLES
 //
 // Main function to update the form titles based on the current reporting month
 function updateFormTitlesWithCurrentReportingMonth() {
@@ -450,7 +454,7 @@ function updateFormTitlesWithCurrentReportingMonth() {
 
 
 
-//        INDEX UTILITIES for COLUMNS and SHEETS
+/////////////  INDEX UTILITIES for COLUMNS and SHEETS
 
 function getColumnIndexByName(sheet, columnName) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
