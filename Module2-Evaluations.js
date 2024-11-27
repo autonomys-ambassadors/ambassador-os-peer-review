@@ -44,22 +44,22 @@ function createMonthSheetAndOverallColumn() {
       return;
     }
 
-    // Get sheet's time zone
-    const spreadsheetTimeZone = scoresSpreadsheet.getSpreadsheetTimeZone();
+    // Get project time zone
+    const spreadsheetTimeZone = getProjectTimeZone();
     Logger.log(`Time zone of the table: ${spreadsheetTimeZone}`);
 
     // Get first day of previous month
     const deliverableMonthDate = getPreviousMonthDate(spreadsheetTimeZone);
-    Logger.log(`Previous month date: ${deliverableMonthDate} (ISO: ${deliverableMonthDate.toISOString()})`);
+    Logger.log(`Previous month date: ${Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`);
 
-    // Form month name, fro ex. 'September 2024'
+    // Form month name, e.g., 'September 2024'
     const deliverableMonthName = Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
     Logger.log(`Month name: "${deliverableMonthName}"`);
 
-    // Create of clean existing sheet if there is
+    // Create or clear existing sheet if there is one
     let monthSheet = scoresSpreadsheet.getSheetByName(deliverableMonthName);
     if (monthSheet) {
-      monthSheet.clear(); // Clean existing sheet if there is
+      monthSheet.clear(); // Clear existing sheet if there is
       Logger.log(`Cleared existing sheet: "${deliverableMonthName}".`);
     } else {
       // Finding index for inserting new month sheet before existing month sheets
@@ -90,7 +90,7 @@ function createMonthSheetAndOverallColumn() {
     // Sort submitter column alphabetically
     const lastRow = monthSheet.getLastRow();
     if (lastRow > 1) {
-      // Ensuring there are raws for sorting
+      // Ensure there are rows for sorting
       monthSheet.getRange(2, 1, lastRow - 1, 1).sort({ column: 1, ascending: true });
       Logger.log('Sorted the Submitter column alphabetically.');
     }
@@ -313,9 +313,8 @@ function sendEvaluationRequests() {
     ); // Correct ID
     Logger.log(`Opened sheet: ${REVIEW_LOG_SHEET_NAME}`);
 
-    // Getting spreadsheet Time Zone
-    const scoresSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID); // Ensure correct constant
-    const spreadsheetTimeZone = scoresSheet.getSpreadsheetTimeZone(); // Correctly get the timezone
+    // Get project time zone
+    const spreadsheetTimeZone = getProjectTimeZone();
     Logger.log(`Spreadsheet TimeZone: ${spreadsheetTimeZone}`);
 
     const lastRow = reviewLogSheet.getLastRow();
@@ -339,7 +338,7 @@ function sendEvaluationRequests() {
 
     // Calculate evaluation window deadline date
     const evaluationWindowStart = new Date();
-    const evaluationDeadline = new Date(evaluationWindowStart.getTime() + EVALUATION_WINDOW_MINUTES); // Adjust as needed
+    const evaluationDeadline = new Date(evaluationWindowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000); // Adjust to milliseconds
     const evaluationDeadlineDate = Utilities.formatDate(evaluationDeadline, spreadsheetTimeZone, 'MMMM dd, yyyy');
 
     reviewData.forEach((row, rowIndex) => {
@@ -401,39 +400,54 @@ function sendEvaluationRequests() {
 
 // Function to get contribution details by email within the submission window
 function getContributionDetailsByEmail(email) {
-  const formResponseSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(
-    FORM_RESPONSES_SHEET_NAME
-  );
+  try {
+    Logger.log(`Fetching contribution details for email: ${email}`);
 
-  // Retrieve submission window start and end times
-  const submissionWindowStartStr = PropertiesService.getScriptProperties().getProperty('submissionWindowStart');
-  if (!submissionWindowStartStr) {
-    Logger.log('Submission window start time not found.');
-    return 'No contribution details found for this submitter.';
-  }
-  const submissionWindowStart = new Date(submissionWindowStartStr);
-  const submissionWindowEnd = new Date(submissionWindowStart);
-  submissionWindowEnd.setMinutes(submissionWindowStart.getMinutes() + SUBMISSION_WINDOW_MINUTES);
+    // Use unified project time zone
+    const projectTimeZone = getProjectTimeZone();
 
-  // Get form responses
-  const formData = formResponseSheet
-    .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())
-    .getValues();
+    const formResponseSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(
+      FORM_RESPONSES_SHEET_NAME
+    );
 
-  // Find the corresponding response within the submission window
-  for (let row of formData) {
-    const timestamp = new Date(row[0]);
-    if (timestamp >= submissionWindowStart && timestamp <= submissionWindowEnd) {
-      const respondentEmail = row[1]; // Assuming Email is in the 2nd column
-      if (respondentEmail === email) {
+    if (!formResponseSheet) {
+      Logger.log(`Error: Sheet "${FORM_RESPONSES_SHEET_NAME}" not found.`);
+      return 'No contribution details found for this submitter.';
+    }
+
+    // Retrieve submission window start and calculate end times
+    const submissionWindowStart = getSubmissionWindowStart(); // Retrieve start time from SharedUtilities
+    if (!submissionWindowStart) {
+      Logger.log('Error: Submission window start time not found.');
+      return 'No contribution details found for this submitter.';
+    }
+    const submissionWindowEnd = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000);
+    Logger.log(`Submission window: ${submissionWindowStart} to ${submissionWindowEnd}`);
+
+    // Get form responses
+    const formData = formResponseSheet
+      .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())
+      .getValues();
+
+    // Find the corresponding response within the submission window
+    for (let row of formData) {
+      const timestamp = new Date(row[0]); // Assuming Timestamp is in the 1st column
+      const respondentEmail = row[1]?.trim().toLowerCase(); // Assuming Email is in the 2nd column
+
+      if (timestamp >= submissionWindowStart && timestamp <= submissionWindowEnd && respondentEmail === email) {
         const contributionText = row[3]; // Contribution details in the 4th column
         const contributionLinks = row[4]; // Links in the 5th column
+        Logger.log(`Contribution found for email: ${email}`);
         return `Contribution Details: ${contributionText}\nLinks: ${contributionLinks}`;
       }
     }
-  }
 
-  return 'No contribution details found for this submitter.';
+    Logger.log(`No contribution details found for email: ${email}`);
+    return 'No contribution details found for this submitter.';
+  } catch (error) {
+    Logger.log(`Error in getContributionDetailsByEmail: ${error.message}`);
+    return 'An error occurred while fetching contribution details.';
+  }
 }
 
 /**
@@ -443,12 +457,14 @@ function populateMonthSheetWithEvaluators() {
   try {
     Logger.log('Populating month sheet with evaluators.');
 
+    // Use unified project time zone
+    const projectTimeZone = getProjectTimeZone();
+
     // Open the Ambassadors' Scores spreadsheet and get the month sheet
     const scoresSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
-    const spreadsheetTimeZone = scoresSheet.getSpreadsheetTimeZone();
     const monthSheetName = Utilities.formatDate(
-      getPreviousMonthDate(spreadsheetTimeZone),
-      spreadsheetTimeZone,
+      getPreviousMonthDate(projectTimeZone),
+      projectTimeZone,
       'MMMM yyyy'
     );
     const monthSheet = scoresSheet.getSheetByName(monthSheetName);
@@ -504,8 +520,8 @@ function processEvaluationResponse(e) {
   try {
     Logger.log('processEvaluationResponse triggered.');
 
-    const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
-    const spreadsheetTimeZone = scoresSpreadsheet.getSpreadsheetTimeZone();
+    const spreadsheetTimeZone = getProjectTimeZone(); // Get project time zone
+    const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID); 
 
     if (!e || !e.response) {
       Logger.log('Error: Event parameter is missing or does not have a response.');
@@ -825,7 +841,6 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
   }
 }
 
-
 // Sets up the evaluation response trigger based on the form's submission
 function setupEvaluationResponseTrigger() {
   try {
@@ -846,7 +861,7 @@ function setupEvaluationResponseTrigger() {
       }
     });
 
-    // Set a new trigger for form submissions
+    // Set a new trigger for Evaluation form submissions
     ScriptApp.newTrigger('processEvaluationResponse').forForm(form).onFormSubmit().create();
 
     Logger.log('Evaluation response trigger set up successfully.');
@@ -858,52 +873,47 @@ function setupEvaluationResponseTrigger() {
 // Sets up all triggers needed for evaluation process and logs evaluation start time
 function setupEvaluationTriggers(evaluationWindowStart) {
   try {
-    // Update Script Properties with evaluation start time
-    PropertiesService.getScriptProperties().setProperty('evaluationWindowStart', evaluationWindowStart.toISOString());
-    Logger.log(`Evaluation start time set to: ${evaluationWindowStart}`);
+    const timeZone = getProjectTimeZone(); // Get project time zone
 
-    // Calculate the evaluation end time based on EVALUATION_WINDOW_MINUTES
-    const evaluationWindowEnd = new Date(evaluationWindowStart);
-    evaluationWindowEnd.setMinutes(evaluationWindowEnd.getMinutes() + EVALUATION_WINDOW_MINUTES);
-    Logger.log(`Evaluation window is from ${evaluationWindowStart} to ${evaluationWindowEnd}`);
+    // Save evaluation start time
+    const evalStartTime = Utilities.formatDate(evaluationWindowStart, timeZone, 'yyyy-MM-dd HH:mm:ss z');
+    PropertiesService.getScriptProperties().setProperty('evaluationWindowStart', evalStartTime);
+    Logger.log(`Evaluation start time set to: ${evalStartTime}`);
 
-    // Set up the evaluation reminder trigger
+    // Calculate evaluation end time
+    const evaluationWindowEnd = new Date(evaluationWindowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000);
+    Logger.log(`Evaluation window is from ${evalStartTime} to ${evaluationWindowEnd}`);
+
+    // Set up evaluation reminder trigger
     setupEvaluationReminderTrigger(evaluationWindowStart);
   } catch (error) {
     Logger.log(`Error in setupEvaluationTriggers: ${error}`);
   }
 }
 
-// Sets up the evaluation reminder trigger and updates Script Properties
+// Sets up the evaluation reminder trigger and logs trigger times
 function setupEvaluationReminderTrigger(evaluationWindowStart) {
   try {
     Logger.log('Setting up evaluation reminder trigger.');
 
     // Calculate reminder time by adding EVALUATION_WINDOW_REMINDER_MINUTES to evaluationWindowStart
-    const reminderTime = new Date(evaluationWindowStart);
-    reminderTime.setMinutes(reminderTime.getMinutes() + EVALUATION_WINDOW_REMINDER_MINUTES);
+    const reminderTime = new Date(evaluationWindowStart.getTime() + EVALUATION_WINDOW_REMINDER_MINUTES * 60 * 1000);
 
-    // Create a new trigger for sending evaluation reminder emails
+    // Create a trigger for sending evaluation reminder emails
     ScriptApp.newTrigger('sendEvaluationReminderEmails').timeBased().at(reminderTime).create();
 
     Logger.log(`Reminder trigger for evaluation set for: ${reminderTime}`);
 
-    // Get the spreadsheet's timezone for consistent formatting
-    const timeZone = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID).getSpreadsheetTimeZone();
+    // Get the project timezone for consistent formatting
+    const timeZone = getProjectTimeZone(); // Use shared utility
 
-    // Format current time (trigger setup time) in Pacific Time
-    const setupTime = new Date(); // Time when the trigger is set up
-    const formattedSetupTime = Utilities.formatDate(setupTime, timeZone, 'yyyy-MM-dd HH:mm:ss z');
+    // Format current time (trigger setup time) in project timezone
+    const setupTime = Utilities.formatDate(new Date(), timeZone, 'yyyy-MM-dd HH:mm:ss z');
+    Logger.log(`Trigger setup time: ${setupTime}`);
 
-    // Format reminder time (trigger fire time) in Pacific Time
+    // Format reminder trigger time in project timezone
     const formattedReminderTime = Utilities.formatDate(reminderTime, timeZone, 'yyyy-MM-dd HH:mm:ss z');
-
-    // Update the reminderTriggerSetupDate and triggerFireTime in Script Properties
-    PropertiesService.getScriptProperties().setProperty('reminderTriggerSetupDate', formattedSetupTime);
-    PropertiesService.getScriptProperties().setProperty('reminderTriggerFireTime', formattedReminderTime);
-
-    Logger.log(`Updated reminderTriggerSetupDate in Script Properties: ${formattedSetupTime}`);
-    Logger.log(`Updated reminderTriggerFireTime in Script Properties: ${formattedReminderTime}`);
+    Logger.log(`Trigger fire time: ${formattedReminderTime}`);
   } catch (error) {
     Logger.log(`Error in setupEvaluationReminderTrigger: ${error}`);
   }

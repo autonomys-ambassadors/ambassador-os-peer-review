@@ -119,7 +119,7 @@ let EXEMPTION_FROM_EVALUATION_TEMPLATE = `
 Dear Ambassador, you have been relieved of the obligation to evaluate your colleagues this month.
 `;
 
-// On Open Menu
+//    On Open Menu
 
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
@@ -131,14 +131,15 @@ function onOpen() {
     .addItem('Notify Upcoming Peer Review', 'notifyUpcomingPeerReview') // Peer Review notifications
     .addItem('Select CRT members', 'selectCRTMembers') // CRT
     .addItem('🔧️Force Authorization', 'forceAuthorization') // Authorization trigger
+    .addItem('🔧️Check missing Emails/DiscorHandles', 'check_missing_data') // Checks Registry sheet for completeness of data. Recommended to run every cycle if multiple changes were made.
     .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers') // Optional item
     .addItem('🔧️Refresh Script State', 'refreshScriptState') // Add this for easy access
-    .addItem('🔧️Create/Check and Sync Columns', 'syncRegistryColumnsToOverallScore') // May be worth to create all necessary service columns in all sheets (Ambassador Status in Registry and Overall score; Penalty Points, Max 6-Month PP; Sync Ambassadors' Discord Handles column) with this separate modul.
+    //.addItem('🔧️Create/Check and Sync Columns', 'syncRegistryColumnsToOverallScore') // create all necessary columns: Ambassador Status,Penalty Points, Max 6-Month PP, and sync them.
     .addToUi();
   Logger.log('Menu initialized.');
 }
 
-// ⚠️ functions to prevent Google's use of cached outdated variables when run from GUI.
+// ⚠️ functions to prevent Google using of cached outdated variables when run from GUI
 function refreshScriptState() {
   Logger.log('Starting Refresh Script State');
 
@@ -193,17 +194,21 @@ function sendEmailNotification(recipientEmail, subject, body) {
   }
 }
 
-///////// Submission/Evaluation WINDOW TIME
+//     Submission/Evaluation WINDOW TIME SET/GET
 
+
+// Save the submission window start time (in PST)
 function setSubmissionWindowStart(time) {
-  PropertiesService.getScriptProperties().setProperty('submissionWindowStart', time.toISOString());
+  const formattedTime = Utilities.formatDate(time, getProjectTimeZone(), 'yyyy-MM-dd HH:mm:ss z'); // Format the time
+  PropertiesService.getScriptProperties().setProperty('submissionWindowStart', formattedTime); // Save the formatted time
+  Logger.log(`Submission window start time saved: ${formattedTime}`);
 }
+
+// Save the evaluation window start time (in PST)
 function setEvaluationWindowStart(time) {
-  PropertiesService.getScriptProperties().setProperty('evaluationWindowStart', time.toISOString());
-}
-function getEvaluationWindowStart() {
-  const timeStr = PropertiesService.getScriptProperties().getProperty('evaluationWindowStart');
-  return timeStr ? new Date(timeStr) : null;
+  const formattedTime = Utilities.formatDate(time, getProjectTimeZone(), 'yyyy-MM-dd HH:mm:ss z'); // Format the time
+  PropertiesService.getScriptProperties().setProperty('evaluationWindowStart', formattedTime); // Save the formatted time
+  Logger.log(`Evaluation window start time saved: ${formattedTime}`);
 }
 
 function getSubmissionWindowStart() {
@@ -221,30 +226,72 @@ function getSubmissionWindowStart() {
   return startDate;
 }
 
+function getEvaluationWindowStart() {
+  const timeStr = PropertiesService.getScriptProperties().getProperty('evaluationWindowStart');
+  return timeStr ? new Date(timeStr) : null;
+}
 
-//
 //                      
-////// VALID RESPONSES///
+//      VALID RESPONSES
+//
 
-function setValidSubmissionResponses(emails) {
-  PropertiesService.getScriptProperties().setProperty('validSubmissionResponses', JSON.stringify(emails));
-}
-function getValidSubmissionResponses() {
-  const emailsStr = PropertiesService.getScriptProperties().getProperty('validSubmissionResponses');
-  return emailsStr ? JSON.parse(emailsStr) : [];
+/**
+ * Extracts the list of valid submitter emails from the submission responses sheet within the submission time window.
+ * @returns {Array} - A list of valid submitter emails within the submission time window.
+ */
+function getValidSubmissionEmails() {
+  Logger.log('Extracting valid submission emails.');
+
+  // Get the submission responses sheet by its name
+  const submissionResponsesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(FORM_RESPONSES_SHEET_NAME);
+
+  if (!submissionResponsesSheet) {
+    Logger.log(`Error: Sheet with name '${FORM_RESPONSES_SHEET_NAME}' not found.`);
+    return [];
+  }
+
+  const lastRow = submissionResponsesSheet.getLastRow();
+  if (lastRow < 2) {
+    Logger.log('No submission responses found.');
+    return [];
+  }
+
+  // Get the submission time window from script properties
+  const submissionWindowStart = getSubmissionWindowStart();
+
+  if (!submissionWindowStart) {
+    Logger.log('Error: Submission window start time not found.');
+    return [];
+  }
+
+  const submissionWindowEnd = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000);
+
+  Logger.log(`Submission window: ${submissionWindowStart} - ${submissionWindowEnd}`);
+
+  // Extract valid responses within the submission time window
+  const validSubmitters = submissionResponsesSheet
+    .getRange(2, 1, lastRow - 1, 2)
+    .getValues()
+    .filter((row) => {
+      const responseTimestamp = new Date(row[0]); // Assuming the first column is the timestamp
+      const email = row[1]?.trim().toLowerCase(); // Assuming the second column is the submitter's email
+
+      // Check if the response is within the submission time window
+      const isWithinWindow = responseTimestamp >= submissionWindowStart && responseTimestamp <= submissionWindowEnd;
+
+      if (isWithinWindow) {
+        Logger.log(`Valid submitter found: ${email} (Response time: ${responseTimestamp})`);
+        return true;
+      }
+      return false;
+    })
+    .map((row) => row[1]?.trim().toLowerCase()); // Extracting the submitter email
+
+  Logger.log(`Valid submitters (within time window): ${validSubmitters.join(', ')}`);
+  return validSubmitters;
 }
 
-function setValidEvaluationResponses(emails) {
-  PropertiesService.getScriptProperties().setProperty('validEvaluationResponses', JSON.stringify(emails));
-}
-function getValidEvaluationResponses() {
-  const emailsStr = PropertiesService.getScriptProperties().getProperty('validEvaluationResponses');
-  return emailsStr ? JSON.parse(emailsStr) : [];
-}
-//function getReviewLogData() {
-// const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REVIEW_LOG_SHEET_NAME);
-//  return reviewLogSheet.getRange(2, 1, reviewLogSheet.getLastRow() - 1, reviewLogSheet.getLastColumn()).getValues();
-//}
+
 
 /**
  * Extracts the list of valid evaluator emails from the evaluation responses sheet within the evaluation time window.
@@ -296,6 +343,7 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
 }
 
 // Fetches and returns the submitter-evaluator assignments from the Review Log
+
 function getReviewLogAssignments() {
   Logger.log('Fetching submitter-evaluator assignments from Review Log.');
 
@@ -352,17 +400,13 @@ function getEligibleAmbassadorsEmails() {
 }
 
 
-//
-//
-//////////// DATE UTILITS
 
-/**
- * Get the time zone of the given spreadsheet.
- * @param {Spreadsheet} spreadsheet - The Spreadsheet instance.
- * @returns {string} - Time zone of the spreadsheet.
- */
-function getSpreadsheetTimeZone(spreadsheet) {
-  return spreadsheet.getSpreadsheetTimeZone();
+//        DATE UTILITS
+
+///**
+// * Get the time zone of the script (all spreadsheets).
+function getProjectTimeZone() {
+  return Session.getScriptTimeZone(); // Using Project's time zone
 }
 
 /**
@@ -403,29 +447,87 @@ function getPreviousMonthDate(timeZone) {
   return targetDate;
 }
 
-//
-//
-// 
-// ======= email-Discord Handle Converters =======
 
+//
+//       log all missing emails or Discord handles
+//
+/**
+ * Checks for missing or invalid email and Discord Handle in the Registry sheet.
+ */
+function check_missing_data() {
+  try {
+    Logger.log('Starting data validation in Registry.');
+
+    // Open the Registry sheet
+    const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
+    if (!registrySheet) {
+      Logger.log('Registry sheet not found.');
+      SpreadsheetApp.getUi().alert('Error: Registry sheet not found.');
+      return;
+    }
+
+    // Get data from Registry
+    const emailColumn = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 1).getValues().flat();
+    const discordColumn = registrySheet.getRange(2, 2, registrySheet.getLastRow() - 1, 1).getValues().flat();
+
+    // Regular expression for email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    let issues = []; // Array to collect issues
+
+    emailColumn.forEach((rowEmail, index) => {
+      const discordHandle = discordColumn[index];
+
+      // Check for missing or invalid email
+      if ((!rowEmail || !rowEmail.trim()) && discordHandle && discordHandle.trim()) {
+        issues.push(`Discord handle "${discordHandle}" has no email address.`);
+      } else if (rowEmail && !emailRegex.test(rowEmail.trim())) {
+        issues.push(`Invalid email address: "${rowEmail}" for Discord handle "${discordHandle || 'Unknown'}".`);
+      }
+
+      // Check for missing Discord Handle
+      if ((!discordHandle || !discordHandle.trim()) && rowEmail && rowEmail.trim()) {
+        issues.push(`Email "${rowEmail}" has no Discord handle.`);
+      }
+    });
+
+    // Show results in a pop-up
+    if (issues.length > 0) {
+      const message = `Found the following issues in Registry:\n\n${issues.join('\n')}`;
+      Logger.log(message);
+      SpreadsheetApp.getUi().alert(message);
+    } else {
+      const successMessage = 'Registry data looks great! No issues found. 🎉';
+      Logger.log(successMessage);
+      SpreadsheetApp.getUi().alert(successMessage);
+    }
+  } catch (error) {
+    Logger.log(`Error in check_missing_data: ${error.message}`);
+    SpreadsheetApp.getUi().alert(`Error: ${error.message}`);
+  }
+}
+
+
+// 
+//       Email to Discord Handle Converter
+//
+/**
+ * Get the Discord handle for a given email address.
+ * Handles cases where the email is missing or invalid.
+ * @param {string} email - The email address of the ambassador.
+ * @returns {string} - The corresponding Discord handle, or "Unknown" if not found.
+ */
 function getDiscordHandleFromEmail(email) {
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const emailColumn = registrySheet
-    .getRange(2, 1, registrySheet.getLastRow() - 1, 1)
-    .getValues()
-    .flat();
-  const discordColumn = registrySheet
-    .getRange(2, 2, registrySheet.getLastRow() - 1, 1)
-    .getValues()
-    .flat();
+  const emailColumn = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 1).getValues().flat();
+  const discordColumn = registrySheet.getRange(2, 2, registrySheet.getLastRow() - 1, 1).getValues().flat();
 
   const index = emailColumn.indexOf(email);
   return index !== -1 ? discordColumn[index] : null;
 }
 
 
-
-//    FORMS' TITLES
+//        FORMS' TITLES
 //
 // Main function to update the form titles based on the current reporting month
 function updateFormTitlesWithCurrentReportingMonth() {
@@ -454,7 +556,7 @@ function updateFormTitlesWithCurrentReportingMonth() {
 
 
 
-/////////////  INDEX UTILITIES for COLUMNS and SHEETS
+//        INDEX UTILITIES for COLUMNS and SHEETS
 
 function getColumnIndexByName(sheet, columnName) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
@@ -585,7 +687,7 @@ function findRowByDiscordHandle(discordHandle) {
   return rowIndex !== -1 ? rowIndex + 2 : null;
 }
 
-////// TRIGGERS
+//      TRIGGERS
 
 // Function to delete all existing triggers
 function deleteExistingTriggers() {
@@ -600,8 +702,17 @@ function deleteExistingTriggers() {
     Logger.log(`Error in deleteExistingTriggers: ${error}`);
   }
 }
+// Lists all triggers:
+function listAllTriggers() {
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(trigger => {
+    Logger.log(`Trigger function: ${trigger.getHandlerFunction()}, type: ${trigger.getEventType()}, next run: ${trigger.getTriggerSourceId()}`);
+  });
+}
 
-//// Force re-authorization
+
+
+//       Force re-authorization
 /**
  * Triggers the Google Apps Script authorization dialog by attempting to access a protected service.
  * Useful when permissions need to be granted before using the script.
