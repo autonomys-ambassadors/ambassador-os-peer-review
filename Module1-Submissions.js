@@ -1,7 +1,6 @@
 // Module1.gs
 
 // Request Submissions: sends emails, sets up the new mailing, and reminder trigger
-// Request Submissions: sends emails, sets up the new mailing, and reminder trigger
 function requestSubmissionsModule() {
   Logger.log('Request Submissions Module started.');
 

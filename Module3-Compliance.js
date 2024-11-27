@@ -10,19 +10,16 @@ function runComplianceAudit() {
   checkAndCreateColumns();
   SpreadsheetApp.flush();
   // Copying all Final Score values to month column in Overall score.
-  // Note: Even if Evaluations came late, they anyway helpful for accountability, while those evaluators are fined.
+  // Note: Even if Evaluations came late, they anyway are helpful, though evaluators are penalized.
   copyFinalScoresToOverallScore();
   SpreadsheetApp.flush();
-  // [⚠️DESIGNED TO RUN ONLY ONCE] - Calculates penalty points for past months violations, colors events, adds PP to PP column.
+  // ⚠️DESIGNED TO RUN ONLY ONCE. Calculates penalty points for past months, colors cells, adds PP to PP column.
   detectNonRespondersPastMonths();
   SpreadsheetApp.flush();
-  // Calculate penalty points for missing Submissions for the current month
-  calculatePenaltyPointsForSubmissions();
+  // Calculate penalty points for missing Submissions and Evaluations for the current reporting month
+  calculatePenaltyPoints();
   SpreadsheetApp.flush();
-  // Calculate penalty points for missing Evaluations for the current month
-  calculatePenaltyPointsForEvaluations();
-  SpreadsheetApp.flush();
-  // Calculate the maximum number of penalty points for any continuous 6-month period
+  // Calculate the maximum number of penalty points for any contiguous 6-month period
   calculateMaxPenaltyPointsForSixMonths();
   SpreadsheetApp.flush();
   // Check for ambassadors eligible for expulsion
@@ -31,7 +28,7 @@ function runComplianceAudit() {
   // Send expulsion notifications
   sendExpulsionNotifications();
   SpreadsheetApp.flush();
-  // Calling function to sync Ambassador Status columns in Overall score and Registry to display updated statuses
+  // Calling function to create/sync Ambassador Status columns in Overall score and Registry to display updated statuses
   syncRegistryColumnsToOverallScore();
   SpreadsheetApp.flush();
   Logger.log('Compliance Audit process completed.');
@@ -166,7 +163,7 @@ function checkAndCreateColumns() {
   }
 }
 
-// Detect non-responders for past months (highlighting #FFD580) ⚠️ One time run only, otherwase will have to manually deduct duplicated scores
+// ⚠️ One time run only! Detect non-responders for past months (highlighting with COLOR_OLD_MISSED_SUBMISSION)
 function detectNonRespondersPastMonths() {
   const scriptProperties = PropertiesService.getScriptProperties();
   let hasRun = scriptProperties.getProperty('detectNonRespondersPastMonthsRan');
@@ -241,20 +238,30 @@ function detectNonRespondersPastMonths() {
 }
 
 /**
- * Calculates and adds penalty points for failing to participate in submissions across all months.
- * Highlights cells with light tone for the current reporting month.
- */
-function calculatePenaltyPointsForSubmissions() {
-  Logger.log('Starting penalty points calculation for missing submissions.');
+ * Calculates and assigns penalty points for ambassadors based on their participation in submissions and evaluations for the current reporting month.
+ * Highlights the corresponding cells in the Overall Scores sheet to reflect missed activities:
+ * - Missed submission: COLOR_MISSED_SUBMISSION
+ * - Missed evaluation: COLOR_MISSED_EVALUATION
+ * - Both missed submission and evaluation: COLOR_MISSED_SUBM_AND_EVAL
+ * Adds 1 penalty point for each missed activity or 2 points for both missed activities.
+ */ 
+function calculatePenaltyPoints() {
+  Logger.log('Starting penalty points calculation for submissions and evaluations.');
 
-  // Getting Overall Score sheet
+  // Open necessary sheets
+  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  if (!overallScoresSheet) {
-    Logger.log('Error: Overall score sheet not found.');
+  const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REVIEW_LOG_SHEET_NAME);
+  const evaluationResponsesSheet = SpreadsheetApp.openById(EVALUATION_RESPONSES_SPREADSHEET_ID).getSheetByName(
+    EVAL_FORM_RESPONSES_SHEET_NAME
+  );
+
+  if (!registrySheet || !overallScoresSheet || !reviewLogSheet || !evaluationResponsesSheet) {
+    Logger.log('Error: One or more required sheets not found.');
     return;
   }
 
-  // Getting sheet headers and index of Penalty Point column
+  // Get headers and indices
   const headersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
   const penaltyPointsColIndex = headersRange.indexOf('Penalty Points') + 1;
   if (penaltyPointsColIndex === 0) {
@@ -262,157 +269,91 @@ function calculatePenaltyPointsForSubmissions() {
     return;
   }
 
-  // Reading all rows all columns cells colors
-  const backgrounds = overallScoresSheet
-    .getRange(2, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn())
-    .getBackgrounds();
+  const spreadsheetTimeZone = getProjectTimeZone();
+  const currentReportingMonth = getPreviousMonthDate(spreadsheetTimeZone); // Assume previous month is the reporting month
+  const currentMonthColIndex = headersRange.findIndex(
+    (header) => header instanceof Date && header.getTime() === currentReportingMonth.getTime()
+  ) + 1;
+  if (currentMonthColIndex === 0) {
+    Logger.log('Error: Current reporting month column not found.');
+    return;
+  }
+  Logger.log(`Current reporting month column index: ${currentMonthColIndex}`);
 
-  // Reading penalty points values, save to 1D array
+  // Get valid submitters and evaluators
+  const validSubmitters = getValidSubmissionEmails();
+  const validEvaluators = getValidEvaluationEmails(evaluationResponsesSheet);
+  Logger.log(`Valid submitters: ${validSubmitters.join(', ')}`);
+  Logger.log(`Valid evaluators: ${validEvaluators.join(', ')}`);
+
+  // Get assignments from Review Log (who evaluates whom)
+  const assignments = getReviewLogAssignments();
+  //Logger.log(`Assignments from Review Log: ${JSON.stringify(assignments)}`); //too extensive log
+
+  // Fetch data from Registry and filter non-expelled ambassadors
+  const registryData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues();
+  const ambassadorData = registryData
+    .filter((row) => row[0]?.trim() && !row[2]?.includes('Expelled'))
+    .map((row) => ({
+      email: row[0].trim().toLowerCase(),
+      discordHandle: row[1]?.trim(),
+    }));
+
+  Logger.log(`Filtered ambassadors: ${ambassadorData.length} valid rows`);
+
+  // Retrieve penalty points
   const penaltyPoints = overallScoresSheet
     .getRange(2, penaltyPointsColIndex, overallScoresSheet.getLastRow() - 1, 1)
     .getValues()
     .flat();
 
-  // Iterate over each month column
-  headersRange.forEach((header, colIndex) => {
-    if (header instanceof Date) {
-      const monthColumnIndex = colIndex + 1;
+  // Process each ambassador
+  ambassadorData.forEach(({ email, discordHandle }) => {
+    const rowInScores = overallScoresSheet.createTextFinder(discordHandle).findNext()?.getRow();
+    if (!rowInScores) {
+      Logger.log(`Discord handle not found in Overall Scores: ${discordHandle}`);
+      return;
+    }
 
-      // Check for cells with COLOR_MISSED_SUBMISSION
-      for (let rowIndex = 0; rowIndex < backgrounds.length; rowIndex++) {
-        if (backgrounds[rowIndex][colIndex] === COLOR_MISSED_SUBMISSION) {
-          penaltyPoints[rowIndex] = (penaltyPoints[rowIndex] || 0) + 1;
-        }
-      }
+    const rowIndex = rowInScores - 2; // Adjust for header offset
+    const cell = overallScoresSheet.getRange(rowInScores, currentMonthColIndex);
+    const currentPenaltyPoints = penaltyPoints[rowIndex] || 0;
+
+    // Determine non-submitter status
+    const isNonSubmitter = !validSubmitters.includes(email);
+
+    // Determine non-evaluator status
+    const isNonEvaluator = Object.values(assignments).some(
+      (evaluators) => evaluators.includes(email) && !validEvaluators.includes(email)
+    );
+
+    // Update colors and penalty points based on detected violations
+    if (isNonSubmitter && isNonEvaluator) {
+      cell.setBackground(COLOR_MISSED_SUBM_AND_EVAL).setValue('');
+      penaltyPoints[rowIndex] = currentPenaltyPoints + 2;
+      Logger.log(`Added 2 penalty points for ${discordHandle} (missed submission and evaluation).`);
+    } else if (isNonSubmitter) {
+      cell.setBackground(COLOR_MISSED_SUBMISSION).setValue('');
+      penaltyPoints[rowIndex] = currentPenaltyPoints + 1;
+      Logger.log(`Added 1 penalty point for ${discordHandle} (missed submission).`);
+    } else if (isNonEvaluator) {
+      cell.setBackground(COLOR_MISSED_EVALUATION).setValue('');
+      penaltyPoints[rowIndex] = currentPenaltyPoints + 1;
+      Logger.log(`Added 1 penalty point for ${discordHandle} (missed evaluation).`);
     }
   });
 
-  // Update penalty points and colors
+  // Update penalty points column
   overallScoresSheet
     .getRange(2, penaltyPointsColIndex, penaltyPoints.length, 1)
     .setValues(penaltyPoints.map((val) => [val]));
-  overallScoresSheet
-    .getRange(2, 1, backgrounds.length, backgrounds[0].length)
-    .setBackgrounds(backgrounds);
 
-  Logger.log('Penalty points calculation for missing submissions completed.');
+  Logger.log('Penalty points calculation for submissions and evaluations completed.');
 }
 
-
 /**
- * Calculates and adds penalty points for failing to participate in evaluations across all months.
- * Highlights cells based on tone: middle(for 1 violation) or dark(for 2 violations) if there were.
- */
-function calculatePenaltyPointsForEvaluations() {
-  try {
-    Logger.log('Starting penalty points calculation for missed evaluations.');
-
-    const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
-      REVIEW_LOG_SHEET_NAME
-    );
-    const evaluationResponsesSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID).getSheetByName(
-      EVAL_FORM_RESPONSES_SHEET_NAME
-    );
-    const overallScoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
-    const overallScoresSheet = overallScoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
-
-    const validEvaluators = getValidEvaluationEmails(evaluationResponsesSheet); // getValidEvaluationEmails: returns array of email-addrresses, submitted valid Eval.responses.
-    const assignments = getReviewLogAssignments(); // getReviewLogAssignments: returns object with assignments (who evaluates whom)).
-
-    const headersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0]; // getting columns' headers
-    const penaltyPointsColIndex = headersRange.indexOf('Penalty Points') + 1; // locates Penalty Point column
-
-    if (penaltyPointsColIndex === 0) {
-      Logger.log('Error: Penalty Points column not found.'); //if PP column is not found
-      return;
-    }
-
-    const spreadsheetTimeZone = getProjectTimeZone(); // Get project time zone
-    const deliverableMonthDate = getPreviousMonthDate(spreadsheetTimeZone);
-    Logger.log(`Previous month date: ${deliverableMonthDate} (ISO: ${deliverableMonthDate.toISOString()})`);
-    
-    //Finding current reporting month month-sheet column index
-    const monthColumnIndex =
-      headersRange.findIndex(
-        (header) => header instanceof Date && header.getTime() === deliverableMonthDate.getTime()
-      ) + 1;
-    // IF couldn't find..
-    if (!monthColumnIndex) {
-      Logger.log(`Month column "${deliverableMonthDate}" not found.`);
-      return;
-    }
-    //Gets data on every row, skipping headers.
-    const sheetData = overallScoresSheet
-      .getRange(2, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn())
-      .getValues();
-    //Gets backgrounds on every row, skipping headers
-    const backgroundData = overallScoresSheet
-      .getRange(2, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn())
-      .getBackgrounds();
-
-
-    const missedEvaluators = new Set(); // Creates a set to hold Discord handles of those who missed to evaluate all assigned submitters
-
-    /** Loop through assignments and identify evaluators who missed to evaluate all assigned submitters. 
-    * For each submitter from assignments(Review Matrix) gets a list of assigned evaluator.
-    * For each evaluator in review log checks, if his email is in valid evaluator (within Eval.window).
-    * If email isn't among valid evals: gets Discord-handle using getDiscordHandleFromEmail, 
-    * finds this evaluator's row (using findRowByDiscordHandle), and if row is found, adds his Discord-handle into missedEvaluators array.
-    * Marks this evaluator as already penalized, Increments PP for this evaluator, set proper color, depending if 1 or 2 violations in total.
-    */
-    Object.keys(assignments).forEach((submitter) => {
-      const evaluators = assignments[submitter];
-
-      evaluators.forEach((evaluator) => {
-        // If evaluator didn't submit any evaluations, penalize them
-        if (!validEvaluators.includes(evaluator)) {
-          const discordHandle = getDiscordHandleFromEmail(evaluator);
-
-          // New check: Skip processing if no email found in Registry
-          if (!evaluator) {
-            Logger.log(`Skipping evaluator without email: ${discordHandle}`);
-            return; // Skip this evaluator
-          }
-
-          const evaluatorRow = findRowByDiscordHandle(discordHandle);
-
-          if (evaluatorRow && !missedEvaluators.has(discordHandle)) {
-            missedEvaluators.add(discordHandle); // Marks this evaluator as already penalized for missing all evaluations
-
-            // Increments penalty points for evaluators
-            let currentPenaltyPoints = sheetData[evaluatorRow - 2][penaltyPointsColIndex - 1] || 0;
-            sheetData[evaluatorRow - 2][penaltyPointsColIndex - 1] = currentPenaltyPoints + 1;
-
-            // Update already missed-submission background to both-violations color; and not colored cell to missed_eval color
-            const cellColor = backgroundData[evaluatorRow - 2][monthColumnIndex - 1];
-            if (cellColor === COLOR_MISSED_SUBMISSION) {
-              backgroundData[evaluatorRow - 2][monthColumnIndex - 1] = COLOR_MISSED_SUBM_AND_EVAL; // For both violations
-            } else {
-              backgroundData[evaluatorRow - 2][monthColumnIndex - 1] = COLOR_MISSED_EVALUATION; // For missed evaluation
-            }
-          }
-        }
-      });
-    });
-
-    // Writes the updated cell values and colors to Overall score sheet to reflect the penalty
-    overallScoresSheet
-      .getRange(2, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn())
-      .setValues(sheetData);
-    overallScoresSheet
-      .getRange(2, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn())
-      .setBackgrounds(backgroundData);
-
-    Logger.log('Penalty points calculation for missed evaluations completed.');
-  } catch (error) {
-    Logger.log(`Error in calculatePenaltyPointsForEvaluations: ${error.message}`);
-  }
-}
-
-
-/**
- * This function calculates the maximum number of penalty points for any 6-month contiguous period for each ambassador
- * and records this value in the "Max 6-Month PP" column.
+ * This function calculates the maximum number of penalty points for any 6-month contiguous period for each ambassador,
+ * including the last reporting month, and records this value in the "Max 6-Month PP" column.
  *
  * - Light tone for old months' "Didn't submit" events - adds 1 penalty point
  * - Light tone for "Didn't submit" events - adds 1 penalty point
@@ -455,44 +396,28 @@ function calculateMaxPenaltyPointsForSixMonths() {
       .getBackgrounds()[0];
     Logger.log(`Row ${row}: Collected background colors for all month columns.`);
 
-    // Iterate over possible 6-month periods
-    for (let i = 0; i <= monthColumns.length - 6; i++) {
+    // Iterate over all possible 6-month periods
+    for (let i = 0; i <= monthColumns.length - 1; i++) { // Process all starting months
       let sixMonthTotal = 0;
 
-      // Logger.log(
-      // `Checking 6-month period starting from column ${monthColumns[i]} (${Utilities.formatDate(headers[monthColumns[i] - 1], spreadsheetTimeZone, 'MMMM yyyy')})`
-      // );
-
-      for (let j = i; j < i + 6; j++) {
+      for (let j = i; j < i + 6 && j < monthColumns.length; j++) { // Ensure period fits within available columns
         const cellBackgroundColor = backgroundColors[j].toLowerCase();
 
-        // Log the actual background color detected for each cell
-        ////////Logger.log(`Row ${row}, Column ${monthColumns[j]}: Detected background color = ${cellBackgroundColor}`);
-
         switch (cellBackgroundColor) {
-          case COLOR_OLD_MISSED_SUBMISSION: // for old months' didn't submit
+          case COLOR_OLD_MISSED_SUBMISSION:
+          case COLOR_MISSED_SUBMISSION:
             sixMonthTotal += 1;
-            Logger.log(`Adding 1 point for COLOR_OLD_MISSED_SUBMISSION at column ${monthColumns[j]}`);
             break;
-          case COLOR_MISSED_SUBMISSION: // didn't submit
+          case COLOR_MISSED_EVALUATION:
             sixMonthTotal += 1;
-            Logger.log(`Adding 1 point for COLOR_MISSED_SUBMISSION at column ${monthColumns[j]}`);
             break;
-          case COLOR_MISSED_EVALUATION: // didn't evaluate
-            sixMonthTotal += 1;
-            Logger.log(`Adding 1 point for COLOR_MISSED_EVALUATION at column ${monthColumns[j]}`);
-            break;
-          case COLOR_MISSED_SUBM_AND_EVAL: // didn't submit and didn't evaluate
+          case COLOR_MISSED_SUBM_AND_EVAL:
             sixMonthTotal += 2;
-            Logger.log(`Adding 2 points for COLOR_MISSED_SUBM_AND_EVAL at column ${monthColumns[j]}`);
             break;
-          default:
-          ////////  Logger.log(`No penalty for background color at column ${monthColumns[j]}`);
         }
       }
 
-      Logger.log(`Total penalty points for this 6-month period: ${sixMonthTotal}`);
-      maxPP = Math.max(maxPP, sixMonthTotal);
+      maxPP = Math.max(maxPP, sixMonthTotal); // Update the maxPP if current total is greater
     }
 
     // Write the maximum penalty points for any 6-month period to the Max 6-Month PP column
@@ -501,7 +426,7 @@ function calculateMaxPenaltyPointsForSixMonths() {
 
     // Color the cell red if maxPP is 3 or greater
     if (maxPP >= 3) {
-      maxPPCell.setBackground(COLOR_EXPELLED); // Red color
+      maxPPCell.setBackground(COLOR_EXPELLED);
       Logger.log(`Max PP >= 3. Setting red background for row ${row} in Max 6-Month PP column.`);
     }
 
@@ -511,9 +436,7 @@ function calculateMaxPenaltyPointsForSixMonths() {
   Logger.log('Completed calculating Max Penalty Points for all rows.');
 }
 
-// Expel ambassadors based on Max 6-Month PP
-// Expel ambassadors based on Max 6-Month PP
-// Modified to track and notify only newly expelled ambassadors.
+// Expel ambassadors based on Max 6-Month PP. Tracks and notify only newly expelled ambassadors.
 function expelAmbassadors() {
   Logger.log('Starting expelAmbassadors process.');
 
@@ -613,7 +536,7 @@ function sendExpulsionNotifications(discordHandle) {
     
     // Check and skip if email is missing
     if (!email || !email.trim()) {
-      Logger.log(`Skipping notification for ambassador with discord handle ${discordHandle} due to missing email.`);
+      Logger.log(`Skipping notification for ambassador with discord handle: ${discordHandle} due to missing email.`);
       return;
     }
 
@@ -629,7 +552,8 @@ function sendExpulsionNotifications(discordHandle) {
     sendEmailNotification(SPONSOR_EMAIL, subject, sponsorBody);
     Logger.log(`Notification sent to sponsor for expelled ambassador: ${email} (${discordHandle}).`);
   } else {
-    Logger.log(`Error: Ambassador with discord handle ${discordHandle} not found in the registry.`);
+    Logger.log(`Error: Ambassador with discord handle: ${discordHandle} not found in the registry.`);
   }
 }
+
 

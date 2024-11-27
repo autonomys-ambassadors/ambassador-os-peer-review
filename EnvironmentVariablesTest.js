@@ -64,9 +64,9 @@ function setTestVariables() {
   AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
 
   // Reinitialize color variables to ensure consistency in color-based logic.
-  COLOR_MISSED_SUBMISSION = '#f5eee6';
-  COLOR_MISSED_EVALUATION = '#e6d6c1';
-  COLOR_EXPELLED = '#FF0000';
-  COLOR_MISSED_SUBM_AND_EVAL = '#ceae83';
-  COLOR_OLD_MISSED_SUBMISSION = '#f5eee6';
+  COLOR_MISSED_SUBMISSION = '#c8ddf6';
+  COLOR_MISSED_EVALUATION = '#b7dfb9';
+  COLOR_EXPELLED = '#c1c1c1';
+  COLOR_MISSED_SUBM_AND_EVAL = '#d5cf99';
+  COLOR_OLD_MISSED_SUBMISSION = '#c8ddf6';
 }

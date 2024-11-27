@@ -34,11 +34,11 @@ var AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
 var SPONSOR_EMAIL = ''; // Sponsor's email
 
 // Color variables
-var COLOR_MISSED_SUBMISSION = '#f5eee6';
-var COLOR_MISSED_EVALUATION = '#e6d6c1';
-var COLOR_EXPELLED = '#FF0000';
-var COLOR_MISSED_SUBM_AND_EVAL = '#ceae83';
-var COLOR_OLD_MISSED_SUBMISSION = '#f5eee6';
+var COLOR_MISSED_SUBMISSION = '';
+var COLOR_MISSED_EVALUATION = '';
+var COLOR_EXPELLED = '';
+var COLOR_MISSED_SUBM_AND_EVAL = '';
+var COLOR_OLD_MISSED_SUBMISSION = '';
 
 // Triggers and Delays
 // These values will set the due date and reminder schedule for Submissions and Evaluations.
@@ -243,7 +243,7 @@ function getValidSubmissionEmails() {
   Logger.log('Extracting valid submission emails.');
 
   // Get the submission responses sheet by its name
-  const submissionResponsesSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(FORM_RESPONSES_SHEET_NAME);
+  const submissionResponsesSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(FORM_RESPONSES_SHEET_NAME);
 
   if (!submissionResponsesSheet) {
     Logger.log(`Error: Sheet with name '${FORM_RESPONSES_SHEET_NAME}' not found.`);

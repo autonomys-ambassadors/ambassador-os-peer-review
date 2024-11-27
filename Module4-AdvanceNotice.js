@@ -1,37 +1,35 @@
-// Function to notify ambassadors of an upcoming peer review, excluding those whose emails start with "(EXPELLED)"
+/**
+ * Notifies ambassadors of an upcoming peer review, excluding those with 'Expelled' status in Registry.
+ */
 function notifyUpcomingPeerReview() {
   try {
     Logger.log('Starting upcoming peer review notification process.');
 
+    // Access the Registry sheet
     const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
       REGISTRY_SHEET_NAME
     );
-    const data = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 1).getValues(); // Get all emails from column A, skipping the header
 
-    const upcomingPeerReviewTemplate = NOTIFY_UPCOMING_PEER_REVIEW; // Using the string template stored in variables
+    // Fetch all rows from the Registry sheet
+    const registryData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn()).getValues();
 
-    // Loop through the emails in column A
-    for (let i = 0; i < data.length; i++) {
-      const email = data[i][0];
-
-      // Skip ambassadors with emails starting with "(EXPELLED)"
-      if (email && email.toUpperCase().startsWith('(EXPELLED)')) {
-        Logger.log(`Skipping expelled ambassador: ${email}`);
-        continue;
-      }
-
-      // Send notification to valid ambassadors
-      if (email) {
-        MailApp.sendEmail({
-          to: email,
-          subject: 'Upcoming Peer Review Notification',
-          body: upcomingPeerReviewTemplate, // Use plain text template
-        });
-        Logger.log(`Notification sent to: ${email}`);
-      } else {
-        Logger.log(`Skipping row ${i + 2}: Email not found.`); // Add 2 to row to match sheet row (because of header)
-      }
-    }
+    // Filter out ambassadors with 'Expelled' in their status
+    const eligibleEmails = registryData
+      .filter(row => !row[2]?.includes('Expelled')) // Exclude expelled ambassadors
+      .map(row => row[0]?.trim()) // Extract valid emails
+      .filter(email => email); // Exclude empty emails
+    
+        // Get the email template
+    const upcomingPeerReviewTemplate = NOTIFY_UPCOMING_PEER_REVIEW;
+    // Send notification to each eligible ambassador
+    eligibleEmails.forEach(email => {
+      MailApp.sendEmail({
+        to: email,
+        subject: 'Upcoming Peer Review Notification',
+        body: upcomingPeerReviewTemplate, // Use plain text template
+      });
+      Logger.log(`Notification sent to: ${email}`);
+    });
 
     Logger.log('Upcoming peer review notifications completed.');
   } catch (error) {
