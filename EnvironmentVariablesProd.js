@@ -24,9 +24,9 @@ function setProductionVariables() {
   // and each ambassador will receive a reminder after the relevant WINDOW_REMINDER_MINUTES.
   // specifies as days * hours * minutes
   SUBMISSION_WINDOW_MINUTES = 7 * 24 * 60;
-  SUBMISSION_WINDOW_REMINDER_MINUTES = 5 * 24 * 60; // how many minutes after Submission Requests sent to remind
+  SUBMISSION_WINDOW_REMINDER_MINUTES = 5 * 24 * 60; // time (expressed in minutes) after Submission Requests sent to remind
   EVALUATION_WINDOW_MINUTES = 7 * 24 * 60;
-  EVALUATION_WINDOW_REMINDER_MINUTES = 5 * 24 * 60; // how many minutes after Evaluation Requests sent to remind
+  EVALUATION_WINDOW_REMINDER_MINUTES = 5 * 24 * 60; // time (expressed in minutes) after Evaluation Requests sent to remind
 
   // Sheet names
   REGISTRY_SHEET_NAME = 'Registry';
@@ -37,14 +37,17 @@ function setProductionVariables() {
   // Columns
   AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
   AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
+  AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
 
   // Sponsor Email (for notifications when ambassadors are expelled)
   SPONSOR_EMAIL = 'community@autonomys.xyz'; // Sponsor's email
 
-  // Reinitialize color variables to ensure consistency in color-based logic.
-  COLOR_MISSED_SUBMISSION = '#f5eee6';
-  COLOR_MISSED_EVALUATION = '#e6d6c1';
-  COLOR_EXPELLED = '#FF0000';
-  COLOR_MISSED_SUBM_AND_EVAL = '#ceae83';
-  COLOR_OLD_MISSED_SUBMISSION = '#f5eee6';
+  /** Reinitialize color variables to ensure consistency in color-based logic.
+  * The color hex string must be in lowercase!
+  */
+  COLOR_MISSED_SUBMISSION = '#ead1dc';
+  COLOR_MISSED_EVALUATION = '#d9d9d9';
+  COLOR_EXPELLED = '#d36a6a';
+  COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
+  COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
 }

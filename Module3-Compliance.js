@@ -28,7 +28,7 @@ function runComplianceAudit() {
   // Send expulsion notifications
   sendExpulsionNotifications();
   SpreadsheetApp.flush();
-  // Calling function to create/sync Ambassador Status columns in Overall score and Registry to display updated statuses
+  // Calling the function to sync Ambassador Status columns in Overall score with it in Registry, to reflect changes
   syncRegistryColumnsToOverallScore();
   SpreadsheetApp.flush();
   Logger.log('Compliance Audit process completed.');
@@ -369,22 +369,25 @@ function calculatePenaltyPoints() {
 }
 
 /**
- * This function calculates the maximum number of penalty points for any 6-month contiguous period for each ambassador,
- * including the last reporting month, and records this value in the "Max 6-Month PP" column.
+ * This function calculates the maximum number of penalty points for any full 6-month contiguous period for each ambassador,
+ * and records this value in the "Max 6-Month PP" column.
  *
  * - Light tone for old months' "Didn't submit" events - adds 1 penalty point
  * - Light tone for "Didn't submit" events - adds 1 penalty point
  * - Middle tone for "Didn't evaluate" events - adds 1 point
- * - Dark tone for "Didn't submit"+"didn't evaluate" events  - adds 2 penalty points
+ * - Dark tone for "Didn't submit"+"didn't evaluate" events - adds 2 penalty points
  */
 function calculateMaxPenaltyPointsForSixMonths() {
+  Logger.log("Starting calculation of Max 6-Month Penalty Points.");
+
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
   const headers = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
 
   const penaltyPointsCol = headers.indexOf('Penalty Points') + 1;
   const maxPPCol = headers.indexOf('Max 6-Month PP') + 1;
+
   if (penaltyPointsCol === 0 || maxPPCol === 0) {
-    Logger.log('Error: Either Penalty Points or Max 6-Month PP column not found.');
+    Logger.log('Error: Either "Penalty Points" or "Max 6-Month PP" column not found.');
     return;
   }
 
@@ -392,7 +395,7 @@ function calculateMaxPenaltyPointsForSixMonths() {
   const lastColumn = overallScoresSheet.getLastColumn();
   const spreadsheetTimeZone = getProjectTimeZone();
 
-  // Collect indices of all month columns
+  // Collect indices of all month columns 
   const monthColumns = [];
   for (let col = 1; col <= lastColumn; col++) {
     const cellValue = headers[col - 1];
@@ -404,54 +407,65 @@ function calculateMaxPenaltyPointsForSixMonths() {
     }
   }
 
+  // Process each row
   for (let row = 2; row <= lastRow; row++) {
     let maxPP = 0;
-    Logger.log(`\nCalculating Max 6-Month Penalty Points for row ${row}`);
+    Logger.log(`\nCalculating Max 6-Month Penalty Points for row ${row}.`);
 
+    // Collect background colors for month columns
     const backgroundColors = overallScoresSheet
       .getRange(row, monthColumns[0], 1, monthColumns.length)
       .getBackgrounds()[0];
+
     Logger.log(`Row ${row}: Collected background colors for all month columns.`);
 
-    // Iterate over all possible 6-month periods
-    for (let i = 0; i <= monthColumns.length - 1; i++) { // Process all starting months
+    // Iterate over all possible full 6-month periods
+    for (let i = 0; i <= monthColumns.length - 6; i++) { // Only consider full 6-month periods
       let sixMonthTotal = 0;
 
-      for (let j = i; j < i + 6 && j < monthColumns.length; j++) { // Ensure period fits within available columns
+      for (let j = i; j < i + 6; j++) { // Exactly 6 months
         const cellBackgroundColor = backgroundColors[j].toLowerCase();
 
         switch (cellBackgroundColor) {
           case COLOR_OLD_MISSED_SUBMISSION:
           case COLOR_MISSED_SUBMISSION:
             sixMonthTotal += 1;
+            Logger.log(`Row ${row}: Adding 1 point for missed submission at column ${monthColumns[j]}.`);
             break;
           case COLOR_MISSED_EVALUATION:
             sixMonthTotal += 1;
+            Logger.log(`Row ${row}: Adding 1 point for missed evaluation at column ${monthColumns[j]}.`);
             break;
           case COLOR_MISSED_SUBM_AND_EVAL:
             sixMonthTotal += 2;
+            Logger.log(`Row ${row}: Adding 2 points for missed submission and evaluation at column ${monthColumns[j]}.`);
+            break;
+          default:
+            // No penalty for other colors
             break;
         }
       }
 
-      maxPP = Math.max(maxPP, sixMonthTotal); // Update the maxPP if current total is greater
+      // Logger.log(`Row ${row}: Total penalty points for this 6-month period: ${sixMonthTotal}.`);
+      maxPP = Math.max(maxPP, sixMonthTotal); //  Update maxPP if current total is greater
     }
 
-    // Write the maximum penalty points for any 6-month period to the Max 6-Month PP column
+    // Write the maximum penalty points to the "Max 6-Month PP" column
     const maxPPCell = overallScoresSheet.getRange(row, maxPPCol);
     maxPPCell.setValue(maxPP);
 
-    // Color the cell red if maxPP is 3 or greater
+    // Set cell background to red if maxPP >= 3
     if (maxPP >= 3) {
       maxPPCell.setBackground(COLOR_EXPELLED);
-      Logger.log(`Max PP >= 3. Setting red background for row ${row} in Max 6-Month PP column.`);
+      Logger.log(`Row ${row}: Max PP >= 3. Setting red background in Max 6-Month PP column.`);
     }
 
-    Logger.log(`Row ${row}: Max 6-Month Penalty Points finalized as ${maxPP}`);
+    Logger.log(`Row ${row}: Max 6-Month Penalty Points finalized as ${maxPP}.`);
   }
 
-  Logger.log('Completed calculating Max Penalty Points for all rows.');
+  Logger.log("Completed calculating Max Penalty Points for all rows.");
 }
+
 
 // Expel ambassadors based on Max 6-Month PP. Tracks and notify only newly expelled ambassadors.
 function expelAmbassadors() {

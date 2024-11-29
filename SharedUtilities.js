@@ -6,49 +6,49 @@ const testing = true; // Set to true for testing (logs instead of sending emails
 // var SEND_EMAIL = false;// (DUPLICATE!) // Will control whether emails are sent - must be true for production; may be true or false for testing depending on testing needs.
 
 // Provide the Id of the google sheet for the registry and scoreing sheets:
-var AMBASSADOR_REGISTRY_SPREADSHEET_ID = ''; //"Ambassador Registry"
-var AMBASSADORS_SCORES_SPREADSHEET_ID = ''; // "Ambassadors' Scores"
-var AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = ''; // "Ambassador Submission Responses"
-var EVALUATION_RESPONSES_SPREADSHEET_ID = ''; // "Evaluation Responses"
+//var AMBASSADOR_REGISTRY_SPREADSHEET_ID = ''; //"Ambassador Registry"
+//var AMBASSADORS_SCORES_SPREADSHEET_ID = ''; // "Ambassadors' Scores"
+//var AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = ''; // "Ambassador Submission Responses"
+//var EVALUATION_RESPONSES_SPREADSHEET_ID = ''; // "Evaluation Responses"
 
 // Provide the Id and submission URL for the submission and evaluation google forms:
-var SUBMISSION_FORM_ID = ''; // ID for Submission form
-var EVALUATION_FORM_ID = ''; // ID for Evaluation form
-var SUBMISSION_FORM_URL = ''; // Submission Form URL for mailing
-var EVALUATION_FORM_URL = ''; // Evaluation Form URL for mailing
+//var SUBMISSION_FORM_ID = ''; // ID for Submission form
+//var EVALUATION_FORM_ID = ''; // ID for Evaluation form
+//var SUBMISSION_FORM_URL = ''; // Submission Form URL for mailing
+//var EVALUATION_FORM_URL = ''; // Evaluation Form URL for mailing
 
 // Sheet names
-var REGISTRY_SHEET_NAME = 'Registry';
-var FORM_RESPONSES_SHEET_NAME = '';
-var REVIEW_LOG_SHEET_NAME = 'Review Log';
-var CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
-var OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
-var EVAL_FORM_RESPONSES_SHEET_NAME = ''; // Evaluation Form responses sheet
+//var REGISTRY_SHEET_NAME = 'Registry';
+//var FORM_RESPONSES_SHEET_NAME = '';
+//var REVIEW_LOG_SHEET_NAME = 'Review Log';
+//var CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
+//var OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
+//var EVAL_FORM_RESPONSES_SHEET_NAME = ''; // Evaluation Form responses sheet
 
 // Columns in Registry Sheet:
-var AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
-var AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
-var AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
+//var AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
+//var AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
+//var AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
 
 // Sponsor Email (for notifications when ambassadors are expelled)
-var SPONSOR_EMAIL = ''; // Sponsor's email
+//var SPONSOR_EMAIL = ''; // Sponsor's email
 
-// Color variables
-var COLOR_MISSED_SUBMISSION = '';
-var COLOR_MISSED_EVALUATION = '';
-var COLOR_EXPELLED = '';
-var COLOR_MISSED_SUBM_AND_EVAL = '';
-var COLOR_OLD_MISSED_SUBMISSION = '';
+// Color variables .The color hex string must be in lowercase!
+//var COLOR_MISSED_SUBMISSION = '';
+//var COLOR_MISSED_EVALUATION = '';
+//var COLOR_EXPELLED = '';
+//var COLOR_MISSED_SUBM_AND_EVAL = '';
+//var COLOR_OLD_MISSED_SUBMISSION = '';
 
 // Triggers and Delays
 // These values will set the due date and reminder schedule for Submissions and Evaluations.
 // The Submission or Evaluation will be due after the relevant WINDOW_MINUTES,
 // and each ambassador will receive a reminder after the relevant WINDOW_REMINDER_MINUTES.
 // specifies as days * hours * minutes
-var SUBMISSION_WINDOW_MINUTES = '';
-var SUBMISSION_WINDOW_REMINDER_MINUTES = ''; // how many minutes after Submission Requests sent to remind
-var EVALUATION_WINDOW_MINUTES = '';
-var EVALUATION_WINDOW_REMINDER_MINUTES = ''; // how many minutes after Evaluation Requests sent to remind
+//var SUBMISSION_WINDOW_MINUTES = '';
+//var SUBMISSION_WINDOW_REMINDER_MINUTES = ''; // how many minutes after Submission Requests sent to remind
+//var EVALUATION_WINDOW_MINUTES = '';
+//var EVALUATION_WINDOW_REMINDER_MINUTES = ''; // how many minutes after Evaluation Requests sent to remind
 
 
 if (testing) {

@@ -48,9 +48,9 @@ function setTestVariables() {
 
   // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
   SUBMISSION_WINDOW_MINUTES = 7;
-  SUBMISSION_WINDOW_REMINDER_MINUTES = 6; // how many minutes after Submission Requests sent to remind
+  SUBMISSION_WINDOW_REMINDER_MINUTES = 6; // time (expressed in minutes) after Submission Requests sent to remind
   EVALUATION_WINDOW_MINUTES = 10;
-  EVALUATION_WINDOW_REMINDER_MINUTES = 8; // how many minutes after Evaluation Requests sent to remind
+  EVALUATION_WINDOW_REMINDER_MINUTES = 8; // time (expressed in minutes) after Evaluation Requests sent to remind
 
   // Sheet names
   REGISTRY_SHEET_NAME = 'Registry';
@@ -63,10 +63,12 @@ function setTestVariables() {
   AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
   AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
 
-  // Reinitialize color variables to ensure consistency in color-based logic.
-  COLOR_MISSED_SUBMISSION = '#87ceeb' // '#c1c1c1';
-  COLOR_MISSED_EVALUATION = '#90ee90';
-  COLOR_EXPELLED = '#D36A6A';
-  COLOR_MISSED_SUBM_AND_EVAL = '#ffc87c';
-  COLOR_OLD_MISSED_SUBMISSION = '#87ceeb' // '#c1c1c1';
+  /** Reinitialize color variables to ensure consistency in color-based logic.
+  * The color hex string must be in lowercase!
+  */
+  COLOR_MISSED_SUBMISSION = '#ead1dc';
+  COLOR_MISSED_EVALUATION = '#d9d9d9';
+  COLOR_EXPELLED = '#d36a6a';
+  COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
+  COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
 }
