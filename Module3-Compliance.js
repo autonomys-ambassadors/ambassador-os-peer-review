@@ -143,22 +143,39 @@ function copyFinalScoresToOverallScore() {
   }
 }
 
-// Function to check and create Penalty Points and Max 6-Month PP columns
+// Function to check and create "Penalty Points" and "Max 6-Month PP" columns in the correct order
 function checkAndCreateColumns() {
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
   const headersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
 
-  let penaltyPointsColIndex = headersRange.indexOf('Penalty Points') + 1;
-  if (penaltyPointsColIndex === 0) {
-    penaltyPointsColIndex = overallScoresSheet.getLastColumn() + 1;
-    overallScoresSheet.getRange(1, penaltyPointsColIndex).setValue('Penalty Points');
-    Logger.log('Created "Penalty Points" column.');
+  // Find the index of the "Average Score" column
+  const averageScoreColIndex = headersRange.indexOf('Average Score') + 1;
+  if (averageScoreColIndex === 0) {
+    Logger.log('Error: "Average Score" column not found.');
+    return;
   }
 
-  let maxPenaltyPointsColIndex = headersRange.indexOf('Max 6-Month PP') + 1;
+  let nextColIndex = averageScoreColIndex; // Start position for the next column
+
+  // Check if "Penalty Points" column exists
+  let penaltyPointsColIndex = headersRange.indexOf('Penalty Points') + 1;
+  if (penaltyPointsColIndex === 0) {
+    nextColIndex += 1; // Next column after "Average Score"
+    overallScoresSheet.insertColumnAfter(averageScoreColIndex);
+    overallScoresSheet.getRange(1, nextColIndex).setValue('Penalty Points');
+    Logger.log('Created "Penalty Points" column.');
+    penaltyPointsColIndex = nextColIndex; // Update index for the newly created column
+  }
+
+  // Refresh headers to account for the newly added column
+  const updatedHeadersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
+
+  // Check if "Max 6-Month PP" column exists
+  let maxPenaltyPointsColIndex = updatedHeadersRange.indexOf('Max 6-Month PP') + 1;
   if (maxPenaltyPointsColIndex === 0) {
-    maxPenaltyPointsColIndex = overallScoresSheet.getLastColumn() + 1;
-    overallScoresSheet.getRange(1, maxPenaltyPointsColIndex).setValue('Max 6-Month PP');
+    nextColIndex = penaltyPointsColIndex + 1; // Next column after "Penalty Points"
+    overallScoresSheet.insertColumnAfter(penaltyPointsColIndex);
+    overallScoresSheet.getRange(1, nextColIndex).setValue('Max 6-Month PP');
     Logger.log('Created "Max 6-Month PP" column.');
   }
 }

@@ -1,6 +1,6 @@
 function setTestVariables() {
   // controls wether email will be sent or just logged for troubleshooting - should always be true for production.
-  SEND_EMAIL = true;
+  SEND_EMAIL = false;
 
   // Specify your testing sheets/forms/etc. here:
 
@@ -64,9 +64,9 @@ function setTestVariables() {
   AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
 
   // Reinitialize color variables to ensure consistency in color-based logic.
-  COLOR_MISSED_SUBMISSION = '#c8ddf6';
-  COLOR_MISSED_EVALUATION = '#b7dfb9';
-  COLOR_EXPELLED = '#c1c1c1';
-  COLOR_MISSED_SUBM_AND_EVAL = '#d5cf99';
-  COLOR_OLD_MISSED_SUBMISSION = '#c8ddf6';
+  COLOR_MISSED_SUBMISSION = '#87ceeb' // '#c1c1c1';
+  COLOR_MISSED_EVALUATION = '#90ee90';
+  COLOR_EXPELLED = '#D36A6A';
+  COLOR_MISSED_SUBM_AND_EVAL = '#ffc87c';
+  COLOR_OLD_MISSED_SUBMISSION = '#87ceeb' // '#c1c1c1';
 }

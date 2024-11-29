@@ -134,7 +134,7 @@ function onOpen() {
     .addItem('🔧️Check missing Emails/DiscorHandles', 'check_missing_data') // Checks Registry sheet for completeness of data. Recommended to run every cycle if multiple changes were made.
     .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers') // Optional item
     .addItem('🔧️Refresh Script State', 'refreshScriptState') // Add this for easy access
-    //.addItem('🔧️Create/Check and Sync Columns', 'syncRegistryColumnsToOverallScore') // create all necessary columns: Ambassador Status,Penalty Points, Max 6-Month PP, and sync them.
+    .addItem('🔧️Create/Sync Columns', 'syncRegistryColumnsToOverallScore') // creates Ambassador Status column in Overall score sheet; Syncs Ambassadors' Discord Handles and Ambassador Status columns between Registry and Overall score.
     .addToUi();
   Logger.log('Menu initialized.');
 }
