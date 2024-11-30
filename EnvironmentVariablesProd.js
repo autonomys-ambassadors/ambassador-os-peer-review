@@ -1,22 +1,22 @@
 function setProductionVariables() {
   // controls wether email will be sent or just logged for troubleshooting - should always be true for production.
-  SEND_EMAIL = true;
+  SEND_EMAIL = false;
 
   // Real sheets:
   //
   // Provide the Id of the google sheet for the registry and scoreing sheets:
-  AMBASSADOR_REGISTRY_SPREADSHEET_ID = ''; //"Ambassador Registry"
-  AMBASSADORS_SCORES_SPREADSHEET_ID = ''; // "Ambassadors Scores"
-  AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = ''; // "Ambassador Submission Responses"
-  EVALUATION_RESPONSES_SPREADSHEET_ID = ''; // "Ambassador Evaluations' Responses"
+  AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1YtE-b7088aV3zi0eyFaGMyA7Nvo3bf9dnl0xzH3BTdA'; //"Ambassador Registry", also where the app is run from
+  AMBASSADORS_SCORES_SPREADSHEET_ID = '1cjhrqgc84HdS59eQJPsiNIPKbusHtp2j7dN55u-mKdc'; // "Ambassadors Scores"
+  AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1EQRSjcvODXQpHzK2g4XNd6imCTsx2m7vTwe-HeNNjjM'; // "Ambassador Submission Responses"
+  EVALUATION_RESPONSES_SPREADSHEET_ID = '1cpXTBiP94LGUz3z_mZya1G-VjBe5FRfdO94vIi74Qts'; // "Ambassador Evaluations' Responses"
 
   // Provide the Id and submission URL for the submission and evaluation google forms:
-  SUBMISSION_FORM_ID = ''; // ID for Submission form
-  EVALUATION_FORM_ID = ''; // ID for Evaluation form
-  SUBMISSION_FORM_URL = ''; // Submission Form URL for mailing
-  EVALUATION_FORM_URL = ''; // Evaluation Form URL for mailing
-  FORM_RESPONSES_SHEET_NAME = ''; // Explicit name for 'Form Responses' sheet
-  EVAL_FORM_RESPONSES_SHEET_NAME = ''; // Evaluation Form responses sheet
+  SUBMISSION_FORM_ID = '1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE'; // ID for Submission form
+  EVALUATION_FORM_ID = '1rz1nh3_aE-S2XWuq_oZjodVlEDxrtzxjInOLYZOCX1M'; // ID for Evaluation form
+  SUBMISSION_FORM_URL = 'https://forms.gle/37wMJEMZ4mPratSZA'; // Submission Form URL for mailing
+  EVALUATION_FORM_URL = 'https://forms.gle/77mwBBh1c7hMWtHa9'; // Evaluation Form URL for mailing
+  FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Explicit name for 'Form Responses' sheet
+  EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Evaluation Form responses sheet
 
   // Triggers and Delays
   // These values will set the due date and reminder schedule for Submissions and Evaluations.
