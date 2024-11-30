@@ -1,9 +1,10 @@
 function setProductionVariables() {
-  // controls wether email will be sent or just logged for troubleshooting - should always be true for production.
-  SEND_EMAIL = false;
+  // Always send emails in production
 
+  SEND_EMAIL = true;
   // Real sheets:
   //
+
   // Provide the Id of the google sheet for the registry and scoreing sheets:
   AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1YtE-b7088aV3zi0eyFaGMyA7Nvo3bf9dnl0xzH3BTdA'; //"Ambassador Registry", also where the app is run from
   AMBASSADORS_SCORES_SPREADSHEET_ID = '1cjhrqgc84HdS59eQJPsiNIPKbusHtp2j7dN55u-mKdc'; // "Ambassadors Scores"
@@ -43,8 +44,8 @@ function setProductionVariables() {
   SPONSOR_EMAIL = 'community@autonomys.xyz'; // Sponsor's email
 
   /** Reinitialize color variables to ensure consistency in color-based logic.
-  * The color hex string must be in lowercase!
-  */
+   * The color hex string must be in lowercase!
+   */
   COLOR_MISSED_SUBMISSION = '#ead1dc';
   COLOR_MISSED_EVALUATION = '#d9d9d9';
   COLOR_EXPELLED = '#d36a6a';
