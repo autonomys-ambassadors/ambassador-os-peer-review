@@ -669,6 +669,7 @@ function promptAndLog(title, message, buttonSet = ButtonSet.OK) {
     }
   } catch (e) {
     Logger.log(message);
+    Logger.log('UI not available; assuming YES or OK response');
     // Return default responses if no UI is available
     switch (buttonSet) {
       case ButtonSet.YES_NO:
