@@ -11,7 +11,9 @@ function selectCRTMembers() {
 
   // Access Registry and CRT sheets
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const crtSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName('Conflict Resolution Team');
+  const crtSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
+    'Conflict Resolution Team'
+  );
 
   if (!registrySheet) {
     Logger.log('Error: Registry sheet not found.');
@@ -24,7 +26,9 @@ function selectCRTMembers() {
   }
 
   // Fetch all data from Registry
-  const registryData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn()).getValues();
+  const registryData = registrySheet
+    .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
+    .getValues();
 
   // Fetch recent CRT members
   const recentCRTMembers = getRecentCRTMembers(crtSheet); // Helper function to get the last 2 months of CRT members
@@ -32,15 +36,14 @@ function selectCRTMembers() {
 
   // Filter eligible ambassadors
   const eligibleAmbassadors = registryData
-    .filter(row => !row[2]?.includes('Expelled')) // Exclude expelled ambassadors
-    .map(row => row[0]?.trim().toLowerCase()) // Extract valid emails
-    .filter(email => email && !recentCRTMembers.includes(email)); // Exclude empty emails and recent CRT members
+    .filter((row) => !row[2]?.includes('Expelled')) // Exclude expelled ambassadors
+    .map((row) => row[0]?.trim().toLowerCase()) // Extract valid emails
+    .filter((email) => email && !recentCRTMembers.includes(email)); // Exclude empty emails and recent CRT members
 
   Logger.log(`Eligible ambassadors emails: ${JSON.stringify(eligibleAmbassadors)}`);
 
   if (eligibleAmbassadors.length < 5) {
     alertAndLog('Failed to select CRT: not enough eligible ambassadors.');
-    }
     return;
   }
 
@@ -65,7 +68,6 @@ function selectCRTMembers() {
     Logger.log('Test mode: no changes made to the spreadsheet or emails sent.');
   }
 }
-
 
 /**
  * Retrieves CRT members from the last 2 months in the Conflict Resolution Team sheet.
@@ -105,7 +107,6 @@ function getRandomSelection(array, num) {
   }
   return selected;
 }
-
 
 /**
  * Sends a notification email to a selected CRT member.
