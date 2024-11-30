@@ -5,46 +5,50 @@
 const testing = true; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
 var SEND_EMAIL = false; // (DUPLICATE!) // Will control whether emails are sent - must be true for production; may be true or false for testing depending on testing needs.
 
-// Provide the Id of the google sheet for the registry and scoreing sheets:
-//var AMBASSADOR_REGISTRY_SPREADSHEET_ID = ''; //"Ambassador Registry"
-//var AMBASSADORS_SCORES_SPREADSHEET_ID = ''; // "Ambassadors' Scores"
-//var AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = ''; // "Ambassador Submission Responses"
-//var EVALUATION_RESPONSES_SPREADSHEET_ID = ''; // "Evaluation Responses"
+// Provide the actual Id of the google sheet for the registry and scoreing sheets in EnvironmentVariables[Prod|Test].js:
+var AMBASSADOR_REGISTRY_SPREADSHEET_ID = ''; //"Ambassador Registry"
+var AMBASSADORS_SCORES_SPREADSHEET_ID = ''; // "Ambassadors' Scores"
+var AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = ''; // "Ambassador Submission Responses"
+var EVALUATION_RESPONSES_SPREADSHEET_ID = ''; // "Evaluation Responses"
 
-// Provide the Id and submission URL for the submission and evaluation google forms:
-//var SUBMISSION_FORM_ID = ''; // ID for Submission form
-//var EVALUATION_FORM_ID = ''; // ID for Evaluation form
-//var SUBMISSION_FORM_URL = ''; // Submission Form URL for mailing
-//var EVALUATION_FORM_URL = ''; // Evaluation Form URL for mailing
+// Provide the actual Id and submission URL for the submission and evaluation google forms in EnvironmentVariables[Prod|Test].js:
+var SUBMISSION_FORM_ID = ''; // ID for Submission form
+var EVALUATION_FORM_ID = ''; // ID for Evaluation form
+var SUBMISSION_FORM_URL = ''; // Submission Form URL for mailing
+var EVALUATION_FORM_URL = ''; // Evaluation Form URL for mailing
 
-// Sheet names
-//var REGISTRY_SHEET_NAME = 'Registry';
-//var FORM_RESPONSES_SHEET_NAME = '';
-//var REVIEW_LOG_SHEET_NAME = 'Review Log';
-//var CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
-//var OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
-//var EVAL_FORM_RESPONSES_SHEET_NAME = ''; // Evaluation Form responses sheet
+// Provide the actual sheet names for the registry, review log, CRT, and overall score sheets in EnvironmentVariables[Prod|Test].js:
+var REGISTRY_SHEET_NAME = '';
+var FORM_RESPONSES_SHEET_NAME = '';
+var REVIEW_LOG_SHEET_NAME = '';
+var CONFLICT_RESOLUTION_TEAM_SHEET_NAME = '';
+var OVERALL_SCORE_SHEET_NAME = ''; // Overall score sheet in Ambassadors' Scores
+var EVAL_FORM_RESPONSES_SHEET_NAME = ''; // Evaluation Form responses sheet
 
 // Columns in Registry Sheet:
-//var AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
-//var AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
-//var AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
+// set the actual values in EnvironmentVariables[Prod|Test].js
+var AMBASSADOR_EMAIL_COLUMN = '';
+var AMBASSADOR_DISCORD_HANDLE_COLUMN = '';
+var AMBASSADOR_STATUS_COLUMN = '';
 
 // Sponsor Email (for notifications when ambassadors are expelled)
-//var SPONSOR_EMAIL = ''; // Sponsor's email
+// set the actual values in EnvironmentVariables[Prod|Test].js
+var SPONSOR_EMAIL = ''; // Sponsor's email
 
 // Color variables .The color hex string must be in lowercase!
-//var COLOR_MISSED_SUBMISSION = '';
-//var COLOR_MISSED_EVALUATION = '';
-//var COLOR_EXPELLED = '';
-//var COLOR_MISSED_SUBM_AND_EVAL = '';
-//var COLOR_OLD_MISSED_SUBMISSION = '';
+// set the actual values in EnvironmentVariables[Prod|Test].js
+var COLOR_MISSED_SUBMISSION = '';
+var COLOR_MISSED_EVALUATION = '';
+var COLOR_EXPELLED = '';
+var COLOR_MISSED_SUBM_AND_EVAL = '';
+var COLOR_OLD_MISSED_SUBMISSION = '';
 
 // Triggers and Delays
 // These values will set the due date and reminder schedule for Submissions and Evaluations.
 // The Submission or Evaluation will be due after the relevant WINDOW_MINUTES,
 // and each ambassador will receive a reminder after the relevant WINDOW_REMINDER_MINUTES.
 // specifies as days * hours * minutes
+// set the actual values in EnvironmentVariables[Prod|Test].js
 var SUBMISSION_WINDOW_MINUTES = '';
 var SUBMISSION_WINDOW_REMINDER_MINUTES = ''; // how many minutes after Submission Requests sent to remind
 var EVALUATION_WINDOW_MINUTES = '';
@@ -132,7 +136,6 @@ function onOpen() {
     .addItem('🔧️Force Authorization', 'forceAuthorization') // Authorization trigger
     .addItem('🔧️Check missing Emails/DiscorHandles', 'check_missing_data') // Checks Registry sheet for completeness of data. Recommended to run every cycle if multiple changes were made.
     .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers') // Optional item
-    .addItem('🔧️Refresh Script State', 'refreshScriptState') // Add this for easy access
     .addItem('🔧️Create/Sync Columns', 'syncRegistryColumnsToOverallScore') // creates Ambassador Status column in Overall score sheet; Syncs Ambassadors' Discord Handles and Ambassador Status columns between Registry and Overall score.
     .addToUi();
   Logger.log('Menu initialized.');
@@ -141,17 +144,8 @@ function onOpen() {
 // ⚠️ functions to prevent Google using of cached outdated variables when run from GUI
 function refreshScriptState() {
   Logger.log('Starting Refresh Script State');
-
-  clearCache();
   refreshGlobalVariables();
-  SpreadsheetApp.flush();
   Logger.log('Script state refreshed: cache cleared, variables refreshed, and flush completed.');
-}
-
-function clearCache() {
-  const cache = CacheService.getScriptCache();
-  cache.removeAll([]);
-  Logger.log('Cache cleared.');
 }
 
 function refreshGlobalVariables() {
