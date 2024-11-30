@@ -4,7 +4,7 @@
 // testing constant will be used to load production vs. test values for the global variables
 const testing = true; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
 var SEND_EMAIL = false; // (DUPLICATE!) // Will control whether emails are sent - must be true for production; may be true or false for testing depending on testing needs.
-
+var
 // Provide the actual Id of the google sheet for the registry and scoreing sheets in EnvironmentVariables[Prod|Test].js:
 var AMBASSADOR_REGISTRY_SPREADSHEET_ID = ''; //"Ambassador Registry"
 var AMBASSADORS_SCORES_SPREADSHEET_ID = ''; // "Ambassadors' Scores"
@@ -612,5 +612,71 @@ function forceAuthorization() {
     Logger.log('Authorization confirmed.');
   } catch (e) {
     Logger.log('Authorization required. Please reauthorize the script.');
+  }
+}
+
+//    Helper functions to show a pop-up alert, or if running in debugger, write a log message
+//    https://developers.google.com/apps-script/reference/base/button-set
+
+const ButtonSet = {
+  OK: 'OK',
+  OK_CANCEL: 'OK_CANCEL',
+  YES_NO: 'YES_NO',
+  YES_NO_CANCEL: 'YES_NO_CANCEL'
+};
+
+const ButtonResponse = {
+  OK: 'ok',
+  CANCEL: 'cancel',
+  YES: 'yes',
+  NO: 'no'
+};
+
+function alertAndLog(message) {
+  Logger.log(message);
+  try {
+    // Attempt to get the UI
+    const ui = SpreadsheetApp.getUi();
+    ui.alert(message);
+  } catch (e) {
+    // If an error occurs, we don't have a UI; just catch and continue
+  }
+}
+function promptAndLog(title, message, buttonSet = ButtonSet.OK) {
+  Logger.log(`${title}: ${message}`);
+  try {
+    const ui = SpreadsheetApp.getUi();
+    let response;
+
+    switch (buttonSet) {
+      case ButtonSet.OK:
+        response = ui.alert(title, message, ui.ButtonSet.OK);
+        return response == ui.Button.OK ? ButtonResponse.OK : null;
+      case ButtonSet.OK_CANCEL:
+        response = ui.alert(title, message, ui.ButtonSet.OK_CANCEL);
+        return response == ui.Button.OK ? ButtonResponse.OK : ButtonResponse.CANCEL;
+      case ButtonSet.YES_NO:
+        response = ui.alert(title, message, ui.ButtonSet.YES_NO);
+        return response == ui.Button.YES ? ButtonResponse.YES : ButtonResponse.NO;
+      case ButtonSet.YES_NO_CANCEL:
+        response = ui.alert(title, message, ui.ButtonSet.YES_NO_CANCEL);
+        if (response == ui.Button.YES) return ButtonResponse.YES;
+        if (response == ui.Button.NO) return ButtonResponse.NO;
+        return ButtonResponse.CANCEL;
+      default:
+        Logger.log('Unknown button set');
+        return null;
+    }
+  } catch (e) {
+    Logger.log(message);
+    // Return default responses if no UI is available
+    switch (buttonSet) {
+      case ButtonSet.YES_NO:
+      case ButtonSet.YES_NO_CANCEL:
+        return ButtonResponse.YES;
+      case ButtonSet.OK_CANCEL:
+      default:
+        return ButtonResponse.OK;
+    }
   }
 }

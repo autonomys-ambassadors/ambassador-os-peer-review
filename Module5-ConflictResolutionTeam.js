@@ -39,10 +39,7 @@ function selectCRTMembers() {
   Logger.log(`Eligible ambassadors emails: ${JSON.stringify(eligibleAmbassadors)}`);
 
   if (eligibleAmbassadors.length < 5) {
-    Logger.log('Not enough eligible ambassadors to form the CRT.');
-    if (!testing) {
-      // Uncomment below line to enable UI alert
-      // SpreadsheetApp.getUi().alert('Failed to select CRT: not enough eligible ambassadors.');
+    alertAndLog('Failed to select CRT: not enough eligible ambassadors.');
     }
     return;
   }

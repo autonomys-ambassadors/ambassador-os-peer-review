@@ -43,8 +43,7 @@ function checkEvaluationWindowStart() {
   const startDateProperty = PropertiesService.getScriptProperties().getProperty('evaluationWindowStart');
 
   if (!startDateProperty) {
-    Logger.log('Error: Evaluation window start date is not set.');
-    SpreadsheetApp.getUi().alert('Error: Evaluation window start date is not set.');
+    alertAndLog('Error: Evaluation window start date is not set.');
     return false;
   }
 
@@ -55,15 +54,14 @@ function checkEvaluationWindowStart() {
   const daysSinceStart = (currentDate - startDate) / (1000 * 60 * 60 * 24);
 
   if (daysSinceStart < 7) {
-    const ui = SpreadsheetApp.getUi();
-    const response = ui.alert(
+    const response = promptAndLog(
       'Warning',
       'This module should be run 7 days after evaluations are requested in the current cycle. \n\nClick CANCEL to wait, or OK to proceed anyway.',
-      ui.ButtonSet.OK_CANCEL
+      ButtonSet.OK_CANCEL
     );
 
     // Return true to proceed if the user clicked "OK"; return false to exit
-    if (response == ui.Button.OK) {
+    if (response == ButtonResponse.OK) {
       Logger.log('User acknowledged the warning and chose to proceed.');
       return true;
     } else {
@@ -190,7 +188,7 @@ function detectNonRespondersPastMonths() {
     Logger.log('Warning: This function has already been executed and is locked from repeated runs.');
 
     // Show warning to the user in the UI if trying to run again
-    SpreadsheetApp.getUi().alert(
+    alertAndLog(
       "Warning! Processing Past Months function is designed to run only once. To allow a re-run, set 'detectNonRespondersPastMonthsRan' to 'false' in the script properties."
     );
     return; // Terminate execution if function already ran once
@@ -261,14 +259,16 @@ function detectNonRespondersPastMonths() {
  * - Missed evaluation: COLOR_MISSED_EVALUATION
  * - Both missed submission and evaluation: COLOR_MISSED_SUBM_AND_EVAL
  * Adds 1 penalty point for each missed activity or 2 points for both missed activities.
- */ 
+ */
 function calculatePenaltyPoints() {
   Logger.log('Starting penalty points calculation for submissions and evaluations.');
 
   // Open necessary sheets
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REVIEW_LOG_SHEET_NAME);
+  const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
+    REVIEW_LOG_SHEET_NAME
+  );
   const evaluationResponsesSheet = SpreadsheetApp.openById(EVALUATION_RESPONSES_SPREADSHEET_ID).getSheetByName(
     EVAL_FORM_RESPONSES_SHEET_NAME
   );
@@ -288,9 +288,9 @@ function calculatePenaltyPoints() {
 
   const spreadsheetTimeZone = getProjectTimeZone();
   const currentReportingMonth = getPreviousMonthDate(spreadsheetTimeZone); // Assume previous month is the reporting month
-  const currentMonthColIndex = headersRange.findIndex(
-    (header) => header instanceof Date && header.getTime() === currentReportingMonth.getTime()
-  ) + 1;
+  const currentMonthColIndex =
+    headersRange.findIndex((header) => header instanceof Date && header.getTime() === currentReportingMonth.getTime()) +
+    1;
   if (currentMonthColIndex === 0) {
     Logger.log('Error: Current reporting month column not found.');
     return;
@@ -378,7 +378,7 @@ function calculatePenaltyPoints() {
  * - Dark tone for "Didn't submit"+"didn't evaluate" events - adds 2 penalty points
  */
 function calculateMaxPenaltyPointsForSixMonths() {
-  Logger.log("Starting calculation of Max 6-Month Penalty Points.");
+  Logger.log('Starting calculation of Max 6-Month Penalty Points.');
 
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
   const headers = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
@@ -395,7 +395,7 @@ function calculateMaxPenaltyPointsForSixMonths() {
   const lastColumn = overallScoresSheet.getLastColumn();
   const spreadsheetTimeZone = getProjectTimeZone();
 
-  // Collect indices of all month columns 
+  // Collect indices of all month columns
   const monthColumns = [];
   for (let col = 1; col <= lastColumn; col++) {
     const cellValue = headers[col - 1];
@@ -420,10 +420,12 @@ function calculateMaxPenaltyPointsForSixMonths() {
     Logger.log(`Row ${row}: Collected background colors for all month columns.`);
 
     // Iterate over all possible full 6-month periods
-    for (let i = 0; i <= monthColumns.length - 6; i++) { // Only consider full 6-month periods
+    for (let i = 0; i <= monthColumns.length - 6; i++) {
+      // Only consider full 6-month periods
       let sixMonthTotal = 0;
 
-      for (let j = i; j < i + 6; j++) { // Exactly 6 months
+      for (let j = i; j < i + 6; j++) {
+        // Exactly 6 months
         const cellBackgroundColor = backgroundColors[j].toLowerCase();
 
         switch (cellBackgroundColor) {
@@ -438,7 +440,9 @@ function calculateMaxPenaltyPointsForSixMonths() {
             break;
           case COLOR_MISSED_SUBM_AND_EVAL:
             sixMonthTotal += 2;
-            Logger.log(`Row ${row}: Adding 2 points for missed submission and evaluation at column ${monthColumns[j]}.`);
+            Logger.log(
+              `Row ${row}: Adding 2 points for missed submission and evaluation at column ${monthColumns[j]}.`
+            );
             break;
           default:
             // No penalty for other colors
@@ -463,9 +467,8 @@ function calculateMaxPenaltyPointsForSixMonths() {
     Logger.log(`Row ${row}: Max 6-Month Penalty Points finalized as ${maxPP}.`);
   }
 
-  Logger.log("Completed calculating Max Penalty Points for all rows.");
+  Logger.log('Completed calculating Max Penalty Points for all rows.');
 }
-
 
 // Expel ambassadors based on Max 6-Month PP. Tracks and notify only newly expelled ambassadors.
 function expelAmbassadors() {
@@ -564,7 +567,7 @@ function sendExpulsionNotifications(discordHandle) {
 
   if (registryRowIndex > 1) {
     const email = registrySheet.getRange(registryRowIndex, emailColIndex).getValue();
-    
+
     // Check and skip if email is missing
     if (!email || !email.trim()) {
       Logger.log(`Skipping notification for ambassador with discord handle: ${discordHandle} due to missing email.`);
@@ -586,5 +589,3 @@ function sendExpulsionNotifications(discordHandle) {
     Logger.log(`Error: Ambassador with discord handle: ${discordHandle} not found in the registry.`);
   }
 }
-
-
