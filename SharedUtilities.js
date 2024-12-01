@@ -217,6 +217,16 @@ function setEvaluationWindowStart(time) {
   Logger.log(`Evaluation window start time saved: ${formattedTime}`);
 }
 
+function getEvaluationWindowTimes() {
+  const evaluationWindowStartStr = PropertiesService.getScriptProperties().getProperty('evaluationWindowStart');
+  if (!evaluationWindowStartStr) {
+    throw new Error('Evaluation window start time not found.');
+  }
+  const evaluationWindowStart = new Date(evaluationWindowStartStr);
+  const evaluationWindowEnd = new Date(evaluationWindowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000);
+  return { evaluationWindowStart, evaluationWindowEnd };
+}
+
 function getSubmissionWindowStart() {
   Logger.log('Getting submission window start time.');
   const scriptProperties = PropertiesService.getScriptProperties();
