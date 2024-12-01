@@ -267,7 +267,7 @@ function getValidSubmissionEmails(submissionSheet) {
     return [];
   }
 
-  const { submissionsWindowStart, submissionsWindowEnd } = getsubmissionsWindowTimes();
+  const { submissionsWindowStart, submissionsWindowEnd } = getSubmissionsWindowTimes();
 
   // Extract valid requests within the submission time window
   // only grabs the firts column, assumes that is the submitter's email address
