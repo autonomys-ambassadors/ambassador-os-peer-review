@@ -509,6 +509,41 @@ function populateMonthSheetWithEvaluators() {
 }
 
 /**
+ * Function to reprocess all evaluation forms within the evaluation window
+ */
+function batchProcessEvaluationResponses() {
+  try {
+    Logger.log('Starting batch processing of evaluation responses.');
+
+    const form = FormApp.openById(EVALUATION_FORM_ID);
+    if (!form) {
+      Logger.log('Error: Form not found with the given ID.');
+      return;
+    }
+
+    const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
+    Logger.log(`Evaluation window: ${evaluationWindowStart} to ${evaluationWindowEnd}`);
+
+    const formResponses = form.getResponses();
+    const filteredResponses = formResponses.filter((response) => {
+      const timestamp = new Date(response.getTimestamp());
+      return timestamp >= evaluationWindowStart && timestamp <= evaluationWindowEnd;
+    });
+
+    Logger.log(`Total form responses to process: ${filteredResponses.length}`);
+
+    filteredResponses.forEach((formResponse) => {
+      const event = { response: formResponse };
+      processEvaluationResponse(event);
+    });
+
+    Logger.log('Batch processing of evaluation responses completed.');
+  } catch (error) {
+    Logger.log(`Error in batchProcessEvaluationResponses: ${error}`);
+  }
+}
+
+/**
  * Function to process evaluation form responses from Google Forms.
  * It extracts the evaluator's email, the Discord handle of the submitter, and the grade,
  * and then updates the respective columns in the month sheet.
