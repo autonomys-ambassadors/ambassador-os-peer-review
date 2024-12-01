@@ -567,11 +567,12 @@ function processEvaluationResponse(e) {
     const formSubmitterEmail = formResponse.getRespondentEmail();
     Logger.log(`Form Submitter's Email from google form: ${formSubmitterEmail}`);
 
+    const itemResponses = formResponse.getItemResponses();
     let evaluatorEmail = '';
     let submitterDiscordHandle = '';
     let grade = NaN;
     let remarks = '';
-    const itemResponses = formResponse.getItemResponses();
+
     itemResponses.forEach((itemResponse) => {
       const question = itemResponse.getItem().getTitle();
       const answer = itemResponse.getResponse();
