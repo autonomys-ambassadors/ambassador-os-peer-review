@@ -82,7 +82,9 @@ function copyFinalScoresToOverallScore() {
     }
 
     const spreadsheetTimeZone = getProjectTimeZone(); // Get project time zone
-    const currentMonthDate = getPreviousMonthDate(spreadsheetTimeZone); // getting reporting month
+    // Instead of assuming previous month (audit could be run later), let's use the previous month from evaluation window start
+    const evaluationMonthDate = getEvaluationWindowTimes().evaluationWindowStart;
+    const currentMonthDate = getStartOfPriorMonth(spreadsheetTimeZone, evaluationMonthDate); // getting reporting month
     Logger.log(`Current month date for copying scores: ${currentMonthDate.toISOString()}`);
 
     const monthSheetName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
@@ -262,6 +264,9 @@ function calculatePenaltyPoints() {
   const evaluationResponsesSheet = SpreadsheetApp.openById(EVALUATION_RESPONSES_SPREADSHEET_ID).getSheetByName(
     EVAL_FORM_RESPONSES_SHEET_NAME
   );
+  const submissionsSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(
+    FORM_RESPONSES_SHEET_NAME
+  );
 
   if (!registrySheet || !overallScoresSheet || !reviewLogSheet || !evaluationResponsesSheet) {
     Logger.log('Error: One or more required sheets not found.');
@@ -277,7 +282,8 @@ function calculatePenaltyPoints() {
   }
 
   const spreadsheetTimeZone = getProjectTimeZone();
-  const currentReportingMonth = getPreviousMonthDate(spreadsheetTimeZone); // Assume previous month is the reporting month
+  const evaluationMonthDate = getEvaluationWindowTimes().evaluationWindowStart;
+  const currentReportingMonth = getStartOfPriorMonth(spreadsheetTimeZone, evaluationMonthDate); // getting reporting month based on evaluation window start
   const currentMonthColIndex =
     headersRange.findIndex((header) => header instanceof Date && header.getTime() === currentReportingMonth.getTime()) +
     1;
@@ -288,7 +294,7 @@ function calculatePenaltyPoints() {
   Logger.log(`Current reporting month column index: ${currentMonthColIndex}`);
 
   // Get valid submitters and evaluators
-  const validSubmitters = getValidSubmissionEmails();
+  const validSubmitters = getValidSubmissionEmails(submissionsSheet);
   const validEvaluators = getValidEvaluationEmails(evaluationResponsesSheet);
   Logger.log(`Valid submitters: ${validSubmitters.join(', ')}`);
   Logger.log(`Valid evaluators: ${validEvaluators.join(', ')}`);
@@ -318,7 +324,7 @@ function calculatePenaltyPoints() {
   ambassadorData.forEach(({ email, discordHandle }) => {
     const rowInScores = overallScoresSheet.createTextFinder(discordHandle).findNext()?.getRow();
     if (!rowInScores) {
-      Logger.log(`Discord handle not found in Overall Scores: ${discordHandle}`);
+      alertAndLog(`Discord handle not found in Overall Scores: ${discordHandle}`);
       return;
     }
 
