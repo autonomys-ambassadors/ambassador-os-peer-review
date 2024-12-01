@@ -261,10 +261,6 @@ function getValidEvaluationResponses() {
   const emailsStr = PropertiesService.getScriptProperties().getProperty('validEvaluationResponses');
   return emailsStr ? JSON.parse(emailsStr) : [];
 }
-//function getReviewLogData() {
-// const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REVIEW_LOG_SHEET_NAME);
-//  return reviewLogSheet.getRange(2, 1, reviewLogSheet.getLastRow() - 1, reviewLogSheet.getLastColumn()).getValues();
-//}
 
 /**
  * Extracts the list of valid evaluator emails from the evaluation responses sheet within the evaluation time window.
@@ -281,16 +277,7 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
   }
 
   // Get the evaluation time window from the stored properties
-  const evaluationWindowStart = getEvaluationWindowStart();
-
-  if (!evaluationWindowStart) {
-    Logger.log('Error: Evaluation window start time not found.');
-    return [];
-  }
-
-  const evaluationWindowEnd = new Date(evaluationWindowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000);
-
-  Logger.log(`Evaluation window: ${evaluationWindowStart} - ${evaluationWindowEnd}`);
+  const [evaluationWindowStart, evaluationWindowEnd] = getEvaluationWindowTimes();
 
   // Extract valid responses within the evaluation time window
   const validEvaluators = evaluationResponsesSheet
@@ -315,8 +302,10 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
   return validEvaluators;
 }
 
-// Fetches and returns the submitter-evaluator assignments from the Review Log
-
+/**
+ * Fetches and returns the submitter-evaluator assignments from the Review Log
+ * @returns list of { submitter: [evaluators] }
+ */
 function getReviewLogAssignments() {
   Logger.log('Fetching submitter-evaluator assignments from Review Log.');
 
@@ -641,7 +630,9 @@ function forceAuthorization() {
 
 //    Helper functions to show a pop-up alert, or if running in debugger, write a log message
 //    https://developers.google.com/apps-script/reference/base/button-set
-
+/**
+ * Shows an alert on the spreadsheet app ui with the given message and logs it.
+ */
 function alertAndLog(message) {
   Logger.log(message);
   try {
@@ -652,6 +643,10 @@ function alertAndLog(message) {
     // If an error occurs, we don't have a UI; just catch and continue
   }
 }
+
+/**
+ * Shows a prompt message and logs; if no UI is available, returns an affirmative response - YES or OK, depending on buttonSet.
+ */
 function promptAndLog(title, message, buttonSet = ButtonSet.OK) {
   Logger.log(`${title}: ${message}`);
   try {
