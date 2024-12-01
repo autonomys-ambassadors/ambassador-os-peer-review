@@ -35,28 +35,18 @@ function runComplianceAudit() {
 }
 
 /**
- * Checks if 7 days have passed since the start of the evaluation window.
+ * Checks if the evaluation window has finished.
  * If not, displays a warning to the user with an "OK, I understand" button.
  * Returns true if the user chooses to proceed, and false if the user presses "Cancel."
  */
 function checkEvaluationWindowStart() {
-  const startDateProperty = PropertiesService.getScriptProperties().getProperty('evaluationWindowStart');
-
-  if (!startDateProperty) {
-    alertAndLog('Error: Evaluation window start date is not set.');
-    return false;
-  }
-
-  const startDate = new Date(startDateProperty);
+  const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
   const currentDate = new Date();
 
-  // Calculate the difference in days between the current date and the start date
-  const daysSinceStart = (currentDate - startDate) / (1000 * 60 * 60 * 24);
-
-  if (daysSinceStart < 7) {
+  if (currentDate < evaluationWindowEnd) {
     const response = promptAndLog(
       'Warning',
-      'This module should be run 7 days after evaluations are requested in the current cycle. \n\nClick CANCEL to wait, or OK to proceed anyway.',
+      'This module should be run after the evaluation window has ended in the current cycle. \n\nClick CANCEL to wait, or OK to proceed anyway.',
       ButtonSet.OK_CANCEL
     );
 
@@ -69,7 +59,7 @@ function checkEvaluationWindowStart() {
       return false;
     }
   } else {
-    Logger.log('7 days have passed since the evaluation window started; no warning needed.');
+    Logger.log('Current date is after the the evaluation window ends; no warning needed.');
     return true; // No warning needed, proceed with the audit
   }
 }
