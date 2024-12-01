@@ -578,12 +578,6 @@ function processEvaluationResponse(e) {
       const answer = itemResponse.getResponse();
       Logger.log(`Question: ${question}, Answer: ${answer}, Type of answer: ${typeof answer}`);
 
-      // reset vars to not accidentally carry data forward
-      evaluatorEmail = '';
-      submitterDiscordHandle = '';
-      grade = NaN;
-      remarks = '';
-
       if (question === 'Email') {
         evaluatorEmail = String(answer).trim();
       } else if (question === 'Discord handle of the ambassador you are evaluating?') {
@@ -638,7 +632,10 @@ function processEvaluationResponse(e) {
     }
     Logger.log(`Evaluator Discord Handle: ${evaluatorDiscordHandle}`);
 
-    const deliverableMonthDate = getPreviousMonthDate(spreadsheetTimeZone);
+    // Get the month before the submissions were collected as teh deliverable Month
+    submissionStart = getSubmissionWindowTimes().submissionWindowStart;
+    const deliverableMonthDate = getStartOfPriorMonth(spreadsheetTimeZone, submissionStart); // getting reporting month
+
     const monthSheetName = Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
     const monthSheet = scoresSpreadsheet.getSheetByName(monthSheetName);
 
