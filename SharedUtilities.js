@@ -225,7 +225,7 @@ function getSubmissionWindowStart() {
   return startDate;
 }
 
-function getSubmissionsWindowTimes() {
+function getSubmissionWindowTimes() {
   const submissionWindowStartStr = PropertiesService.getScriptProperties().getProperty('submissionWindowStart');
   if (!submissionWindowStartStr) {
     throw new Error('Evaluation window start time not found.');
@@ -267,7 +267,7 @@ function getValidSubmissionEmails(submissionSheet) {
     return [];
   }
 
-  const { submissionsWindowStart, submissionsWindowEnd } = getSubmissionsWindowTimes();
+  const { submissionWindowStart, submissionWindowEnd } = getSubmissionWindowTimes();
 
   // Extract valid requests within the submission time window
   // only grabs the firts column, assumes that is the submitter's email address
@@ -277,15 +277,12 @@ function getValidSubmissionEmails(submissionSheet) {
     .filter((row) => {
       const submissionTimestamp = new Date(row[0]); // Assuming the first column is the timestamp
       // Check if the response is within the evaluation time window
-      const isWithinWindow =
-        submissionTimestamp >= submissionsWindowStart && submissionTimestamp <= submissionsWindowEnd;
+      const isWithinWindow = submissionTimestamp >= submissionWindowStart && submissionTimestamp <= submissionWindowEnd;
       if (isWithinWindow) {
-        Logger.log(`Valid submission found: ${email} (Response time: ${responseTimestamp})`);
+        Logger.log(`Valid submission found: ${row[1]} (Response time: ${row[0]})`);
         return true;
       }
-      Logger.log(
-        `Invalid submission found - outside sumbission window: ${email} (Response time: ${responseTimestamp})`
-      );
+      Logger.log(`Invalid submission found - outside sumbission window: ${row[1]} (Response time: ${row[0]})`);
       return false;
     })
     //TODO: get column for Email instead of assuming
@@ -322,7 +319,7 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
       // Check if the response is within the evaluation time window
       const isWithinWindow = responseTimestamp >= evaluationWindowStart && responseTimestamp <= evaluationWindowEnd;
       if (isWithinWindow) {
-        Logger.log(`Valid evaluator found: ${email} (Response time: ${responseTimestamp})`);
+        Logger.log(`Valid evaluator found: ${row[2]} (Response time: ${row[0]})`);
         return true;
       }
       return false;
