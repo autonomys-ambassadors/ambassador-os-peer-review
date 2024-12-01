@@ -210,6 +210,21 @@ function setSubmissionWindowStart(time) {
   Logger.log(`Submission window start time saved: ${formattedTime}`);
 }
 
+function getSubmissionWindowStart() {
+  Logger.log('Getting submission window start time.');
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const startDateStr = scriptProperties.getProperty('submissionWindowStart');
+
+  if (!startDateStr) {
+    Logger.log('Submission window start date not found!');
+    return null;
+  }
+
+  const startDate = new Date(startDateStr);
+  Logger.log(`Submission window started at: ${startDate}`);
+  return startDate;
+}
+
 // Save the evaluation window start time (in PST)
 function setEvaluationWindowStart(time) {
   const formattedTime = Utilities.formatDate(time, getProjectTimeZone(), 'yyyy-MM-dd HH:mm:ss z'); // Format the time
@@ -227,39 +242,31 @@ function getEvaluationWindowTimes() {
   return { evaluationWindowStart, evaluationWindowEnd };
 }
 
-function getSubmissionWindowStart() {
-  Logger.log('Getting submission window start time.');
-  const scriptProperties = PropertiesService.getScriptProperties();
-  const startDateStr = scriptProperties.getProperty('submissionWindowStart');
+/**
+ * Extracts the list of valid submission emails from the request log sheet within the submission time window.
+ * Assumes the review log is for the current / correct period, and that the submitter email is in the first column for the request log sheet.
+ * @param {Sheet} reviewLogSheet - The sheet containing submission request logs.
+ * @returns {Array} - A list of valid submission emails within the submission time window.
+ */
+function getValidSubmissionEmails(reviewLogSheet) {
+  Logger.log('Extracting valid submission emails.');
 
-  if (!startDateStr) {
-    Logger.log('Submission window start date not found!');
-    return null;
+  const lastRow = reviewLogSheet.getLastRow();
+  if (lastRow < 2) {
+    Logger.log('No submission requests found.');
+    return [];
   }
 
-  const startDate = new Date(startDateStr);
-  Logger.log(`Submission window started at: ${startDate}`);
-  return startDate;
-}
+  // Extract valid requests within the submission time window
+  const validSubmitters = reviewLogSheet
+    .getRange(2, 1, lastRow - 1, 2)
+    .getValues()
+    .filter((row) => {
+      const email = row[0].trim().toLowerCase(); // Assuming the first column is the submitter's email
+    });
 
-//
-//
-////// VALID RESPONSES///
-
-function setValidSubmissionResponses(emails) {
-  PropertiesService.getScriptProperties().setProperty('validSubmissionResponses', JSON.stringify(emails));
-}
-function getValidSubmissionResponses() {
-  const emailsStr = PropertiesService.getScriptProperties().getProperty('validSubmissionResponses');
-  return emailsStr ? JSON.parse(emailsStr) : [];
-}
-
-function setValidEvaluationResponses(emails) {
-  PropertiesService.getScriptProperties().setProperty('validEvaluationResponses', JSON.stringify(emails));
-}
-function getValidEvaluationResponses() {
-  const emailsStr = PropertiesService.getScriptProperties().getProperty('validEvaluationResponses');
-  return emailsStr ? JSON.parse(emailsStr) : [];
+  Logger.log(`Valid submitters (within time window): ${validSubmitters.join(', ')}`);
+  return validSubmitters;
 }
 
 /**
