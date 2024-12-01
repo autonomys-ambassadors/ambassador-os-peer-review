@@ -225,6 +225,16 @@ function getSubmissionWindowStart() {
   return startDate;
 }
 
+function getSubmissionsWindowTimes() {
+  const submissionWindowStartStr = PropertiesService.getScriptProperties().getProperty('submissionWindowStart');
+  if (!submissionWindowStartStr) {
+    throw new Error('Evaluation window start time not found.');
+  }
+  const submissionWindowStart = new Date(submissionWindowStartStr);
+  const submissionWindowEnd = new Date(submissionWindowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000);
+  return { submissionWindowStart, submissionWindowEnd };
+}
+
 // Save the evaluation window start time (in PST)
 function setEvaluationWindowStart(time) {
   const formattedTime = Utilities.formatDate(time, getProjectTimeZone(), 'yyyy-MM-dd HH:mm:ss z'); // Format the time
@@ -245,25 +255,41 @@ function getEvaluationWindowTimes() {
 /**
  * Extracts the list of valid submission emails from the request log sheet within the submission time window.
  * Assumes the review log is for the current / correct period, and that the submitter email is in the first column for the request log sheet.
- * @param {Sheet} reviewLogSheet - The sheet containing submission request logs.
+ * @param {Sheet} submissionSheet - The sheet containing submissions.
  * @returns {Array} - A list of valid submission emails within the submission time window.
  */
-function getValidSubmissionEmails(reviewLogSheet) {
+function getValidSubmissionEmails(submissionSheet) {
   Logger.log('Extracting valid submission emails.');
 
-  const lastRow = reviewLogSheet.getLastRow();
+  const lastRow = submissionSheet.getLastRow();
   if (lastRow < 2) {
     Logger.log('No submission requests found.');
     return [];
   }
 
+  const { submissionsWindowStart, submissionsWindowEnd } = getsubmissionsWindowTimes();
+
   // Extract valid requests within the submission time window
-  const validSubmitters = reviewLogSheet
-    .getRange(2, 1, lastRow - 1, 2)
+  // only grabs the firts column, assumes that is the submitter's email address
+  const validSubmitters = submissionSheet
+    .getRange(2, 1, lastRow - 1, 6)
     .getValues()
     .filter((row) => {
-      const email = row[0].trim().toLowerCase(); // Assuming the first column is the submitter's email
-    });
+      const submissionTimestamp = new Date(row[0]); // Assuming the first column is the timestamp
+      // Check if the response is within the evaluation time window
+      const isWithinWindow =
+        submissionTimestamp >= submissionsWindowStart && submissionTimestamp <= submissionsWindowEnd;
+      if (isWithinWindow) {
+        Logger.log(`Valid submission found: ${email} (Response time: ${responseTimestamp})`);
+        return true;
+      }
+      Logger.log(
+        `Invalid submission found - outside sumbission window: ${email} (Response time: ${responseTimestamp})`
+      );
+      return false;
+    })
+    //TODO: get column for Email instead of assuming
+    .map((row) => row[1]?.trim().toLowerCase()); // Extract and clean submitter emails
 
   Logger.log(`Valid submitters (within time window): ${validSubmitters.join(', ')}`);
   return validSubmitters;
@@ -284,26 +310,24 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
   }
 
   // Get the evaluation time window from the stored properties
-  const [evaluationWindowStart, evaluationWindowEnd] = getEvaluationWindowTimes();
+  const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
 
   // Extract valid responses within the evaluation time window
+  //TODO: get column from 'Email' header
   const validEvaluators = evaluationResponsesSheet
-    .getRange(2, 1, lastRow - 1, 2)
+    .getRange(2, 1, lastRow - 1, 3)
     .getValues()
     .filter((row) => {
       const responseTimestamp = new Date(row[0]); // Assuming the first column is the timestamp
-      const email = row[1].trim().toLowerCase(); // Assuming the second column is the evaluator's email
-
       // Check if the response is within the evaluation time window
       const isWithinWindow = responseTimestamp >= evaluationWindowStart && responseTimestamp <= evaluationWindowEnd;
-
       if (isWithinWindow) {
         Logger.log(`Valid evaluator found: ${email} (Response time: ${responseTimestamp})`);
         return true;
       }
       return false;
     })
-    .map((row) => row[1].trim().toLowerCase()); // Extracting the evaluator email
+    .map((row) => row[2].trim().toLowerCase()); // Extracting the evaluator email
 
   Logger.log(`Valid evaluators (within time window): ${validEvaluators.join(', ')}`);
   return validEvaluators;
@@ -411,6 +435,37 @@ function getPreviousMonthDate(timeZone) {
   }
 
   // Create a Date object for the first day of the previous month at 7:00 UTC (to match the time of the previous columns)
+  //TODO: fix timezone assumption
+  const targetDate = new Date(Date.UTC(prevYear, prevMonth - 1, 1, 7, 0, 0, 0));
+  Logger.log(`Calculated date of the previous month: ${targetDate} (ISO: ${targetDate.toISOString()})`);
+
+  return targetDate;
+}
+
+/**
+ * A helper function to retrieve the first day of the previous month based on time zone and a starting date.
+ * This function returns a Date object that represents the first day of the month before the starting date.
+ * The time is set to 7:00 (feel free to adjust as needed) to match the time set in the previous columns.
+ * @param {string} timeZone - The time zone of the table.
+ * @param {Date} startingDate - The starting date for the calculation.
+ * @returns {Date} - The date of the first day of the previous month.
+ */
+function getStartOfPriorMonth(timeZone, startingDate) {
+  const now = new Date();
+
+  // Get the current year and month in the time zone of the table
+  const formattedYear = Utilities.formatDate(startingDate, timeZone, 'yyyy');
+  const formattedMonth = Utilities.formatDate(startingDate, timeZone, 'MM');
+
+  let prevMonth = parseInt(formattedMonth) - 1;
+  let prevYear = parseInt(formattedYear);
+  if (prevMonth === 0) {
+    prevMonth = 12;
+    prevYear -= 1;
+  }
+
+  // Create a Date object for the first day of the previous month at 7:00 UTC (to match the time of the previous columns)
+  //TODO: fix timezone assumption
   const targetDate = new Date(Date.UTC(prevYear, prevMonth - 1, 1, 7, 0, 0, 0));
   Logger.log(`Calculated date of the previous month: ${targetDate} (ISO: ${targetDate.toISOString()})`);
 
