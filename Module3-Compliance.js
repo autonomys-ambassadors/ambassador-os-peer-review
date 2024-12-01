@@ -77,7 +77,7 @@ function copyFinalScoresToOverallScore() {
     const overallScoreSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
 
     if (!overallScoreSheet) {
-      Logger.log(`Sheet "${OVERALL_SCORE_SHEET_NAME}" isn't found.`);
+      alertAndLog(`Sheet "${OVERALL_SCORE_SHEET_NAME}" isn't found.`);
       return;
     }
 
@@ -89,7 +89,7 @@ function copyFinalScoresToOverallScore() {
     const monthSheet = scoresSpreadsheet.getSheetByName(monthSheetName);
 
     if (!monthSheet) {
-      Logger.log(`Month sheet "${monthSheetName}" not found.`);
+      alertAndLog(`Month sheet "${monthSheetName}" not found.`);
       return;
     }
 
@@ -100,7 +100,7 @@ function copyFinalScoresToOverallScore() {
       1;
 
     if (monthColumnIndex === 0) {
-      Logger.log(`Column for "${monthSheetName}" not found in Overall score sheet.`);
+      alertAndLog(`Column for "${monthSheetName}" not found in Overall score sheet.`);
       return;
     }
 
@@ -127,7 +127,7 @@ function copyFinalScoresToOverallScore() {
 
     Logger.log('Copy of Final Scores to Overall Score sheet completed.');
   } catch (error) {
-    Logger.log(`Error in copyFinalScoresToOverallScore: ${error}`);
+    alertAndLog(`Error in copyFinalScoresToOverallScore: ${error}`);
   }
 }
 
