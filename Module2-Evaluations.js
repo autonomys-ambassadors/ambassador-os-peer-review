@@ -50,7 +50,9 @@ function createMonthSheetAndOverallColumn() {
 
     // Get first day of previous month
     const deliverableMonthDate = getPreviousMonthDate(spreadsheetTimeZone);
-    Logger.log(`Previous month date: ${Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`);
+    Logger.log(
+      `Previous month date: ${Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`
+    );
 
     // Form month name, e.g., 'September 2024'
     const deliverableMonthName = Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
@@ -140,7 +142,7 @@ function createMonthSheetAndOverallColumn() {
 function generateReviewMatrix() {
   try {
     Logger.log('Starting generateReviewMatrix.');
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const registrySpreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
     const registrySheet = registrySpreadsheet.getSheetByName(REGISTRY_SHEET_NAME);
@@ -200,15 +202,15 @@ function generateReviewMatrix() {
     // Get all ambassador emails from the registry, excluding those with 'Expelled' status
     const ambassadorData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Assuming columns: Email, Discord Handle, Status
     const allAmbassadorsEmails = ambassadorData
-      .filter(row => !row[2].includes('Expelled')) // Exclude those marked as 'Expelled'
-      .filter(row => {
+      .filter((row) => !row[2].includes('Expelled')) // Exclude those marked as 'Expelled'
+      .filter((row) => {
         if (!emailRegex.test(row[0])) {
           Logger.log(`Invalid email for Discord Handle ${row[1]}: "${row[0]}". Skipping.`);
           return false; // Exclude invalid emails
         }
         return true;
       })
-      .map(row => row[0]); // Extract email addresses
+      .map((row) => row[0]); // Extract email addresses
     Logger.log(`Eligible Ambassadors Emails: ${JSON.stringify(allAmbassadorsEmails)}`);
 
     // Create a pool of potential evaluators, allowing each evaluator to be picked up to 3 times
@@ -219,12 +221,12 @@ function generateReviewMatrix() {
     const assignments = [];
 
     // Assign evaluators to submissions
-    submittersEmails.forEach(submitter => {
+    submittersEmails.forEach((submitter) => {
       const reviewers = [];
 
       for (let i = 0; i < 3; i++) {
         const availableEvaluators = potentialEvaluators.filter(
-          evaluator =>
+          (evaluator) =>
             evaluator !== submitter && // Exclude the submitter themselves
             (ambassadorCount[evaluator] || 0) < 3 && // Ensure no evaluator is assigned more than 3 times
             !reviewers.includes(evaluator) // Ensure unique evaluators for the same submitter
@@ -252,7 +254,7 @@ function generateReviewMatrix() {
 
     // Send exemption notification to evaluators who were not assigned to submit anyone
     const assignedEvaluators = Object.keys(ambassadorCount);
-    const unassignedEvaluators = allAmbassadorsEmails.filter(email => !assignedEvaluators.includes(email));
+    const unassignedEvaluators = allAmbassadorsEmails.filter((email) => !assignedEvaluators.includes(email));
     sendExemptionEmails(allAmbassadorsEmails, unassignedEvaluators);
 
     // Fill Review Log
@@ -462,11 +464,7 @@ function populateMonthSheetWithEvaluators() {
 
     // Open the Ambassadors' Scores spreadsheet and get the month sheet
     const scoresSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
-    const monthSheetName = Utilities.formatDate(
-      getPreviousMonthDate(projectTimeZone),
-      projectTimeZone,
-      'MMMM yyyy'
-    );
+    const monthSheetName = Utilities.formatDate(getPreviousMonthDate(projectTimeZone), projectTimeZone, 'MMMM yyyy');
     const monthSheet = scoresSheet.getSheetByName(monthSheetName);
 
     if (!monthSheet) {
@@ -521,7 +519,7 @@ function processEvaluationResponse(e) {
     Logger.log('processEvaluationResponse triggered.');
 
     const spreadsheetTimeZone = getProjectTimeZone(); // Get project time zone
-    const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID); 
+    const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
 
     if (!e || !e.response) {
       Logger.log('Error: Event parameter is missing or does not have a response.');
@@ -531,20 +529,28 @@ function processEvaluationResponse(e) {
     const formResponse = e.response;
     Logger.log('Form response received.');
 
-    const evaluatorEmail = formResponse.getRespondentEmail();
-    Logger.log(`Evaluator Email: ${evaluatorEmail}`);
+    const formSubmitterEmail = formResponse.getRespondentEmail();
+    Logger.log(`Form Submitter's Email from google form: ${formSubmitterEmail}`);
 
-    const itemResponses = formResponse.getItemResponses();
+    let evaluatorEmail = '';
     let submitterDiscordHandle = '';
     let grade = NaN;
     let remarks = '';
-
+    const itemResponses = formResponse.getItemResponses();
     itemResponses.forEach((itemResponse) => {
       const question = itemResponse.getItem().getTitle();
       const answer = itemResponse.getResponse();
       Logger.log(`Question: ${question}, Answer: ${answer}, Type of answer: ${typeof answer}`);
 
-      if (question === 'Discord handle of the ambassador you are evaluating?') {
+      // reset vars to not accidentally carry data forward
+      evaluatorEmail = '';
+      submitterDiscordHandle = '';
+      grade = NaN;
+      remarks = '';
+
+      if (question === 'Email') {
+        evaluatorEmail = String(answer).trim();
+      } else if (question === 'Discord handle of the ambassador you are evaluating?') {
         submitterDiscordHandle = String(answer).trim();
       } else if (question === 'Please assign a grade on a scale of 0 to 5') {
         const gradeMatch = String(answer).match(/\d+/);
@@ -554,6 +560,7 @@ function processEvaluationResponse(e) {
       }
     });
 
+    Logger.log(`Evaluator Email Provided: ${evaluatorEmail}`);
     Logger.log(`Submitter Discord Handle (provided): ${submitterDiscordHandle}`);
     Logger.log(`Grade: ${grade}`);
     Logger.log(`Remarks: ${remarks}`);
@@ -814,8 +821,8 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
 
       // Validate email format
       if (!emailRegex.test(evaluatorEmail)) {
-       Logger.log(`Invalid email format for evaluator: "${evaluatorEmail}". Skipping.`);
-       return;
+        Logger.log(`Invalid email format for evaluator: "${evaluatorEmail}". Skipping.`);
+        return;
       }
 
       const result = registrySheet.createTextFinder(evaluatorEmail).findNext(); // Find evaluator's row by email
