@@ -21,7 +21,7 @@ function syncRegistryColumnsToOverallScore() {
       return;
     }
     overallScoreSheet.getRange(2, discordHandleColumnIndex, registryData.length, 1).setValues(
-      registryData.map(row => [row[0]]) // Копируем Discord Handles
+      registryData.map(row => [row[0]]) // Copying Discord Handles
     );
     overallScoreSheet.getRange(2, discordHandleColumnIndex, overallScoreSheet.getLastRow() - 1).setHorizontalAlignment('left');
     Logger.log('"Ambassadors\' Discord Handles" column synchronized and aligned to the left.');
@@ -34,7 +34,7 @@ function syncRegistryColumnsToOverallScore() {
       Logger.log(`Created "Ambassador Status" column at index ${statusColumnIndex}.`);
     }
     overallScoreSheet.getRange(2, statusColumnIndex, registryData.length, 1).setValues(
-      registryData.map(row => [row[1]]) // Копируем Status
+      registryData.map(row => [row[1]]) // Copying Status
     );
     overallScoreSheet.getRange(2, statusColumnIndex, overallScoreSheet.getLastRow() - 1).setHorizontalAlignment('left');
     Logger.log('"Ambassador Status" column synchronized and aligned to the left.');
