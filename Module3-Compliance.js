@@ -9,15 +9,15 @@ function runComplianceAudit() {
   // Check and create Penalty Points and Max 6-Month PP columns, if they do not exist
   checkAndCreateColumns();
   SpreadsheetApp.flush();
-  // Copying all Final Score values to month column in Overall score.
-  // Note: Even if Evaluations came late, they anyway are helpful, though evaluators are penalized.
-  copyFinalScoresToOverallScore();
-  SpreadsheetApp.flush();
   // ⚠️DESIGNED TO RUN ONLY ONCE. Calculates penalty points for past months, colors cells, adds PP to PP column.
   detectNonRespondersPastMonths();
   SpreadsheetApp.flush();
   // Calculate penalty points for missing Submissions and Evaluations for the current reporting month
   calculatePenaltyPoints();
+  SpreadsheetApp.flush();
+  // Copying all Final Score values to month column in Overall score.
+  // Note: Even if Evaluations came late, they anyway are helpful, though evaluators are penalized.
+  copyFinalScoresToOverallScore();
   SpreadsheetApp.flush();
   // Calculate the maximum number of penalty points for any contiguous 6-month period
   calculateMaxPenaltyPointsForSixMonths();
@@ -66,7 +66,7 @@ function checkEvaluationWindowStart() {
 
 /**
  * Copies Final Score from the current month sheet to the current month column in the Overall score sheet.
- * Note: Even if Evaluations came late, they anyway helpful for accountability, while those evaluators are fined.
+ * Note: Even if Evaluations came late, they anyway helpful for accountability, while those evaluators are subject to fine.
  */
 function copyFinalScoresToOverallScore() {
   try {
