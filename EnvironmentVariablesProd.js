@@ -9,13 +9,13 @@ function setProductionVariables() {
   AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1YtE-b7088aV3zi0eyFaGMyA7Nvo3bf9dnl0xzH3BTdA'; //"Ambassador Registry", also where the app is run from
   AMBASSADORS_SCORES_SPREADSHEET_ID = '1cjhrqgc84HdS59eQJPsiNIPKbusHtp2j7dN55u-mKdc'; // "Ambassadors Scores"
   AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1EQRSjcvODXQpHzK2g4XNd6imCTsx2m7vTwe-HeNNjjM'; // "Ambassador Submission Responses"
-  EVALUATION_RESPONSES_SPREADSHEET_ID = '1cpXTBiP94LGUz3z_mZya1G-VjBe5FRfdO94vIi74Qts'; // "Ambassador Evaluations' Responses"
+  EVALUATION_RESPONSES_SPREADSHEET_ID = '12S_qu-Uiq0BupN_Z6lVHJ76YaVM5NG0JQY_IC-gFWmg'; // "Ambassador Evaluations' Responses"
 
   // Provide the Id and submission URL for the submission and evaluation google forms:
   SUBMISSION_FORM_ID = '1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE'; // ID for Submission form
-  EVALUATION_FORM_ID = '1rz1nh3_aE-S2XWuq_oZjodVlEDxrtzxjInOLYZOCX1M'; // ID for Evaluation form
-  SUBMISSION_FORM_URL = 'https://forms.gle/37wMJEMZ4mPratSZA'; // Submission Form URL for mailing
-  EVALUATION_FORM_URL = 'https://forms.gle/77mwBBh1c7hMWtHa9'; // Evaluation Form URL for mailing
+  EVALUATION_FORM_ID = '1WKQ1acvwVVXJOtYRZgiX-4YXOUgnwwlquL3c5l494ew'; // ID for Evaluation form
+  SUBMISSION_FORM_URL = 'https://forms.gle/jU6u22fycgQjQ3z68'; // Submission Form URL for mailing
+  EVALUATION_FORM_URL = 'https://forms.gle/MfRt9G8WdvhgVRca6'; // Evaluation Form URL for mailing
   FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Explicit name for 'Form Responses' sheet
   EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Evaluation Form responses sheet
 
