@@ -403,6 +403,14 @@ function calculateMaxPenaltyPointsForSixMonths() {
     }
   }
 
+  if (monthColumns.length === 0) {
+    Logger.log('No month columns found. Exiting calculation.');
+    return;
+  }
+
+  // Set the period length to minimum of 6 or available months
+  const periodLength = Math.min(6, monthColumns.length);
+
   // Process each row
   for (let row = 2; row <= lastRow; row++) {
     let maxPP = 0;
@@ -415,30 +423,26 @@ function calculateMaxPenaltyPointsForSixMonths() {
 
     Logger.log(`Row ${row}: Collected background colors for all month columns.`);
 
-    // Iterate over all possible full 6-month periods
-    for (let i = 0; i <= monthColumns.length - 6; i++) {
-      // Only consider full 6-month periods
-      let sixMonthTotal = 0;
+    // Iterate over all possible periods
+    for (let i = 0; i <= monthColumns.length - periodLength; i++) {
+      let periodTotal = 0;
 
-      for (let j = i; j < i + 6; j++) {
-        // Exactly 6 months
+      for (let j = i; j < i + periodLength; j++) {
         const cellBackgroundColor = backgroundColors[j].toLowerCase();
 
         switch (cellBackgroundColor) {
           case COLOR_OLD_MISSED_SUBMISSION:
           case COLOR_MISSED_SUBMISSION:
-            sixMonthTotal += 1;
+            periodTotal += 1;
             Logger.log(`Row ${row}: Adding 1 point for missed submission at column ${monthColumns[j]}.`);
             break;
           case COLOR_MISSED_EVALUATION:
-            sixMonthTotal += 1;
+            periodTotal += 1;
             Logger.log(`Row ${row}: Adding 1 point for missed evaluation at column ${monthColumns[j]}.`);
             break;
           case COLOR_MISSED_SUBM_AND_EVAL:
-            sixMonthTotal += 2;
-            Logger.log(
-              `Row ${row}: Adding 2 points for missed submission and evaluation at column ${monthColumns[j]}.`
-            );
+            periodTotal += 2;
+            Logger.log(`Row ${row}: Adding 2 points for missed submission and evaluation at column ${monthColumns[j]}.`);
             break;
           default:
             // No penalty for other colors
@@ -446,13 +450,15 @@ function calculateMaxPenaltyPointsForSixMonths() {
         }
       }
 
-      // Logger.log(`Row ${row}: Total penalty points for this 6-month period: ${sixMonthTotal}.`);
-      maxPP = Math.max(maxPP, sixMonthTotal); //  Update maxPP if current total is greater
+      maxPP = Math.max(maxPP, periodTotal); // Update maxPP if current total is greater
     }
 
     // Write the maximum penalty points to the "Max 6-Month PP" column
     const maxPPCell = overallScoresSheet.getRange(row, maxPPCol);
     maxPPCell.setValue(maxPP);
+
+    // Center-align the data in the cell
+    maxPPCell.setHorizontalAlignment('center');
 
     // Set cell background to red if maxPP >= 3
     if (maxPP >= 3) {
