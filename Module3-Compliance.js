@@ -100,6 +100,8 @@ function copyFinalScoresToOverallScore() {
     const monthColumnIndex =
       existingColumns.findIndex((header) => header instanceof Date && header.getTime() === currentMonthDate.getTime()) +
       1;
+    const monthDiscordColIndex = getColumnIndexByName(monthSheet, 'Submitter');
+    const monthFinalScoreColIndex = getColumnIndexByName(monthSheet, 'Final Score');
 
     if (monthColumnIndex === 0) {
       alertAndLog(`Column for "${monthSheetName}" not found in Overall score sheet.`);
@@ -108,15 +110,19 @@ function copyFinalScoresToOverallScore() {
 
     // Fetch data from Final Score on month sheet
     const finalScores = monthSheet
-      .getRange(2, 1, monthSheet.getLastRow() - 1, 11)
+      .getRange(2, 1, monthSheet.getLastRow() - 1, monthSheet.getLastColumn())
       .getValues()
-      .map((row) => ({ handle: row[0], score: row[10] }));
+      .map((row) => ({
+        handle: row[monthDiscordColIndex - 1],
+        score: row[monthFinalScoreColIndex - 1],
+      }));
 
     Logger.log(`Retrieved ${finalScores.length} scores from "${monthSheetName}" sheet.`);
 
     //Copy Final Score values to proper rows Overall score" by Discord Handles
+    const overallSheetDiscordColumn = getColumnIndexByName(overallScoreSheet, "Ambassadors' Discord Handles");
     const overallHandles = overallScoreSheet
-      .getRange(2, 1, overallScoreSheet.getLastRow() - 1, 1)
+      .getRange(2, overallSheetDiscordColumn, overallScoreSheet.getLastRow() - 1, 1)
       .getValues()
       .flat();
     finalScores.forEach(({ handle, score }) => {
@@ -304,12 +310,18 @@ function calculatePenaltyPoints() {
   //Logger.log(`Assignments from Review Log: ${JSON.stringify(assignments)}`); //too extensive log
 
   // Fetch data from Registry and filter non-expelled ambassadors
-  const registryData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues();
+  const registryData = registrySheet
+    .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
+    .getValues();
+  const registryEmailColumn = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN) - 1;
+  const registryDiscordColumn = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN) - 1;
+  const registryStatusColumn = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN) - 1;
+
   const ambassadorData = registryData
-    .filter((row) => row[0]?.trim() && !row[2]?.includes('Expelled'))
+    .filter((row) => row[registryEmailColumn]?.trim() && !row[registryStatusColumn]?.includes('Expelled'))
     .map((row) => ({
-      email: row[0].trim().toLowerCase(),
-      discordHandle: row[1]?.trim(),
+      email: row[registryEmailColumn].trim().toLowerCase(),
+      discordHandle: row[registryDiscordColumn]?.trim(),
     }));
 
   Logger.log(`Filtered ambassadors: ${ambassadorData.length} valid rows`);
@@ -442,7 +454,9 @@ function calculateMaxPenaltyPointsForSixMonths() {
             break;
           case COLOR_MISSED_SUBM_AND_EVAL:
             periodTotal += 2;
-            Logger.log(`Row ${row}: Adding 2 points for missed submission and evaluation at column ${monthColumns[j]}.`);
+            Logger.log(
+              `Row ${row}: Adding 2 points for missed submission and evaluation at column ${monthColumns[j]}.`
+            );
             break;
           default:
             // No penalty for other colors
@@ -552,6 +566,7 @@ function sendExpulsionNotifications(discordHandle) {
   const registryHeaders = registrySheet.getRange(1, 1, 1, registrySheet.getLastColumn()).getValues()[0];
   const emailColIndex = registryHeaders.indexOf(AMBASSADOR_EMAIL_COLUMN) + 1;
   const statusColIndex = registryHeaders.indexOf(AMBASSADOR_STATUS_COLUMN) + 1;
+  const discordColIndex = registryHeaders.indexOf(AMBASSADOR_DISCORD_HANDLE_COLUMN) + 1;
 
   if (emailColIndex === 0 || statusColIndex === 0) {
     Logger.log(
@@ -563,7 +578,7 @@ function sendExpulsionNotifications(discordHandle) {
   // Find ambassador's row by discord handle
   const registryRowIndex =
     registrySheet
-      .getRange(2, 2, registrySheet.getLastRow() - 1, 1)
+      .getRange(2, discordColIndex, registrySheet.getLastRow() - 1, 1)
       .getValues()
       .findIndex((row) => row[0] === discordHandle) + 2;
 
