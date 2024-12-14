@@ -342,15 +342,15 @@ function calculatePenaltyPoints() {
 
     // Update colors and penalty points based on detected violations
     if (isNonSubmitter && isNonEvaluator) {
-      cell.setBackground(COLOR_MISSED_SUBM_AND_EVAL).setValue('');
+      cell.setBackground(COLOR_MISSED_SUBM_AND_EVAL); //.setValue('');
       penaltyPoints[rowIndex] = currentPenaltyPoints + 2;
       Logger.log(`Added 2 penalty points for ${discordHandle} (missed submission and evaluation).`);
     } else if (isNonSubmitter) {
-      cell.setBackground(COLOR_MISSED_SUBMISSION).setValue('');
+      cell.setBackground(COLOR_MISSED_SUBMISSION); //.setValue('');
       penaltyPoints[rowIndex] = currentPenaltyPoints + 1;
       Logger.log(`Added 1 penalty point for ${discordHandle} (missed submission).`);
     } else if (isNonEvaluator) {
-      cell.setBackground(COLOR_MISSED_EVALUATION).setValue('');
+      cell.setBackground(COLOR_MISSED_EVALUATION); //.setValue('');
       penaltyPoints[rowIndex] = currentPenaltyPoints + 1;
       Logger.log(`Added 1 penalty point for ${discordHandle} (missed evaluation).`);
     }
