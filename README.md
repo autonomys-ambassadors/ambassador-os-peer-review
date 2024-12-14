@@ -163,24 +163,24 @@ Choose the relevant menu option to send out emails requesting evaluations or sub
 
 When requesting Evaluations, the script will add a new sheet to the Submissions spreadsheet called Review Log to record which ambassadors received which evaluation request.
 
-<span style="color:blue">NOTES:</span>
+# NOTES:
 
-<div style="background-color:#bccfb0; padding:10px;">
-	Installing script notes:
+## Installing script notes:
+
 Backup your current "Ambassadors' Scores" spreadsheet.
 In Registry add 3-rd column. Name it "Ambassador Status". Manually write onboarding date of all ambassadors.
 Rename sheet 'Overall score ' to 'Overall score' (remove the last space symbol).
-Delete "Sheet 1" sheet in Ambassadors' Scores sprdsht, (if you forget and don't rly need it).
+In both Registry and Overall score sheets, add new first column "Ambassador Id" - it can be left empty, just create the column.
+Delete "Sheet 1" sheet in Ambassadors' Scores sprdsht, (if you forget and don't really need it).
 Ensure "Ambassadors' Discord Handles" column in Overall score sheet is an exact copy of "Ambassador Discord Handle" column in Registry sheet. (could be made programmatically)
 Check vars: testing = false. SEMD_EMAIL = true.
 ⚠️ Use "Processing past months" option only once, to count all "didn't submit" and "later submissoin" events in past.
 Through all the code the setMinutes and getMinutes methods are used. Edit Triggers and Delays section, using minutes. For ex. 7 days is 10080 minutes, possibly you can use em in format like: 60*24*7.
 
-Notes:
+## Notes:
+
 If too-many-triggers error happens, use "Delete existing triggers" menu item for this (but it's already implemented in code).
 Do not allow multi selecting options in Evaluation Form. Limit submitting to only one time. Editing in fact creates two forms (can lead to errors too).
 Columns "Penalty Points" and "Max 6-Month PP" are added automatically if don't exist.
 Current reporting month column is added automatically.
 Expelled ambassadors are not deleted from Registry. Rather, their status in new column "Ambassador Status" will be updated with expulsion information.
-
-</div>
