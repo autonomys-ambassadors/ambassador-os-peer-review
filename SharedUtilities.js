@@ -745,3 +745,35 @@ function promptAndLog(title, message, buttonSet = ButtonSet.OK) {
     }
   }
 }
+
+/**
+ * Generates an MD5 hash from the given string.
+ */
+function generateMD5Hash(input) {
+  const rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, input);
+  return rawHash.map((byte) => ('0' + (byte & 0xff).toString(16)).slice(-2)).join('');
+}
+
+/**
+ *
+ * @param {sheetName} string sheetName used for logging to explain what sheet is being evaluated
+ * @param {headers[]} headers array of the entries in the first row from the sheet
+ * @param {expectedHeaders[]} expectedHeaders array of the expected headers - simple string array of column names we expect to find
+ * @returns true if all expectedHeaders are in headers, in the same order from left to right.
+ */
+
+function validateHeaders(sheetName, headers, expectedHeaders) {
+  // Check if headers match the expected headers
+  // only checks one-way - that expected headers are present in the sheet headers
+  // does not care if there are more headers in the sheet than expected,
+  // but expects the order matches from left (first column) to right.
+  for (let i = 0; i < expectedHeaders.length; i++) {
+    if (headers[i] !== expectedHeaders[i]) {
+      alertAndLog(
+        `Error: Unexpected column heading in ${sheetName} at index ${i}. Found: ${headers[i]}. Expected: ${expectedHeaders[i]}`
+      );
+      return false;
+    }
+  }
+  return true;
+}
