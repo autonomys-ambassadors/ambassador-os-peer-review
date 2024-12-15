@@ -253,21 +253,21 @@ function attemptSingleAssignment() {
   Logger.log(`Submitters Emails: ${JSON.stringify(submittersEmails)}`);
 
   // Get all ambassador emails from the registry, excluding those with 'Expelled' status
-  const registryAmbassadorEmail = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
-  const registryAmbassadorStatus = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
+  const registryAmbassadorEmailColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+  const registryAmbassadorStatusColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
   const ambassadorData = registrySheet
     .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
     .getValues();
   const allAmbassadorsEmails = ambassadorData
-    .filter((row) => !row[registryAmbassadorStatus - 1].includes('Expelled')) // Exclude those marked as 'Expelled'
+    .filter((row) => !row[registryAmbassadorStatusColumnIndex - 1].includes('Expelled')) // Exclude those marked as 'Expelled'
     .filter((row) => {
-      if (!emailRegex.test(row[registryAmbassadorEmail - 1])) {
+      if (!emailRegex.test(row[registryAmbassadorEmailColumnIndex - 1])) {
         Logger.log(`Invalid email for Discord Handle ${row[1]}: "${row[0]}". Skipping.`);
         return false; // Exclude invalid emails
       }
       return true;
     })
-    .map((row) => row[0]); // Extract email addresses
+    .map((row) => row[registryAmbassadorEmailColumnIndex - 1]); // Extract email addresses
   Logger.log(`Eligible Ambassadors Emails: ${JSON.stringify(allAmbassadorsEmails)}`);
 
   // Create a pool of potential evaluators, allowing each evaluator to be picked up to 3 times
