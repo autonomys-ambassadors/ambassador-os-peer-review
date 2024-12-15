@@ -19,13 +19,15 @@ function requestSubmissionsModule() {
   const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
   const registryAmbassadorStatus = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
   const registryAmbassadorDiscordHandle = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
-  const registryData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Fetch Emails, Discord Handles, and Status
+  const registryData = registrySheet
+    .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
+    .getValues(); // Fetch Emails, Discord Handles, and Status
   Logger.log(`Fetched data from "Registry" sheet: ${JSON.stringify(registryData)}`);
 
   // Filter out ambassadors with 'Expelled' in their status
   const eligibleEmails = registryData
     .filter((row) => !row[registryAmbassadorStatus - 1].includes('Expelled')) // Exclude expelled ambassadors
-    .map((row) => row[registryEmailColIndex - 1]); // Extract only emails
+    .map((row) => [row[registryEmailColIndex - 1], row[registryAmbassadorDiscordHandle - 1]]); // Extract only emails
   Logger.log(`Eligible ambassadors emails: ${JSON.stringify(eligibleEmails)}`);
 
   // Get deliverable date (previous month date)
@@ -41,8 +43,9 @@ function requestSubmissionsModule() {
   const submissionDeadline = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000); // Convert minutes to milliseconds
   const submissionDeadlineDate = Utilities.formatDate(submissionDeadline, spreadsheetTimeZone, 'MMMM dd, yyyy');
 
-  eligibleEmails.forEach((email, index) => {
-    const discordHandle = registryData[index][registryAmbassadorDiscordHandle - 1]; // Get Discord Handle from Registry
+  eligibleEmails.forEach((row) => {
+    const email = row[0]; //
+    const discordHandle = row[1]; // Get Discord Handle from Registry
 
     // Validating email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Simple email regex
