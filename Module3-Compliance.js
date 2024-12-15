@@ -516,10 +516,11 @@ function expelAmbassadors() {
   // for each ambassador meeting the explusion criteria, check if they are already expelled
   scoreData.forEach((row, i) => {
     const discordHandle = row[scoreDiscordHandleColIndex - 1];
-    const registryRowIndex = registrySheet
-      .getRange(1, registryDiscordHandleColIndex, registrySheet.getLastRow() - 1, 1)
-      .getValues()
-      .findIndex((regRow) => regRow[0] === discordHandle);
+    const registryRowIndex =
+      registrySheet
+        .getRange(1, registryDiscordHandleColIndex, registrySheet.getLastRow() - 1, 1)
+        .getValues()
+        .findIndex((regRow) => regRow[0] === discordHandle) + 1;
 
     if (registryRowIndex > 1) {
       const currentStatus = registrySheet.getRange(registryRowIndex, registryStatusColIndex).getValue();
