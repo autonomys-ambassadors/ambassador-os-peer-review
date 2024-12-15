@@ -530,11 +530,11 @@ function getColumnIndexByName(sheet, columnName) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const columnIndex = headers.findIndex((header) => header === columnName);
   if (columnIndex !== -1) {
-    Logger.log(`Found header for ${columnName} include column ${columnIndex + 1} of ${sheet.getName()}`);
+    //Logger.log(`Found header for ${columnName} include column ${columnIndex + 1} of ${sheet.getName()}`);
     return columnIndex + 1; // Return -1 if the column is not found
   } else {
     Logger.log(`Header for ${columnName} not found in ${sheet.getName()}`);
-    return -1;
+    throw new Error("Column doesn't exist in the sheet.");
   }
 }
 
