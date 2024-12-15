@@ -4,7 +4,6 @@ function setProductionVariables() {
   SEND_EMAIL = true;
   // Real sheets:
   //
-
   // Provide the Id of the google sheet for the registry and scoreing sheets:
   AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1YtE-b7088aV3zi0eyFaGMyA7Nvo3bf9dnl0xzH3BTdA'; //"Ambassador Registry", also where the app is run from
   AMBASSADORS_SCORES_SPREADSHEET_ID = '1cjhrqgc84HdS59eQJPsiNIPKbusHtp2j7dN55u-mKdc'; // "Ambassadors Scores"
@@ -42,6 +41,9 @@ function setProductionVariables() {
 
   // Sponsor Email (for notifications when ambassadors are expelled)
   SPONSOR_EMAIL = 'community@autonomys.xyz'; // Sponsor's email
+
+  // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
+  MAX_PENALTY_POINTS_TO_EXPEL = 3;
 
   /** Reinitialize color variables to ensure consistency in color-based logic.
    * The color hex string must be in lowercase!

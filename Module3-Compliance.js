@@ -1,6 +1,4 @@
 // MODULE 3
-const MAX_PENALTY_POINTS_TO_EXPEL = 3;
-
 function runComplianceAudit() {
   // Run evaluation window check and exit if the user presses "Cancel"
   if (!checkEvaluationWindowStart()) {
@@ -517,7 +515,7 @@ function expelAmbassadors() {
 
   // for each ambassador meeting the explusion criteria, check if they are already expelled
   scoreData.forEach((row, i) => {
-    const discordHandle = row[scoreDiscordHandleColIndex];
+    const discordHandle = row[scoreDiscordHandleColIndex - 1];
     const registryRowIndex = registrySheet
       .getRange(1, registryDiscordHandleColIndex, registrySheet.getLastRow() - 1, 1)
       .getValues()

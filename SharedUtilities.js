@@ -35,6 +35,9 @@ var AMBASSADOR_STATUS_COLUMN = '';
 // set the actual values in EnvironmentVariables[Prod|Test].js
 var SPONSOR_EMAIL = ''; // Sponsor's email
 
+// Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
+var MAX_PENALTY_POINTS_TO_EXPEL = '';
+
 // Color variables .The color hex string must be in lowercase!
 // set the actual values in EnvironmentVariables[Prod|Test].js
 var COLOR_MISSED_SUBMISSION = '';
