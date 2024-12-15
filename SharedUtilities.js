@@ -533,8 +533,8 @@ function getColumnIndexByName(sheet, columnName) {
     //Logger.log(`Found header for ${columnName} include column ${columnIndex + 1} of ${sheet.getName()}`);
     return columnIndex + 1; // Return -1 if the column is not found
   } else {
-    Logger.log(`Header for ${columnName} not found in ${sheet.getName()}`);
-    throw new Error("Column doesn't exist in the sheet.");
+    Logger.log(`Header for ${columnName} not found in ${sheet.getName()} with header ${headers}`);
+    return -1;
   }
 }
 

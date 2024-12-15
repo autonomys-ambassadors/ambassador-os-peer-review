@@ -41,7 +41,7 @@ function setTestVariables() {
     GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = `Dear Ambassador,
 Please add text to your contributions during the month`;
     GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
-Please add links your contributions during the month`;
+Please add links your contributions during the month `;
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 10;
