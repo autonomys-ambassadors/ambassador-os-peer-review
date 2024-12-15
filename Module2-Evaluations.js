@@ -313,6 +313,7 @@ function attemptSingleAssignment() {
   // Determine which evaluators were never used
   const assignedEvaluators = Object.keys(ambassadorCount);
   const unassignedEvaluators = allAmbassadorsEmails.filter((email) => !assignedEvaluators.includes(email));
+  // TOOD this has to move outside the loop in case we run multiple assignement attempts.
   sendExemptionEmails(allAmbassadorsEmails, unassignedEvaluators);
 
   return { assignments, countHasNoEvaluator };
@@ -513,7 +514,7 @@ function getContributionDetailsByEmail(email) {
 
     // Find the corresponding response within the submission window
     for (let row of formData) {
-      const timestamp = new Date(row[formResponseTimestampColumnIndex - 0]); // Assuming Timestamp is in the 1st column
+      const timestamp = new Date(row[formResponseTimestampColumnIndex - 1]); // Assuming Timestamp is in the 1st column
       const respondentEmail = row[formResponseEmailColumnIndex - 1]?.trim().toLowerCase(); // Assuming Email is in the 2nd column
 
       if (timestamp >= submissionWindowStart && timestamp <= submissionWindowEnd && respondentEmail === email) {
