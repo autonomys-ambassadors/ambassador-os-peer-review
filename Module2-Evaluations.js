@@ -183,7 +183,6 @@ function generateReviewMatrix() {
     } else {
       Logger.log('No assignments could be made in the given attempts.');
     }
-
   } catch (error) {
     Logger.log(`Error in generateReviewMatrix: ${error}`);
   }
@@ -224,18 +223,21 @@ function attemptSingleAssignment() {
   Logger.log(`Submission window is from ${submissionWindowStart} to ${submissionWindowEnd}`);
 
   // Get responses from Submission form
-  const lastRow = formResponseSheet.getLastRow();
-  if (lastRow < 2) {
+  const lastRow = formResponseSheet.getLastRow() - 1;
+  if (lastRow < 1) {
     Logger.log('No submissions found in Form Responses sheet.');
     return { assignments: [], countHasNoEvaluator: Infinity };
   }
 
-  const responseData = formResponseSheet.getRange(2, 1, lastRow - 1, formResponseSheet.getLastColumn()).getValues();
+  const responseData = formResponseSheet.getRange(2, 1, lastRow, formResponseSheet.getLastColumn()).getValues();
   Logger.log(`Retrieved ${responseData.length} Submission form responses.`);
+
+  const timestampColumnIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
+  const emailColumnIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN);
 
   // Filtering responses by Submission window
   const validResponses = responseData.filter((row) => {
-    const timestamp = new Date(row[0]);
+    const timestamp = new Date(row[timestampColumnIndex - 1]);
     return timestamp >= submissionWindowStart && timestamp <= submissionWindowEnd;
   });
 
@@ -247,15 +249,19 @@ function attemptSingleAssignment() {
   }
 
   // Getting email of submitters
-  const submittersEmails = validResponses.map((row) => row[1]); // Assuming Email is in column 2
+  const submittersEmails = validResponses.map((row) => row[emailColumnIndex - 1]);
   Logger.log(`Submitters Emails: ${JSON.stringify(submittersEmails)}`);
 
   // Get all ambassador emails from the registry, excluding those with 'Expelled' status
-  const ambassadorData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Assuming columns: Email, Discord Handle, Status
+  const registryAmbassadorEmail = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+  const registryAmbassadorStatus = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
+  const ambassadorData = registrySheet
+    .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
+    .getValues();
   const allAmbassadorsEmails = ambassadorData
-    .filter((row) => !row[2].includes('Expelled')) // Exclude those marked as 'Expelled'
+    .filter((row) => !row[registryAmbassadorStatus - 1].includes('Expelled')) // Exclude those marked as 'Expelled'
     .filter((row) => {
-      if (!emailRegex.test(row[0])) {
+      if (!emailRegex.test(row[registryAmbassadorEmail - 1])) {
         Logger.log(`Invalid email for Discord Handle ${row[1]}: "${row[0]}". Skipping.`);
         return false; // Exclude invalid emails
       }
@@ -333,7 +339,6 @@ function writeAssignmentsToReviewLog(assignments) {
     });
   });
 }
-
 
 /**
  * Sends exemption emails to evaluators who were not assigned any submitters.
@@ -629,10 +634,10 @@ function processEvaluationResponse(e) {
     Logger.log('Form response received.');
 
     const formSubmitterEmail = formResponse.getRespondentEmail();
-      if (!formSubmitterEmail) {
-       Logger.log('Error: Respondent email is missing. Ensure that email collection is enabled in the form.');
+    if (!formSubmitterEmail) {
+      Logger.log('Error: Respondent email is missing. Ensure that email collection is enabled in the form.');
       return;
-      }
+    }
     Logger.log(`Form Submitter's Email from google form: ${formSubmitterEmail}`);
 
     const itemResponses = formResponse.getItemResponses();
