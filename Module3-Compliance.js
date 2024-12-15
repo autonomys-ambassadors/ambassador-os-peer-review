@@ -1,4 +1,5 @@
 // MODULE 3
+const MAX_PENALTY_POINTS_TO_EXPEL = 3;
 
 function runComplianceAudit() {
   // Run evaluation window check and exit if the user presses "Cancel"
@@ -8,6 +9,9 @@ function runComplianceAudit() {
   }
   // Check and create Penalty Points and Max 6-Month PP columns, if they do not exist
   checkAndCreateColumns();
+  SpreadsheetApp.flush();
+  // Let's sync the data to make sure overall score has all ambassadors and knows who has been expelled before now
+  syncRegistryColumnsToOverallScore();
   SpreadsheetApp.flush();
   // ⚠️DESIGNED TO RUN ONLY ONCE. Calculates penalty points for past months, colors cells, adds PP to PP column.
   detectNonRespondersPastMonths();
@@ -26,11 +30,13 @@ function runComplianceAudit() {
   expelAmbassadors();
   SpreadsheetApp.flush();
   // Send expulsion notifications
-  sendExpulsionNotifications();
-  SpreadsheetApp.flush();
+  // this is already included in the expelAmbassadors function; removing
+  // sendExpulsionNotifications();
+  // SpreadsheetApp.flush();
   // Calling the function to sync Ambassador Status columns in Overall score with it in Registry, to reflect changes
-  syncRegistryColumnsToOverallScore();
-  SpreadsheetApp.flush();
+  // TODO: This doesn't do that, it syncs from registry TO overall score, not the other way around.
+  //syncRegistryColumnsToOverallScore();
+  //SpreadsheetApp.flush();
   Logger.log('Compliance Audit process completed.');
 }
 
@@ -120,7 +126,7 @@ function copyFinalScoresToOverallScore() {
     Logger.log(`Retrieved ${finalScores.length} scores from "${monthSheetName}" sheet.`);
 
     //Copy Final Score values to proper rows Overall score" by Discord Handles
-    const overallSheetDiscordColumn = getColumnIndexByName(overallScoreSheet, "Ambassadors' Discord Handles");
+    const overallSheetDiscordColumn = getColumnIndexByName(overallScoreSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
     const overallHandles = overallScoreSheet
       .getRange(2, overallSheetDiscordColumn, overallScoreSheet.getLastRow() - 1, 1)
       .getValues()
@@ -208,7 +214,7 @@ function detectNonRespondersPastMonths() {
   const currentMonthName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
   Logger.log(`Current reporting month: ${currentMonthName}`);
 
-  const lastRow = overallScoresSheet.getLastRow();
+  const lastRow = overallScoresSheet.getLastRow() - 1;
   const lastColumn = overallScoresSheet.getLastColumn();
   const sheetData = overallScoresSheet.getRange(1, 1, lastRow, lastColumn).getValues();
 
@@ -399,7 +405,7 @@ function calculateMaxPenaltyPointsForSixMonths() {
     return;
   }
 
-  const lastRow = overallScoresSheet.getLastRow();
+  const lastRow = overallScoresSheet.getLastRow() - 1;
   const lastColumn = overallScoresSheet.getLastColumn();
   const spreadsheetTimeZone = getProjectTimeZone();
 
@@ -436,6 +442,7 @@ function calculateMaxPenaltyPointsForSixMonths() {
     Logger.log(`Row ${row}: Collected background colors for all month columns.`);
 
     // Iterate over all possible periods
+    // TODO rewrite this - it's too dangerous to do this based on background colors.
     for (let i = 0; i <= monthColumns.length - periodLength; i++) {
       let periodTotal = 0;
 
@@ -487,6 +494,7 @@ function calculateMaxPenaltyPointsForSixMonths() {
 }
 
 // Expel ambassadors based on Max 6-Month PP. Tracks and notify only newly expelled ambassadors.
+// If an ambassador already has status containing "Expelled", they are assumed to have already been notified and will be skipped.
 function expelAmbassadors() {
   Logger.log('Starting expelAmbassadors process.');
 
@@ -494,58 +502,43 @@ function expelAmbassadors() {
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
 
   // Get headers for column indices
-  const headers = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
-  const maxPenaltyPointsIndex = headers.indexOf('Max 6-Month PP') + 1;
-
-  const registryHeaders = registrySheet.getRange(1, 1, 1, registrySheet.getLastColumn()).getValues()[0];
-  Logger.log(`Registry Headers: ${registryHeaders.join(', ')}`); // Log headers to verify
-
-  const emailColIndex = registryHeaders.indexOf(AMBASSADOR_EMAIL_COLUMN) + 1;
-  const discordHandleColIndex = registryHeaders.indexOf(AMBASSADOR_DISCORD_HANDLE_COLUMN) + 1;
-  const statusColIndex = registryHeaders.indexOf(AMBASSADOR_STATUS_COLUMN) + 1;
-
-  if (emailColIndex === 0 || discordHandleColIndex === 0 || statusColIndex === 0) {
-    Logger.log(
-      `Error: Column '${AMBASSADOR_EMAIL_COLUMN}', '${AMBASSADOR_DISCORD_HANDLE_COLUMN}', or '${AMBASSADOR_STATUS_COLUMN}' not found in registry headers.`
-    );
-    return;
-  }
+  const scoreMaxPenaltiesColIndex = getColumnIndexByName(overallScoresSheet, 'Max 6-Month PP');
+  const scoreDiscordHandleColIndex = getColumnIndexByName(overallScoresSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+  const registryDiscordHandleColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+  const registryStatusColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
 
   const newlyExpelled = []; // List to track newly expelled ambassadors
 
-  // Retrieve ambassador data from the Overall Scores sheet
-  const ambassadorData = overallScoresSheet
+  // Retrieve ambassador scores from the Overall Scores sheet, filter for those that meet the expulsion criteria
+  const scoreData = overallScoresSheet
     .getRange(2, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn())
-    .getValues();
+    .getValues()
+    .filter((row) => row[scoreMaxPenaltiesColIndex - 1] >= MAX_PENALTY_POINTS_TO_EXPEL);
 
-  ambassadorData.forEach((row, i) => {
-    const discordHandle = row[0];
-    const maxPenaltyPoints = row[maxPenaltyPointsIndex - 1];
+  // for each ambassador meeting the explusion criteria, check if they are already expelled
+  scoreData.forEach((row, i) => {
+    const discordHandle = row[scoreDiscordHandleColIndex];
+    const registryRowIndex = registrySheet
+      .getRange(1, registryDiscordHandleColIndex, registrySheet.getLastRow() - 1, 1)
+      .getValues()
+      .findIndex((regRow) => regRow[0] === discordHandle);
 
-    if (maxPenaltyPoints >= 3) {
-      const registryRowIndex =
-        registrySheet
-          .getRange(2, discordHandleColIndex, registrySheet.getLastRow() - 1, 1)
-          .getValues()
-          .findIndex((regRow) => regRow[0] === discordHandle) + 2; // Adding 2 to account for header row
-
-      if (registryRowIndex > 1) {
-        const currentStatus = registrySheet.getRange(registryRowIndex, statusColIndex).getValue();
-        // Check if 'Expelled' is already in the status
-        if (currentStatus.includes('Expelled')) {
-          Logger.log(`Notice: Ambassador ${discordHandle} is already marked as expelled.`);
-          return;
-        }
-
-        const currentDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd MMM yy');
-
-        // Concatenate 'Expelled [DD MMM YY]' to the current status
-        const updatedStatus = `${currentStatus} Expelled [${currentDate}].`;
-        registrySheet.getRange(registryRowIndex, statusColIndex).setValue(updatedStatus);
-
-        Logger.log(`Ambassador ${discordHandle} status updated to: "${updatedStatus}"`);
-        newlyExpelled.push(discordHandle); // Add to newly expelled list
+    if (registryRowIndex > 1) {
+      const currentStatus = registrySheet.getRange(registryRowIndex, registryStatusColIndex).getValue();
+      // Check if 'Expelled' is already in the status
+      if (currentStatus.includes('Expelled')) {
+        Logger.log(`Notice: Ambassador ${discordHandle} is already marked as expelled.`);
+        return;
       }
+
+      const currentDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd MMM yy');
+
+      // Concatenate 'Expelled [DD MMM YY]' to the current status
+      const updatedStatus = `${currentStatus} | Expelled [${currentDate}].`;
+      registrySheet.getRange(registryRowIndex, registryStatusColIndex).setValue(updatedStatus);
+
+      Logger.log(`Ambassador ${discordHandle} status updated to: "${updatedStatus}"`);
+      newlyExpelled.push(discordHandle); // Add to newly expelled list
     }
   });
 
@@ -563,14 +556,12 @@ function sendExpulsionNotifications(discordHandle) {
   Logger.log(`Sending expulsion notifications for ambassador with discord handle: ${discordHandle}`);
 
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const registryHeaders = registrySheet.getRange(1, 1, 1, registrySheet.getLastColumn()).getValues()[0];
-  const emailColIndex = registryHeaders.indexOf(AMBASSADOR_EMAIL_COLUMN) + 1;
-  const statusColIndex = registryHeaders.indexOf(AMBASSADOR_STATUS_COLUMN) + 1;
-  const discordColIndex = registryHeaders.indexOf(AMBASSADOR_DISCORD_HANDLE_COLUMN) + 1;
+  const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+  const registryDiscordColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
 
-  if (emailColIndex === 0 || statusColIndex === 0) {
+  if (registryEmailColIndex === 0 || registryDiscordColIndex === 0) {
     Logger.log(
-      `Error: Column '${AMBASSADOR_EMAIL_COLUMN}' or '${AMBASSADOR_STATUS_COLUMN}' not found in registry headers.`
+      `Error: Column '${AMBASSADOR_EMAIL_COLUMN}' or '${AMBASSADOR_DISCORD_HANDLE_COLUMN}' not found in registry headers.`
     );
     return;
   }
@@ -578,12 +569,12 @@ function sendExpulsionNotifications(discordHandle) {
   // Find ambassador's row by discord handle
   const registryRowIndex =
     registrySheet
-      .getRange(2, discordColIndex, registrySheet.getLastRow() - 1, 1)
+      .getRange(2, registryDiscordColIndex, registrySheet.getLastRow() - 1, 1)
       .getValues()
       .findIndex((row) => row[0] === discordHandle) + 2;
 
   if (registryRowIndex > 1) {
-    const email = registrySheet.getRange(registryRowIndex, emailColIndex).getValue();
+    const email = registrySheet.getRange(registryRowIndex, registryEmailColIndex).getValue();
 
     // Check and skip if email is missing
     if (!email || !email.trim()) {

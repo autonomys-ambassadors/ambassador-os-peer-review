@@ -33,7 +33,7 @@ function syncRegistryColumnsToOverallScore() {
     }
 
     // Verify columns "Ambassadors' Discord Handles" in overall score
-    const discordHandleColumnIndex = getColumnIndexByName(overallScoreSheet, "Ambassadors' Discord Handles");
+    const discordHandleColumnIndex = getColumnIndexByName(overallScoreSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
     if (discordHandleColumnIndex === 0) {
       alertAndLog('Error: "Ambassadors\' Discord Handles" column not found.');
       return;

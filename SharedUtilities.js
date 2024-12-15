@@ -517,13 +517,17 @@ function updateFormTitlesWithCurrentReportingMonth() {
 }
 
 /////////////  INDEX UTILITIES for COLUMNS and SHEETS
-
+// returns 1-based column index
 function getColumnIndexByName(sheet, columnName) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  headers.forEach((header, index) => {
-    Logger.log(`Header at column ${index + 1}: ${header}`);
-  });
-  return headers.indexOf(columnName) + 1;
+  const columnIndex = headers.findIndex((header) => header === columnName);
+  if (columnIndex !== -1) {
+    Logger.log(`Found header for ${columnName} include column ${columnIndex + 1} of ${sheet.getName()}`);
+    return columnIndex + 1; // Return -1 if the column is not found
+  } else {
+    Logger.log(`Header for ${columnName} not found in ${sheet.getName()}`);
+    return -1;
+  }
 }
 
 /**
