@@ -277,22 +277,28 @@ function getValidSubmissionEmails(submissionSheet) {
 
   // Extract valid requests within the submission time window
   // only grabs the firts column, assumes that is the submitter's email address
+  const submitterEmailColumnIndex = getColumnIndexByName(submissionSheet, GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN);
+  const submitterTimestampColumnIndex = getColumnIndexByName(submissionSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
   const validSubmitters = submissionSheet
-    .getRange(2, 1, lastRow - 1, 6)
+    .getRange(2, 1, lastRow - 1, submissionSheet.getLastColumn())
     .getValues()
     .filter((row) => {
-      const submissionTimestamp = new Date(row[0]); // Assuming the first column is the timestamp
+      const submissionTimestamp = new Date(row[submitterTimestampColumnIndex - 1]);
       // Check if the response is within the evaluation time window
       const isWithinWindow = submissionTimestamp >= submissionWindowStart && submissionTimestamp <= submissionWindowEnd;
       if (isWithinWindow) {
-        Logger.log(`Valid submission found: ${row[1]} (Response time: ${row[0]})`);
+        Logger.log(
+          `Valid submission found: ${row[submitterEmailColumnIndex - 1]} (Response time: ${row[submitterTimestampColumnIndex - 1]})`
+        );
         return true;
       }
-      Logger.log(`Invalid submission found - outside sumbission window: ${row[1]} (Response time: ${row[0]})`);
+      Logger.log(
+        `Invalid submission found - outside sumbission window: ${row[submitterEmailColumnIndex - 1]} (Response time: ${row[submitterTimestampColumnIndex - 1]})`
+      );
       return false;
     })
     //TODO: get column for Email instead of assuming
-    .map((row) => row[1]?.trim().toLowerCase()); // Extract and clean submitter emails
+    .map((row) => row[submitterEmailColumnIndex - 1]?.trim().toLowerCase()); // Extract and clean submitter emails
 
   Logger.log(`Valid submitters (within time window): ${validSubmitters.join(', ')}`);
   return validSubmitters;
@@ -317,20 +323,24 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
 
   // Extract valid responses within the evaluation time window
   //TODO: get column from 'Email' header
+  const evalEmailColumnIndex = getColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN);
+  const evalTimestampColumnIndex = getColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
   const validEvaluators = evaluationResponsesSheet
-    .getRange(2, 1, lastRow - 1, 3)
+    .getRange(2, 1, lastRow - 1, evaluationResponsesSheet.getLastColumn())
     .getValues()
     .filter((row) => {
-      const responseTimestamp = new Date(row[0]); // Assuming the first column is the timestamp
+      const responseTimestamp = new Date(row[evalEmailColumnIndex - 1]); // Assuming the first column is the timestamp
       // Check if the response is within the evaluation time window
       const isWithinWindow = responseTimestamp >= evaluationWindowStart && responseTimestamp <= evaluationWindowEnd;
       if (isWithinWindow) {
-        Logger.log(`Valid evaluator found: ${row[2]} (Response time: ${row[0]})`);
+        Logger.log(
+          `Valid evaluator found: ${row[evalTimestampColumnIndex - 1]} (Response time: ${row[evalEmailColumnIndex - 1]})`
+        );
         return true;
       }
       return false;
     })
-    .map((row) => row[2].trim().toLowerCase()); // Extracting the evaluator email
+    .map((row) => row[evalTimestampColumnIndex - 1].trim().toLowerCase()); // Extracting the evaluator email
 
   Logger.log(`Valid evaluators (within time window): ${validEvaluators.join(', ')}`);
   return validEvaluators;
@@ -382,11 +392,14 @@ function getEligibleAmbassadorsEmails() {
       Logger.log('Registry sheet not found.');
       return [];
     }
-
-    const registryData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Columns: Email, Discord Handle, Status
+    const registryAmbassadorStatusColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
+    const registryAmbassadorEmailColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+    const registryData = registrySheet
+      .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
+      .getValues(); // Columns: Email, Discord Handle, Status
     const eligibleEmails = registryData
-      .filter((row) => !row[2].includes('Expelled')) // Exclude those marked as 'Expelled'
-      .map((row) => row[0]); // Extract emails
+      .filter((row) => !row[registryAmbassadorStatusColumnIndex - 1].includes('Expelled')) // Exclude those marked as 'Expelled'
+      .map((row) => row[registryAmbassadorEmailColumnIndex - 1]); // Extract emails
 
     Logger.log(`Eligible emails (excluding 'Expelled'): ${JSON.stringify(eligibleEmails)}`);
     return eligibleEmails;
@@ -528,7 +541,7 @@ function updateFormTitlesWithCurrentReportingMonth() {
 // returns 1-based column index
 function getColumnIndexByName(sheet, columnName) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const columnIndex = headers.findIndex((header) => header === columnName);
+  const columnIndex = headers.findIndex((header) => header.trim() === columnName.trim());
   if (columnIndex !== -1) {
     //Logger.log(`Found header for ${columnName} include column ${columnIndex + 1} of ${sheet.getName()}`);
     return columnIndex + 1; // Return -1 if the column is not found
@@ -648,8 +661,9 @@ function findRowByDiscordHandle(discordHandle) {
   const overallScoresSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID).getSheetByName(
     OVERALL_SCORE_SHEET_NAME
   );
+  const discordHandleColIndex = getColumnIndexByName(overallScoresSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const handlesColumn = overallScoresSheet
-    .getRange(2, 1, overallScoresSheet.getLastRow() - 1, 1)
+    .getRange(2, discordHandleColIndex, overallScoresSheet.getLastRow() - 1, 1)
     .getValues()
     .flat(); // Assuming Discord handle is in the first column
 

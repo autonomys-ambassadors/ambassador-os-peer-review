@@ -42,7 +42,6 @@ function setTestVariables() {
 Please add text to your contributions during the month`;
     GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
 Please add links your contributions during the month `;
-
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 10;
     SUBMISSION_WINDOW_REMINDER_MINUTES = 5; // how many minutes after Submission Requests sent to remind
