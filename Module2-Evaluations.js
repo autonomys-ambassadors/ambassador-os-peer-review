@@ -652,6 +652,9 @@ function processEvaluationResponse(e) {
     }
     Logger.log(`Form Submitter's Email from google form: ${formSubmitterEmail}`);
 
+    const responseTime = formResponse.getTimestamp();
+    Logger.log(`Evaluation response received at: ${responseTime}`);
+
     const itemResponses = formResponse.getItemResponses();
     let evaluatorEmail = '';
     let submitterDiscordHandle = '';
@@ -682,6 +685,14 @@ function processEvaluationResponse(e) {
 
     if (!evaluatorEmail || !submitterDiscordHandle || isNaN(grade)) {
       Logger.log('Missing required data. Exiting processEvaluationResponse.');
+      return;
+    }
+
+    const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
+    if (responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) {
+      Logger.log(
+        'Evaluation received at ${responseTime} outside the window from ${evaluationWindowStart} to ${evaluationWindowEnd}. Response will be ignored.'
+      );
       return;
     }
 
@@ -730,10 +741,16 @@ function processEvaluationResponse(e) {
     }
 
     // Find row for submitter
-    const submitterRows = monthSheet.getRange(2, 1, monthSheet.getLastRow() - 1, 1).getValues();
+    const submitterDiscordColumnIndex = getColumnIndexByName(monthSheet, 'Submitter');
+    const submitterRows = monthSheet
+      .getRange(2, submitterDiscordColumnIndex, monthSheet.getLastRow() - 1, 1)
+      .getValues();
     let row = null;
     for (let i = 0; i < submitterRows.length; i++) {
-      if (submitterRows[i][0] && submitterRows[i][0].toLowerCase() === submitterDiscordHandle.toLowerCase()) {
+      if (
+        submitterRows[i][submitterDiscordColumnIndex - 1] &&
+        submitterRows[i][submitterDiscordColumnIndex - 1].toLowerCase() === submitterDiscordHandle.toLowerCase()
+      ) {
         row = i + 2; // Offset for header row
         break;
       }
