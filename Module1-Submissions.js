@@ -16,13 +16,16 @@ function requestSubmissionsModule() {
   Logger.log('Opened "Registry" sheet from "Ambassador Registry" spreadsheet.');
 
   // Fetch data from Registry sheet (Emails and Status)
+  const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+  const registryAmbassadorStatus = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
+  const registryAmbassadorDiscordHandle = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const registryData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Fetch Emails, Discord Handles, and Status
   Logger.log(`Fetched data from "Registry" sheet: ${JSON.stringify(registryData)}`);
 
   // Filter out ambassadors with 'Expelled' in their status
   const eligibleEmails = registryData
-    .filter(row => !row[2].includes('Expelled')) // Exclude expelled ambassadors
-    .map(row => row[0]); // Extract only emails
+    .filter((row) => !row[registryAmbassadorStatus - 1].includes('Expelled')) // Exclude expelled ambassadors
+    .map((row) => row[registryEmailColIndex - 1]); // Extract only emails
   Logger.log(`Eligible ambassadors emails: ${JSON.stringify(eligibleEmails)}`);
 
   // Get deliverable date (previous month date)
@@ -39,7 +42,7 @@ function requestSubmissionsModule() {
   const submissionDeadlineDate = Utilities.formatDate(submissionDeadline, spreadsheetTimeZone, 'MMMM dd, yyyy');
 
   eligibleEmails.forEach((email, index) => {
-    const discordHandle = registryData[index][1]; // Get Discord Handle from Registry
+    const discordHandle = registryData[index][registryAmbassadorDiscordHandle - 1]; // Get Discord Handle from Registry
 
     // Validating email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Simple email regex
@@ -103,11 +106,15 @@ function setupSubmissionReminderTrigger(submissionStartTime) {
 
   // Log trigger details
   const spreadsheetTimeZone = getProjectTimeZone(); // Updated function name
-  Logger.log(`Trigger date for reminder set to: ${Utilities.formatDate(triggerDate, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`);
+  Logger.log(
+    `Trigger date for reminder set to: ${Utilities.formatDate(triggerDate, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`
+  );
 
   // Calculate and log submission window
   const submissionWindowEnd = new Date(submissionStartTime.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000);
-  Logger.log(`Submission window is from ${Utilities.formatDate(submissionStartTime, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')} to ${Utilities.formatDate(submissionWindowEnd, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`);
+  Logger.log(
+    `Submission window is from ${Utilities.formatDate(submissionStartTime, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')} to ${Utilities.formatDate(submissionWindowEnd, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`
+  );
 
   // Create a time-based trigger for checking non-respondents
   ScriptApp.newTrigger('checkNonRespondents').timeBased().at(triggerDate).create();
@@ -124,14 +131,16 @@ function checkNonRespondents() {
     Logger.log('Submission window start time not found, aborting checkNonRespondents.');
     return;
   }
-  
+
   // Convert submission window start to Date and calculate window end
   const submissionWindowStart = new Date(submissionWindowStartStr);
   const submissionWindowEnd = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000);
 
   // Get project time zone for consistent logging
   const spreadsheetTimeZone = getProjectTimeZone();
-  Logger.log(`Submission window is from ${Utilities.formatDate(submissionWindowStart, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')} to ${Utilities.formatDate(submissionWindowEnd, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`);
+  Logger.log(
+    `Submission window is from ${Utilities.formatDate(submissionWindowStart, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')} to ${Utilities.formatDate(submissionWindowEnd, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`
+  );
 
   // Open Registry sheet
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
@@ -149,13 +158,21 @@ function checkNonRespondents() {
   Logger.log('Form Response sheet found.');
 
   // Fetch data from Registry and filter eligible ambassadors
-  const registryData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, 3).getValues(); // Columns: Email, Discord, Status
+  const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+  const registryAmbassadorStatus = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
+  const registryData = registrySheet
+    .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
+    .getValues(); // Columns: Email, Discord, Status
   Logger.log(`Registry data fetched: ${registryData.length} rows`);
-  
-  const eligibleEmails = registryData.filter(row => !row[2].includes('Expelled')).map(row => row[0]);
+
+  const eligibleEmails = registryData
+    .filter((row) => !row[registryAmbassadorStatus - 1].includes('Expelled'))
+    .map((row) => row[registryEmailColIndex - 1]);
   Logger.log(`Eligible emails (excluding Expelled): ${eligibleEmails}`);
 
   // Fetch response data from Form Responses
+  const responseTimestamp = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
+  const responseEmail = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN);
   const responseData = formResponseSheet
     .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())
     .getValues();
@@ -163,12 +180,12 @@ function checkNonRespondents() {
 
   // Filter responses within submission window
   const validResponses = responseData.filter((row) => {
-    const timestamp = new Date(row[0]);
+    const timestamp = new Date(row[responseTimestamp - 1]);
     return timestamp >= submissionWindowStart && timestamp <= submissionWindowEnd;
   });
   Logger.log(`Valid responses within submission window: ${validResponses.length}`);
 
-  const respondedEmails = validResponses.map((row) => row[1]); // Assuming email is in the second column
+  const respondedEmails = validResponses.map((row) => row[responseEmail - 1]); // Assuming email is in the second column
   Logger.log(`Responded emails: ${respondedEmails}`);
 
   // Find non-respondents
@@ -199,17 +216,19 @@ function sendReminderEmails(nonRespondents) {
     // Validating emails
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Simple regex for validating email
     if (!emailRegex.test(email)) {
-      const discordHandle = registrySheet.getRange(index + 2, 2).getValue(); // getting Discord Handle from Registry
+      const registryAmbassadorDiscordHandle = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+      const discordHandle = registrySheet.getRange(index + 2, registryAmbassadorDiscordHandle).getValue(); // getting Discord Handle from Registry
       Logger.log(`Warning: Invalid or missing email for Discord Handle "${discordHandle}". Skipping.`);
       return; // skipping incorrect or empty email
     }
 
     // Finding row with given email in Registry
+    const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
     const result = registrySheet.createTextFinder(email).findNext();
     if (result) {
       const row = result.getRow(); // Get the row number
       Logger.log(`Non-respondent found at row: ${row}`);
-      const discordHandle = registrySheet.getRange(row, 2).getValue(); // Fetch Discord Handle from column B
+      const discordHandle = registrySheet.getRange(row, registryEmailColIndex).getValue(); // Fetch Discord Handle from column B
       Logger.log(`Discord handle found for ${email}: ${discordHandle}`);
 
       // Create the reminder email message
