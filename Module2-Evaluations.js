@@ -501,7 +501,7 @@ function getContributionDetailsByEmail(email) {
       formResponseSheet,
       GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN
     );
-    const contributionLinksColumnIndex = getColumnIndexByName(formResponeSheet, GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN);
+    const contributionLinksColumnIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN);
 
     const formResponseEmailColumnIndex = getColumnIndexByName(
       formResponseSheet,
