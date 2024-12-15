@@ -1,8 +1,9 @@
 function setTestVariables() {
   // controls wether email will be sent or just logged for troubleshooting - should always be true for production.
   SEND_EMAIL = true;
-  const TESTER = 'Wilyam'; // 'Wilyam' or 'Jonathan'
-  if ((TESTER = 'Wilyam')) {
+  const TESTER = 'Jonathan'; // 'Wilyam' or 'Jonathan'
+
+  if (TESTER === 'Wilyam') {
     // Specify your testing sheets/forms/etc. here:
     // Spreadsheets:
     //
@@ -26,7 +27,7 @@ function setTestVariables() {
     //
     // Wilyam test sponsor
     SPONSOR_EMAIL = 'economicsilver@starmail.net'; // Sponsor's email
-  } else if ((TESTER = 'Jonathan')) {
+  } else if (TESTER === 'Jonathan') {
     // Specify your testing sheets/forms/etc. here:
     // Spreadsheets:
     //
