@@ -30,6 +30,8 @@ var EVAL_FORM_RESPONSES_SHEET_NAME = ''; // Evaluation Form responses sheet
 var AMBASSADOR_EMAIL_COLUMN = '';
 var AMBASSADOR_DISCORD_HANDLE_COLUMN = '';
 var AMBASSADOR_STATUS_COLUMN = '';
+var GOOGLE_FORM_TIMESTAMP_COLUMN = '';
+var GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN = '';
 
 // Sponsor Email (for notifications when ambassadors are expelled)
 // set the actual values in EnvironmentVariables[Prod|Test].js
