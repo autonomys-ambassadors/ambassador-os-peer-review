@@ -83,7 +83,7 @@ Please add links your contributions during the month`;
     EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 4'; // Evaluation Form responses sheet
 
     // Sponsor Email (for notifications when ambassadors are expelled)
-    SPONSOR_EMAIL = 'jonathan@jkw.fm'; // Sponsor's email
+    SPONSOR_EMAIL = 'auto-sponsor@jkw.fm'; // Sponsor's email
 
     // Sheet names
     REGISTRY_SHEET_NAME = 'Registry';
