@@ -32,7 +32,8 @@ var AMBASSADOR_DISCORD_HANDLE_COLUMN = '';
 var AMBASSADOR_STATUS_COLUMN = '';
 var GOOGLE_FORM_TIMESTAMP_COLUMN = '';
 var GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN = '';
-
+var GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = '';
+var GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = '';
 // Sponsor Email (for notifications when ambassadors are expelled)
 // set the actual values in EnvironmentVariables[Prod|Test].js
 var SPONSOR_EMAIL = ''; // Sponsor's email
@@ -481,12 +482,14 @@ function getStartOfPriorMonth(timeZone, startingDate) {
 
 function getDiscordHandleFromEmail(email) {
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
+  const emailColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+  const discordColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const emailColumn = registrySheet
-    .getRange(2, 1, registrySheet.getLastRow() - 1, 1)
+    .getRange(2, emailColumnIndex, registrySheet.getLastRow() - 1, 1)
     .getValues()
     .flat();
   const discordColumn = registrySheet
-    .getRange(2, 2, registrySheet.getLastRow() - 1, 1)
+    .getRange(2, discordColumnIndex, registrySheet.getLastRow() - 1, 1)
     .getValues()
     .flat();
 

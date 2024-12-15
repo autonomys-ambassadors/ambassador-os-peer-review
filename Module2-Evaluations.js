@@ -496,18 +496,29 @@ function getContributionDetailsByEmail(email) {
     Logger.log(`Submission window: ${submissionWindowStart} to ${submissionWindowEnd}`);
 
     // Get form responses
+    const formResponseTimestampColumnIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
+    const contributionDetailsColumnIndex = getColumnIndexByName(
+      formResponseSheet,
+      GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN
+    );
+    const contributionLinksColumnIndex = getColumnIndexByName(formResponeSheet, GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN);
+
+    const formResponseEmailColumnIndex = getColumnIndexByName(
+      formResponseSheet,
+      GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN
+    );
     const formData = formResponseSheet
       .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())
       .getValues();
 
     // Find the corresponding response within the submission window
     for (let row of formData) {
-      const timestamp = new Date(row[0]); // Assuming Timestamp is in the 1st column
-      const respondentEmail = row[1]?.trim().toLowerCase(); // Assuming Email is in the 2nd column
+      const timestamp = new Date(row[formResponseTimestampColumnIndex - 0]); // Assuming Timestamp is in the 1st column
+      const respondentEmail = row[formResponseEmailColumnIndex - 1]?.trim().toLowerCase(); // Assuming Email is in the 2nd column
 
       if (timestamp >= submissionWindowStart && timestamp <= submissionWindowEnd && respondentEmail === email) {
-        const contributionText = row[3]; // Contribution details in the 4th column
-        const contributionLinks = row[4]; // Links in the 5th column
+        const contributionText = row[contributionDetailsColumnIndex - 1]; // Contribution details in the 4th column
+        const contributionLinks = row[contributionLinksColumnIndex - 1]; // Links in the 5th column
         Logger.log(`Contribution found for email: ${email}`);
         return `Contribution Details: ${contributionText}\nLinks: ${contributionLinks}`;
       }

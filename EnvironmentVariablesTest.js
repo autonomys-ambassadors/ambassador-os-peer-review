@@ -38,6 +38,10 @@ function setTestVariables() {
     AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
     GOOGLE_FORM_TIMESTAMP_COLUMN = 'Timestamp';
     GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email';
+    GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = `Dear Ambassador,
+Please add text to your contributions during the month`;
+    GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
+Please add links your contributions during the month`;
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 10;
@@ -91,12 +95,18 @@ function setTestVariables() {
     AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
     AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
     AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
+    GOOGLE_FORM_TIMESTAMP_COLUMN = 'Timestamp';
+    GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email';
+    GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = `Dear Ambassador,
+Please add text to your contributions during the month`;
+    GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
+Please add links your contributions during the month`;
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
-    SUBMISSION_WINDOW_MINUTES = 30;
-    SUBMISSION_WINDOW_REMINDER_MINUTES = 20; // how many minutes after Submission Requests sent to remind
-    EVALUATION_WINDOW_MINUTES = 60;
-    EVALUATION_WINDOW_REMINDER_MINUTES = 45; // how many minutes after Evaluation Requests sent to remind
+    SUBMISSION_WINDOW_MINUTES = 20;
+    SUBMISSION_WINDOW_REMINDER_MINUTES = 15; // how many minutes after Submission Requests sent to remind
+    EVALUATION_WINDOW_MINUTES = 20;
+    EVALUATION_WINDOW_REMINDER_MINUTES = 15; // how many minutes after Evaluation Requests sent to remind
 
     // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
     MAX_PENALTY_POINTS_TO_EXPEL = 2;
