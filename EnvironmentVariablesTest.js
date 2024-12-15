@@ -1,9 +1,9 @@
 function setTestVariables() {
   // controls wether email will be sent or just logged for troubleshooting - should always be true for production.
-  SEND_EMAIL = true;
-  const TESTER = 'Wilyam'; // 'Wilyam' or 'Jonathan'
+  const TESTER = 'Jonathan'; // 'Wilyam' or 'Jonathan'
 
   if (TESTER === 'Wilyam') {
+    SEND_EMAIL = false;
     // Specify your testing sheets/forms/etc. here:
     // Spreadsheets:
     //
@@ -27,7 +27,40 @@ function setTestVariables() {
     //
     // Wilyam test sponsor
     SPONSOR_EMAIL = 'economicsilver@starmail.net'; // Sponsor's email
+
+    // Sheet names
+    REGISTRY_SHEET_NAME = 'Registry';
+    REVIEW_LOG_SHEET_NAME = 'Review Log';
+    CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
+    OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
+
+    // Columns
+    AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
+    AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
+    AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
+    GOOGLE_FORM_TIMESTAMP_COLUMN = 'Timestamp';
+    GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email';
+
+    // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
+    SUBMISSION_WINDOW_MINUTES = 10;
+    SUBMISSION_WINDOW_REMINDER_MINUTES = 5; // how many minutes after Submission Requests sent to remind
+    EVALUATION_WINDOW_MINUTES = 10;
+    EVALUATION_WINDOW_REMINDER_MINUTES = 5; // how many minutes after Evaluation Requests sent to remind
+
+    // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
+    MAX_PENALTY_POINTS_TO_EXPEL = 2;
+
+    /** Reinitialize color variables to ensure consistency in color-based logic.
+     * The color hex string must be in lowercase!
+     */
+    COLOR_MISSED_SUBMISSION = '#ead1dc';
+    COLOR_MISSED_EVALUATION = '#d9d9d9';
+    COLOR_EXPELLED = '#d36a6a';
+    COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
+    COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
   } else if (TESTER === 'Jonathan') {
+    SEND_EMAIL = false;
+
     // Specify your testing sheets/forms/etc. here:
     // Spreadsheets:
     //
@@ -54,36 +87,36 @@ function setTestVariables() {
     //
     // Jonathan test sponsor
     SPONSOR_EMAIL = 'jonathan@jkw.fm'; // Sponsor's email
+
+    // Sheet names
+    REGISTRY_SHEET_NAME = 'Registry';
+    REVIEW_LOG_SHEET_NAME = 'Review Log';
+    CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
+    OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
+
+    // Columns
+    AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
+    AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
+    AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
+
+    // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
+    SUBMISSION_WINDOW_MINUTES = 30;
+    SUBMISSION_WINDOW_REMINDER_MINUTES = 20; // how many minutes after Submission Requests sent to remind
+    EVALUATION_WINDOW_MINUTES = 60;
+    EVALUATION_WINDOW_REMINDER_MINUTES = 45; // how many minutes after Evaluation Requests sent to remind
+
+    // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
+    MAX_PENALTY_POINTS_TO_EXPEL = 2;
+
+    /** Reinitialize color variables to ensure consistency in color-based logic.
+     * The color hex string must be in lowercase!
+     */
+    COLOR_MISSED_SUBMISSION = '#ead1dc';
+    COLOR_MISSED_EVALUATION = '#d9d9d9';
+    COLOR_EXPELLED = '#d36a6a';
+    COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
+    COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
   } else {
     throw new Error('Invalid tester - configure your sheets and scenarios');
   }
-
-  // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
-  SUBMISSION_WINDOW_MINUTES = 10;
-  SUBMISSION_WINDOW_REMINDER_MINUTES = 5; // how many minutes after Submission Requests sent to remind
-  EVALUATION_WINDOW_MINUTES = 10;
-  EVALUATION_WINDOW_REMINDER_MINUTES = 5; // how many minutes after Evaluation Requests sent to remind
-
-  // Sheet names
-  REGISTRY_SHEET_NAME = 'Registry';
-  REVIEW_LOG_SHEET_NAME = 'Review Log';
-  CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
-  OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
-
-  // Columns
-  AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
-  AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
-  AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
-
-  // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
-  MAX_PENALTY_POINTS_TO_EXPEL = 2;
-
-  /** Reinitialize color variables to ensure consistency in color-based logic.
-   * The color hex string must be in lowercase!
-   */
-  COLOR_MISSED_SUBMISSION = '#ead1dc';
-  COLOR_MISSED_EVALUATION = '#d9d9d9';
-  COLOR_EXPELLED = '#d36a6a';
-  COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
-  COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
 }
