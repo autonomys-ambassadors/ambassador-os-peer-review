@@ -541,7 +541,8 @@ function updateFormTitlesWithCurrentReportingMonth() {
 // returns 1-based column index
 function getColumnIndexByName(sheet, columnName) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const columnIndex = headers.findIndex((header) => header.trim() === columnName.trim());
+  const columnIndex = headers.findIndex((header) => (header?.trim?.() ?? '') === columnName.trim());
+
   if (columnIndex !== -1) {
     //Logger.log(`Found header for ${columnName} include column ${columnIndex + 1} of ${sheet.getName()}`);
     return columnIndex + 1; // Return -1 if the column is not found
