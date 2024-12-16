@@ -14,12 +14,12 @@ function runComplianceAudit() {
   // ⚠️DESIGNED TO RUN ONLY ONCE. Calculates penalty points for past months, colors cells, adds PP to PP column.
   detectNonRespondersPastMonths();
   SpreadsheetApp.flush();
-  // Calculate penalty points for missing Submissions and Evaluations for the current reporting month
-  calculatePenaltyPoints();
-  SpreadsheetApp.flush();
   // Copying all Final Score values to month column in Overall score.
   // Note: Even if Evaluations came late, they anyway are helpful, though evaluators are penalized.
   copyFinalScoresToOverallScore();
+  SpreadsheetApp.flush();
+  // Calculate penalty points for missing Submissions and Evaluations for the current reporting month
+  calculatePenaltyPoints();
   SpreadsheetApp.flush();
   // Calculate the maximum number of penalty points for any contiguous 6-month period
   calculateMaxPenaltyPointsForSixMonths();
@@ -180,7 +180,7 @@ function checkAndCreateColumns() {
   }
 }
 
-// ⚠️ One time run only! Detect non-responders for past months (highlighting with COLOR_OLD_MISSED_SUBMISSION)
+// ⚠️ One time run only! Detect non-responders for past months (highlighting with COLOR_MISSED_SUBMISSION)
 function detectNonRespondersPastMonths() {
   const scriptProperties = PropertiesService.getScriptProperties();
   let hasRun = scriptProperties.getProperty('detectNonRespondersPastMonthsRan');
@@ -235,7 +235,7 @@ function detectNonRespondersPastMonths() {
             if (marker === "didn't submit" || marker === 'late submission') {
               currentPenaltyPoints += 1;
               const cell = overallScoresSheet.getRange(row, col);
-              cell.setBackground(COLOR_MISSED_SUBMISSION); // initially (COLOR_OLD_MISSED_SUBMISSION) wes here, but it makes no sense to separate them. Lerr error prone.
+              cell.setBackground(COLOR_MISSED_SUBMISSION); // initially (COLOR_OLD_MISSED_SUBMISSION) was here, but it makes no sense to separate them. Less error prone.
             }
           });
         }
@@ -389,6 +389,10 @@ function calculatePenaltyPoints() {
  * - Middle tone for "Didn't evaluate" events - adds 1 point
  * - Dark tone for "Didn't submit"+"didn't evaluate" events - adds 2 penalty points
  */
+/**
+ * This function calculates the maximum number of penalty points for any full 6-month contiguous period for each ambassador,
+ * and records this value in the "Max 6-Month PP" column.
+ */
 function calculateMaxPenaltyPointsForSixMonths() {
   Logger.log('Starting calculation of Max 6-Month Penalty Points.');
 
@@ -403,7 +407,7 @@ function calculateMaxPenaltyPointsForSixMonths() {
     return;
   }
 
-  const lastRow = overallScoresSheet.getLastRow() - 1;
+  const lastRow = overallScoresSheet.getLastRow();
   const lastColumn = overallScoresSheet.getLastColumn();
   const spreadsheetTimeZone = getProjectTimeZone();
 
@@ -424,8 +428,9 @@ function calculateMaxPenaltyPointsForSixMonths() {
     return;
   }
 
-  // Set the period length to minimum of 6 or available months
+  // Set the period length to the minimum of 6 or available months
   const periodLength = Math.min(6, monthColumns.length);
+  Logger.log(`Period length for calculation: ${periodLength} months.`);
 
   // Process each row
   for (let row = 2; row <= lastRow; row++) {
@@ -440,7 +445,6 @@ function calculateMaxPenaltyPointsForSixMonths() {
     Logger.log(`Row ${row}: Collected background colors for all month columns.`);
 
     // Iterate over all possible periods
-    // TODO rewrite this - it's too dangerous to do this based on background colors.
     for (let i = 0; i <= monthColumns.length - periodLength; i++) {
       let periodTotal = 0;
 
@@ -448,7 +452,6 @@ function calculateMaxPenaltyPointsForSixMonths() {
         const cellBackgroundColor = backgroundColors[j].toLowerCase();
 
         switch (cellBackgroundColor) {
-          case COLOR_OLD_MISSED_SUBMISSION:
           case COLOR_MISSED_SUBMISSION:
             periodTotal += 1;
             Logger.log(`Row ${row}: Adding 1 point for missed submission at column ${monthColumns[j]}.`);
