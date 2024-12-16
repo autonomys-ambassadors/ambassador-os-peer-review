@@ -1,9 +1,9 @@
 function setTestVariables() {
   // controls wether email will be sent or just logged for troubleshooting - should always be true for production.
-  const TESTER = 'Jonathan'; // 'Wilyam' or 'Jonathan'
+  const TESTER = 'Wilyam'; // 'Wilyam' or 'Jonathan'
 
   if (TESTER === 'Wilyam') {
-    SEND_EMAIL = false;
+    SEND_EMAIL = true;
 
     // Specify your testing sheets/forms/etc. here:
     // Spreadsheets:
@@ -58,7 +58,7 @@ Please add links your contributions during the month `;
     COLOR_MISSED_EVALUATION = '#d9d9d9';
     COLOR_EXPELLED = '#d36a6a';
     COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
-    COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
+    //COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
 
     // Jonathan Test vars
     //
@@ -117,7 +117,7 @@ Please add links your contributions during the month`;
     COLOR_MISSED_EVALUATION = '#d9d9d9';
     COLOR_EXPELLED = '#d36a6a';
     COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
-    COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
+    //COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
   } else {
     throw new Error('Invalid tester - configure your sheets and scenarios');
   }

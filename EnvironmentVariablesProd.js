@@ -58,5 +58,5 @@ Please add links your contributions during the month`;
   COLOR_MISSED_EVALUATION = '#d9d9d9';
   COLOR_EXPELLED = '#d36a6a';
   COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
-  COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
+  //COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
 }

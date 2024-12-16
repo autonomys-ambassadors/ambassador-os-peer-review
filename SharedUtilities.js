@@ -47,7 +47,7 @@ var COLOR_MISSED_SUBMISSION = '';
 var COLOR_MISSED_EVALUATION = '';
 var COLOR_EXPELLED = '';
 var COLOR_MISSED_SUBM_AND_EVAL = '';
-var COLOR_OLD_MISSED_SUBMISSION = '';
+//var COLOR_OLD_MISSED_SUBMISSION = '';
 
 // Triggers and Delays
 // These values will set the due date and reminder schedule for Submissions and Evaluations.
@@ -181,7 +181,7 @@ function refreshGlobalVariables() {
   Logger.log('Templates and constants reinitialized to ensure accurate processing.');
 
   Logger.log('Color for missed submission: ' + COLOR_MISSED_SUBMISSION);
-  Logger.log('Color for missed submission: ' + COLOR_OLD_MISSED_SUBMISSION);
+  //Logger.log('Color for missed submission: ' + COLOR_OLD_MISSED_SUBMISSION);
   Logger.log('Color for missed evaluation: ' + COLOR_MISSED_EVALUATION);
   Logger.log('Color for missed submiss and eval: ' + COLOR_MISSED_SUBM_AND_EVAL);
   Logger.log('Color for expelled: ' + COLOR_EXPELLED);
