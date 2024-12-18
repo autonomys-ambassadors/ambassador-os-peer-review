@@ -4,6 +4,10 @@
 function requestSubmissionsModule() {
   Logger.log('Request Submissions Module started.');
 
+  // activating OnForm submit trigger for detecting edited responses
+  setupFormSubmitTrigger();
+  Logger.log('Form submission trigger set up.');
+
   // Update form titles with the current reporting month
   updateFormTitlesWithCurrentReportingMonth();
   Logger.log('Form titles updated with the current reporting month.');
@@ -95,11 +99,106 @@ function requestSubmissionsModule() {
   Logger.log('Request Submissions completed.');
 }
 
+/**
+ * Sets up a trigger for form submission to handle new responses.
+ * Ensures that only one trigger is active for the 'handleNewResponses' function.
+ */
+function setupFormSubmitTrigger() {
+  Logger.log('Setting up form submission trigger.');
+
+  // Remove any existing trigger for 'handleNewResponses'
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach((trigger) => {
+    if (trigger.getHandlerFunction() === 'handleNewResponses') {
+      ScriptApp.deleteTrigger(trigger);
+      Logger.log('Existing trigger for handleNewResponses removed.');
+    }
+  });
+
+  // Create a new trigger for 'handleNewResponses'
+  ScriptApp.newTrigger('handleNewResponses')
+    .forSpreadsheet(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID)
+    .onFormSubmit()
+    .create();
+
+  Logger.log('Form submission trigger created.');
+}
+
+/**
+ * Handles new form submissions, ensuring only the latest response per user (real email) is kept.
+ * Removes older responses for the same email within the submission window.
+ * The real email collected by Google Forms is used instead of a user-inputted email field.
+ */
+function handleNewResponses(e) {
+  Logger.log('Processing new form submission.');
+
+  // Open the Form Responses sheet
+  const formResponsesSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(FORM_RESPONSES_SHEET_NAME);
+  if (!formResponsesSheet) {
+    Logger.log('Error: Form Responses sheet not found.');
+    return;
+  }
+
+  // Get the headers to find the indices of "Timestamp" and "Email Address" columns
+  const headers = formResponsesSheet.getRange(1, 1, 1, formResponsesSheet.getLastColumn()).getValues()[0];
+  const timestampColIndex = headers.indexOf(GOOGLE_FORM_TIMESTAMP_COLUMN) + 1; // Convert to 1-based index
+  const realEmailColIndex = headers.indexOf(GOOGLE_FORM_REAL_EMAIL_COLUMN) + 1; // Automatically collected email column
+
+  if (timestampColIndex === 0 || realEmailColIndex === 0) {
+    Logger.log('Error: Required columns (Timestamp or Real Email) not found in Form Responses Sheet.');
+    return;
+  }
+
+  // Access the newly submitted row via the event object 'e'
+  const newRow = e.range.getRow();
+  const newTimestamp = formResponsesSheet.getRange(newRow, timestampColIndex).getValue();
+  const newRealEmail = formResponsesSheet.getRange(newRow, realEmailColIndex).getValue();
+
+  if (!newRealEmail || !newTimestamp) {
+    Logger.log('New response missing real email or timestamp. No action taken.');
+    return;
+  }
+
+  const submissionDate = new Date(newTimestamp).toDateString();
+  Logger.log(`New response from ${newRealEmail} on ${submissionDate} at row ${newRow}. Checking for older duplicates...`);
+
+  // Loop through all rows except the new one to find duplicates
+  const lastRow = formResponsesSheet.getLastRow();
+  for (let row = lastRow; row >= 2; row--) {
+    if (row === newRow) continue; // Skip the newly submitted row
+
+    const rowTimestamp = formResponsesSheet.getRange(row, timestampColIndex).getValue();
+    const rowRealEmail = formResponsesSheet.getRange(row, realEmailColIndex).getValue();
+
+    if (!rowRealEmail || !rowTimestamp) continue;
+
+    if (
+      rowRealEmail.trim().toLowerCase() === newRealEmail.trim().toLowerCase() &&
+      new Date(rowTimestamp).toDateString() === submissionDate
+    ) {
+      // Delete older responses from the same email and date
+      formResponsesSheet.deleteRow(row);
+      Logger.log(`Deleted older response from ${newRealEmail} on ${submissionDate} at row ${row}.`);
+    }
+  }
+
+  Logger.log('Form responses updated. Only the latest response for this email and date is kept.');
+}
+
 // Function to set up submission reminder trigger
 function setupSubmissionReminderTrigger(submissionStartTime) {
   Logger.log('Setting up submission reminder trigger.');
 
-  // Calculate reminder trigger time
+  // Remove existing triggers for 'checkNonRespondents'
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach((trigger) => {
+    if (trigger.getHandlerFunction() === 'checkNonRespondents') {
+      ScriptApp.deleteTrigger(trigger);
+      Logger.log('Existing reminder trigger removed.');
+    }
+  });
+
+  // Calculate the time for the reminder
   const triggerDate = new Date(submissionStartTime.getTime() + SUBMISSION_WINDOW_REMINDER_MINUTES * 60 * 1000);
 
   if (isNaN(triggerDate.getTime())) {
@@ -107,19 +206,7 @@ function setupSubmissionReminderTrigger(submissionStartTime) {
     return;
   }
 
-  // Log trigger details
-  const spreadsheetTimeZone = getProjectTimeZone(); // Updated function name
-  Logger.log(
-    `Trigger date for reminder set to: ${Utilities.formatDate(triggerDate, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`
-  );
-
-  // Calculate and log submission window
-  const submissionWindowEnd = new Date(submissionStartTime.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000);
-  Logger.log(
-    `Submission window is from ${Utilities.formatDate(submissionStartTime, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')} to ${Utilities.formatDate(submissionWindowEnd, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`
-  );
-
-  // Create a time-based trigger for checking non-respondents
+  // Create the reminder trigger
   ScriptApp.newTrigger('checkNonRespondents').timeBased().at(triggerDate).create();
   Logger.log('Reminder trigger created.');
 }
@@ -128,79 +215,59 @@ function setupSubmissionReminderTrigger(submissionStartTime) {
 function checkNonRespondents() {
   Logger.log('Checking for non-respondents.');
 
-  // Retrieve the submission window start time
+  // Retrieve submission window start time
   const submissionWindowStartStr = PropertiesService.getScriptProperties().getProperty('submissionWindowStart');
   if (!submissionWindowStartStr) {
-    Logger.log('Submission window start time not found, aborting checkNonRespondents.');
+    Logger.log('Submission window start time not found.');
     return;
   }
 
-  // Convert submission window start to Date and calculate window end
+  // Calculate submission window start and end times
   const submissionWindowStart = new Date(submissionWindowStartStr);
   const submissionWindowEnd = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000);
 
-  // Get project time zone for consistent logging
-  const spreadsheetTimeZone = getProjectTimeZone();
-  Logger.log(
-    `Submission window is from ${Utilities.formatDate(submissionWindowStart, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')} to ${Utilities.formatDate(submissionWindowEnd, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`
-  );
-
-  // Open Registry sheet
+  // Open Registry and Form Responses sheets
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  if (!registrySheet) {
-    Logger.log('Error: Registry sheet not found.');
-    return;
-  }
-  Logger.log('Opened "Registry" sheet.');
+  const formResponseSheet = getSubmissionFormResponseSheet();
 
-  const formResponseSheet = getSubmissionFormResponseSheet(); // Call from SharedUtilities.gs
-  if (!formResponseSheet) {
-    Logger.log('Error: Form Response sheet not found.');
-    return;
-  }
-  Logger.log('Form Response sheet found.');
+  Logger.log('Sheets successfully fetched.');
 
-  // Fetch data from Registry and filter eligible ambassadors
+  // Get column indices for required headers
   const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
-  const registryAmbassadorStatus = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
-  const registryData = registrySheet
-    .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
-    .getValues(); // Columns: Email, Discord, Status
-  Logger.log(`Registry data fetched: ${registryData.length} rows`);
+  const registryAmbassadorStatusColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
+  const responseEmailColIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN);
+  const responseTimestampColIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
+  // Fetch registry data and filter eligible emails
+  const registryData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn()).getValues();
   const eligibleEmails = registryData
-    .filter((row) => !row[registryAmbassadorStatus - 1].includes('Expelled'))
+    .filter((row) => !row[registryAmbassadorStatusColIndex - 1].includes('Expelled'))
     .map((row) => row[registryEmailColIndex - 1]);
-  Logger.log(`Eligible emails (excluding Expelled): ${eligibleEmails}`);
 
-  // Fetch response data from Form Responses
-  const responseTimestamp = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
-  const responseEmail = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN);
-  const responseData = formResponseSheet
-    .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())
-    .getValues();
-  Logger.log(`Response data fetched from form: ${responseData.length} rows`);
+  Logger.log(`Eligible emails: ${eligibleEmails}`);
 
-  // Filter responses within submission window
+  // Fetch form responses
+  const responseData = formResponseSheet.getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn()).getValues();
+
+  // Filter valid responses within submission window
   const validResponses = responseData.filter((row) => {
-    const timestamp = new Date(row[responseTimestamp - 1]);
+    const timestamp = new Date(row[responseTimestampColIndex - 1]);
     return timestamp >= submissionWindowStart && timestamp <= submissionWindowEnd;
   });
-  Logger.log(`Valid responses within submission window: ${validResponses.length}`);
 
-  const respondedEmails = validResponses.map((row) => row[responseEmail - 1]); // Assuming email is in the second column
+  const respondedEmails = validResponses.map((row) => row[responseEmailColIndex - 1]);
   Logger.log(`Responded emails: ${respondedEmails}`);
 
-  // Find non-respondents
+  // Identify non-respondents
   const nonRespondents = eligibleEmails.filter((email) => !respondedEmails.includes(email));
-  Logger.log(`Non-respondents (eligible only): ${nonRespondents}`);
+  Logger.log(`Non-respondents: ${nonRespondents}`);
 
-  // Send reminder emails to non-respondents
+  // Send reminders to non-respondents
   if (nonRespondents.length > 0) {
-    sendReminderEmails(nonRespondents); // Call from SharedUtilities.gs
-    Logger.log(`Reminder emails sent to ${nonRespondents.length} non-respondents.`);
+    sendReminderEmails(nonRespondents);
+    Logger.log(`Reminders sent to ${nonRespondents.length} non-respondents.`);
   } else {
-    Logger.log('No non-respondents found. No reminder emails sent.');
+    Logger.log('No non-respondents found.');
   }
 }
 
@@ -215,31 +282,41 @@ function sendReminderEmails(nonRespondents) {
     return; // Exit if there are no non-respondents
   }
 
-  nonRespondents.forEach((email, index) => {
-    // Validating emails
+  // Dynamically fetch column indices
+  const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN); // Email column index
+  const registryDiscordHandleColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN); // Discord Handle column index
+
+  // Validate column indices
+  if (registryEmailColIndex === -1 || registryDiscordHandleColIndex === -1) {
+    Logger.log('Error: One or more required columns not found in Registry sheet.');
+    return;
+  }
+
+  nonRespondents.forEach((email) => {
+    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Simple regex for validating email
     if (!emailRegex.test(email)) {
-      const registryAmbassadorDiscordHandle = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
-      const discordHandle = registrySheet.getRange(index + 2, registryAmbassadorDiscordHandle).getValue(); // getting Discord Handle from Registry
-      Logger.log(`Warning: Invalid or missing email for Discord Handle "${discordHandle}". Skipping.`);
-      return; // skipping incorrect or empty email
+      Logger.log(`Warning: Invalid email "${email}". Skipping.`);
+      return; // Skip invalid or empty email
     }
 
-    // Finding row with given email in Registry
-    const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+    // Find the row with the given email in the Registry
     const result = registrySheet.createTextFinder(email).findNext();
     if (result) {
       const row = result.getRow(); // Get the row number
       Logger.log(`Non-respondent found at row: ${row}`);
-      const discordHandle = registrySheet.getRange(row, registryEmailColIndex).getValue(); // Fetch Discord Handle from column B
+
+      // Fetch Discord Handle dynamically
+      const discordHandle = registrySheet.getRange(row, registryDiscordHandleColIndex).getValue();
       Logger.log(`Discord handle found for ${email}: ${discordHandle}`);
 
       // Create the reminder email message
       const message = REMINDER_EMAIL_TEMPLATE.replace('{AmbassadorDiscordHandle}', discordHandle);
 
+      // Send the email
       if (SEND_EMAIL) {
         try {
-          MailApp.sendEmail(email, '🕚Reminder to Submit', message); // Send the reminder email
+          MailApp.sendEmail(email, '🕚 Reminder to Submit', message); // Send the reminder email
           Logger.log(`Reminder email sent to: ${email} (Discord: ${discordHandle})`);
         } catch (error) {
           Logger.log(`Failed to send reminder email to ${email}. Error: ${error}`);

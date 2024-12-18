@@ -544,13 +544,13 @@ function getColumnIndexByName(sheet, columnName) {
   const columnIndex = headers.findIndex((header) => (header?.trim?.() ?? '') === columnName.trim());
 
   if (columnIndex !== -1) {
-    //Logger.log(`Found header for ${columnName} include column ${columnIndex + 1} of ${sheet.getName()}`);
-    return columnIndex + 1; // Return -1 if the column is not found
+    return columnIndex + 1; // Convert 0-based index to 1-based index for Apps Script
   } else {
-    Logger.log(`Header for ${columnName} not found in ${sheet.getName()} with header ${headers}`);
+    Logger.log(`Header for "${columnName}" not found in sheet "${sheet.getName()}" with headers: ${headers}`);
     return -1;
   }
 }
+
 
 /**
  * This function helps to determine if a column already exists for a given month to avoid duplicate columns in the "Overall score" sheet.

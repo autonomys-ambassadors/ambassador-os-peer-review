@@ -114,7 +114,7 @@ function copyFinalScoresToOverallScore() {
 
     // Fetch data from Final Score on month sheet
     const finalScores = monthSheet
-      .getRange(2, 1, monthSheet.getLastRow() - 1, monthSheet.getLastColumn())
+      .getRange(2, 1, monthSheet.getLastRow(), monthSheet.getLastColumn()) // Removed `-1`
       .getValues()
       .map((row) => ({
         handle: row[monthDiscordColIndex - 1],
@@ -185,15 +185,12 @@ function detectNonRespondersPastMonths() {
   const scriptProperties = PropertiesService.getScriptProperties();
   let hasRun = scriptProperties.getProperty('detectNonRespondersPastMonthsRan');
 
-  // Check if the function has already been executed
   if (hasRun === 'true') {
     Logger.log('Warning: This function has already been executed and is locked from repeated runs.');
-
-    // Show warning to the user in the UI if trying to run again
     alertAndLog(
       "Warning! Processing Past Months function is designed to run only once. To allow a re-run, set 'detectNonRespondersPastMonthsRan' to 'false' in the script properties."
     );
-    return; // Terminate execution if function already ran once
+    return; // Terminate execution
   }
 
   Logger.log('Executing detectNonRespondersPastMonths for the first time.');
@@ -202,54 +199,52 @@ function detectNonRespondersPastMonths() {
   const headersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
   const penaltyPointsColIndex = headersRange.indexOf('Penalty Points') + 1;
 
-  if (penaltyPointsColIndex === 0 || penaltyPointsColIndex === -1) {
+  if (penaltyPointsColIndex === 0) {
     Logger.log('Error: Penalty Points column not found.');
     return;
   }
 
-  const spreadsheetTimeZone = getProjectTimeZone(); // Get project time zone
+  const spreadsheetTimeZone = getProjectTimeZone();
   const currentMonthDate = getPreviousMonthDate(spreadsheetTimeZone);
   const currentMonthName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
   Logger.log(`Current reporting month: ${currentMonthName}`);
 
-  const lastRow = overallScoresSheet.getLastRow() - 1;
+  const lastRow = overallScoresSheet.getLastRow();
   const lastColumn = overallScoresSheet.getLastColumn();
-  const sheetData = overallScoresSheet.getRange(1, 1, lastRow, lastColumn).getValues();
+  const sheetData = overallScoresSheet.getRange(1, 1, lastRow, lastColumn).getValues(); // No `-1`
 
   for (let row = 2; row <= lastRow; row++) {
-    let currentPenaltyPoints = sheetData[row - 1][penaltyPointsColIndex - 1] || 0;
+    let currentPenaltyPoints = sheetData[row - 1][penaltyPointsColIndex - 1] || 0; // -1 for array index
 
     for (let col = 1; col <= lastColumn; col++) {
-      const cellValue = sheetData[0][col - 1];
+      const cellValue = sheetData[0][col - 1]; // -1 for array index
 
       if (cellValue instanceof Date) {
         const cellMonthName = Utilities.formatDate(cellValue, spreadsheetTimeZone, 'MMMM yyyy');
-
         if (cellMonthName === currentMonthName) continue;
 
-        const pastMonthValue = sheetData[row - 1][col - 1];
+        const pastMonthValue = sheetData[row - 1][col - 1]; // -1 for array index
 
         if (typeof pastMonthValue === 'string') {
           const markers = pastMonthValue.split(';').map((s) => s.trim());
           markers.forEach((marker) => {
             if (marker === "didn't submit" || marker === 'late submission') {
               currentPenaltyPoints += 1;
-              const cell = overallScoresSheet.getRange(row, col);
-              cell.setBackground(COLOR_MISSED_SUBMISSION); // initially (COLOR_OLD_MISSED_SUBMISSION) was here, but it makes no sense to separate them. Less error prone.
+              const cell = overallScoresSheet.getRange(row, col); // 1-based indices
+              cell.setBackground(COLOR_MISSED_SUBMISSION);
             }
           });
         }
       }
     }
 
-    sheetData[row - 1][penaltyPointsColIndex - 1] = currentPenaltyPoints;
+    sheetData[row - 1][penaltyPointsColIndex - 1] = currentPenaltyPoints; // -1 for array index
   }
 
   overallScoresSheet
-    .getRange(2, penaltyPointsColIndex, lastRow - 1, 1)
+    .getRange(2, penaltyPointsColIndex, lastRow - 1, 1) // Use 1-based indices
     .setValues(sheetData.slice(1).map((row) => [row[penaltyPointsColIndex - 1]]));
 
-  // Set the property to 'true' to lock the function from running again
   scriptProperties.setProperty('detectNonRespondersPastMonthsRan', 'true');
   Logger.log('detectNonRespondersPastMonths completed. Function locked from repeated runs.');
 }
@@ -332,7 +327,7 @@ function calculatePenaltyPoints() {
 
   // Retrieve penalty points
   const penaltyPoints = overallScoresSheet
-    .getRange(2, penaltyPointsColIndex, overallScoresSheet.getLastRow() - 1, 1)
+    .getRange(2, penaltyPointsColIndex, overallScoresSheet.getLastRow(), 1)// Removed `-1`
     .getValues()
     .flat();
 
@@ -502,53 +497,48 @@ function expelAmbassadors() {
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
 
-  // Get headers for column indices
   const scoreMaxPenaltiesColIndex = getColumnIndexByName(overallScoresSheet, 'Max 6-Month PP');
   const scoreDiscordHandleColIndex = getColumnIndexByName(overallScoresSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const registryDiscordHandleColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const registryStatusColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
 
-  const newlyExpelled = []; // List to track newly expelled ambassadors
+  const newlyExpelled = [];
 
-  // Retrieve ambassador scores from the Overall Scores sheet, filter for those that meet the expulsion criteria
   const scoreData = overallScoresSheet
-    .getRange(2, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn())
+    .getRange(2, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn()) // Correct range
     .getValues()
-    .filter((row) => row[scoreMaxPenaltiesColIndex - 1] >= MAX_PENALTY_POINTS_TO_EXPEL);
+    .filter((row) => row[scoreMaxPenaltiesColIndex - 1] >= MAX_PENALTY_POINTS_TO_EXPEL); // -1 for array index
 
-  // for each ambassador meeting the explusion criteria, check if they are already expelled
-  scoreData.forEach((row, i) => {
-    const discordHandle = row[scoreDiscordHandleColIndex - 1];
+  scoreData.forEach((row) => {
+    const discordHandle = row[scoreDiscordHandleColIndex - 1]; // -1 for array index
     const registryRowIndex =
       registrySheet
-        .getRange(1, registryDiscordHandleColIndex, registrySheet.getLastRow() - 1, 1)
+        .getRange(2, registryDiscordHandleColIndex, registrySheet.getLastRow() - 1, 1) // Correct range
         .getValues()
-        .findIndex((regRow) => regRow[0] === discordHandle) + 1;
+        .findIndex((regRow) => regRow[0] === discordHandle) + 2; // +2 to adjust for headers and 0-based index
 
     if (registryRowIndex > 1) {
       const currentStatus = registrySheet.getRange(registryRowIndex, registryStatusColIndex).getValue();
-      // Check if 'Expelled' is already in the status
       if (currentStatus.includes('Expelled')) {
         Logger.log(`Notice: Ambassador ${discordHandle} is already marked as expelled.`);
         return;
       }
 
       const currentDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd MMM yy');
-
-      // Concatenate 'Expelled [DD MMM YY]' to the current status
       const updatedStatus = `${currentStatus} | Expelled [${currentDate}].`;
       registrySheet.getRange(registryRowIndex, registryStatusColIndex).setValue(updatedStatus);
 
       Logger.log(`Ambassador ${discordHandle} status updated to: "${updatedStatus}"`);
-      newlyExpelled.push(discordHandle); // Add to newly expelled list
+      newlyExpelled.push(discordHandle);
     }
   });
 
-  // Notify newly expelled ambassadors
   newlyExpelled.forEach((discordHandle) => {
     sendExpulsionNotifications(discordHandle);
   });
+  Logger.log('expelAmbassadors process completed.');
 }
+
 
 /**
  * Sends expulsion notifications to the expelled ambassador and sponsor.
@@ -571,7 +561,7 @@ function sendExpulsionNotifications(discordHandle) {
   // Find ambassador's row by discord handle
   const registryRowIndex =
     registrySheet
-      .getRange(2, registryDiscordColIndex, registrySheet.getLastRow() - 1, 1)
+      .getRange(2, registryDiscordColIndex, registrySheet.getLastRow(), 1) // Removed `-1`
       .getValues()
       .findIndex((row) => row[0] === discordHandle) + 2;
 
