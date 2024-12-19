@@ -27,14 +27,9 @@ function runComplianceAudit() {
   // Check for ambassadors eligible for expulsion
   expelAmbassadors();
   SpreadsheetApp.flush();
-  // Send expulsion notifications
-  // this is already included in the expelAmbassadors function; removing
-  // sendExpulsionNotifications();
-  // SpreadsheetApp.flush();
-  // Calling the function to sync Ambassador Status columns in Overall score with it in Registry, to reflect changes
-  // TODO: This doesn't do that, it syncs from registry TO overall score, not the other way around.
-  //syncRegistryColumnsToOverallScore();
-  //SpreadsheetApp.flush();
+  // Calling the function to sync Ambassador Status columns from Registry back to Overall score, to reflect changes
+  syncRegistryColumnsToOverallScore();
+  SpreadsheetApp.flush();
   Logger.log('Compliance Audit process completed.');
 }
 
@@ -100,6 +95,7 @@ function copyFinalScoresToOverallScore() {
     }
 
     // Searching column index in "Overall score" by date
+    // TODO Suggstion: improve getColumnIndexByName to handle the month case?
     const existingColumns = overallScoreSheet.getRange(1, 1, 1, overallScoreSheet.getLastColumn()).getValues()[0];
     const monthColumnIndex =
       existingColumns.findIndex((header) => header instanceof Date && header.getTime() === currentMonthDate.getTime()) +
@@ -114,7 +110,7 @@ function copyFinalScoresToOverallScore() {
 
     // Fetch data from Final Score on month sheet
     const finalScores = monthSheet
-      .getRange(2, 1, monthSheet.getLastRow(), monthSheet.getLastColumn()) // Removed `-1`
+      .getRange(2, 1, monthSheet.getLastRow() - 1, monthSheet.getLastColumn())
       .getValues()
       .map((row) => ({
         handle: row[monthDiscordColIndex - 1],
@@ -327,7 +323,7 @@ function calculatePenaltyPoints() {
 
   // Retrieve penalty points
   const penaltyPoints = overallScoresSheet
-    .getRange(2, penaltyPointsColIndex, overallScoresSheet.getLastRow(), 1)// Removed `-1`
+    .getRange(2, penaltyPointsColIndex, overallScoresSheet.getLastRow() - 1, 1)
     .getValues()
     .flat();
 
@@ -393,7 +389,7 @@ function calculateMaxPenaltyPointsForSixMonths() {
 
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
   const headers = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
-
+  // TODO Suggestion: switch to header constant vars
   const penaltyPointsCol = headers.indexOf('Penalty Points') + 1;
   const maxPPCol = headers.indexOf('Max 6-Month PP') + 1;
 
@@ -413,7 +409,11 @@ function calculateMaxPenaltyPointsForSixMonths() {
     if (cellValue instanceof Date) {
       monthColumns.push(col);
       Logger.log(
-        `Found month column at index ${col} with date: ${Utilities.formatDate(cellValue, spreadsheetTimeZone, 'MMMM yyyy')}`
+        `Found month column at index ${col} with date: ${Utilities.formatDate(
+          cellValue,
+          spreadsheetTimeZone,
+          'MMMM yyyy'
+        )}`
       );
     }
   }
@@ -496,7 +496,7 @@ function expelAmbassadors() {
 
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
-
+  // TODO Suggestion: move max 6-month PP to a constant
   const scoreMaxPenaltiesColIndex = getColumnIndexByName(overallScoresSheet, 'Max 6-Month PP');
   const scoreDiscordHandleColIndex = getColumnIndexByName(overallScoresSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const registryDiscordHandleColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
@@ -539,7 +539,6 @@ function expelAmbassadors() {
   Logger.log('expelAmbassadors process completed.');
 }
 
-
 /**
  * Sends expulsion notifications to the expelled ambassador and sponsor.
  * @param {string} discordHandle - The ambassador's discord handle to look up the email.
@@ -561,7 +560,7 @@ function sendExpulsionNotifications(discordHandle) {
   // Find ambassador's row by discord handle
   const registryRowIndex =
     registrySheet
-      .getRange(2, registryDiscordColIndex, registrySheet.getLastRow(), 1) // Removed `-1`
+      .getRange(2, registryDiscordColIndex, registrySheet.getLastRow() - 1, 1)
       .getValues()
       .findIndex((row) => row[0] === discordHandle) + 2;
 
