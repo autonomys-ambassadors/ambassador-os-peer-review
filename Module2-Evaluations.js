@@ -189,11 +189,11 @@ function generateReviewMatrix() {
   }
 }
 
-+/**
-+ * Sets up a trigger for evaluation form submission to handle new responses.
-+ * Ensures that only one trigger is active for the 'handleEvaluationNewResponses' function.
-+ * This will ensure form editing scenario is handled: only the latest response for each user per date is kept.
-+ */
+/**
+ * Sets up a trigger for evaluation form submission to handle new responses.
+ * Ensures that only one trigger is active for the 'handleEvaluationNewResponses' function.
+ * This will ensure form editing scenario is handled: only the latest response for each user per date is kept.
+ */
 function setupEvaluationFormSubmitTrigger() {
   Logger.log('Setting up evaluation form submission trigger.');
 
@@ -215,11 +215,11 @@ function setupEvaluationFormSubmitTrigger() {
   Logger.log('Evaluation form submission trigger created.');
 }
 
-+/**
-+ * Handles new evaluation form submissions, ensuring only the latest response per user (real email) is kept for that day.
-+ * Removes older responses for the same email and same date within the evaluation period.
-+ * Uses the real email automatically collected by Google Forms.
-+ */
+/**
+ * Handles new evaluation form submissions, ensuring only the latest response per user (real email) is kept for that day.
+ * Removes older responses for the same email and same date within the evaluation period.
+ * Uses the real email automatically collected by Google Forms.
+ */
 function handleEvaluationNewResponses(e) {
   Logger.log('Processing new evaluation form submission.');
 
