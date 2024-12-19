@@ -26,6 +26,7 @@ function requestEvaluationsModule() {
   // Step 6: Setting triggers
   setupEvaluationResponseTrigger(); // Setting the onFormSubmit trigger to process evaluation responses
   setupEvaluationTriggers(evaluationWindowStart); // Setting triggers for reminders and closures
+  setupEvaluationFormSubmitTrigger(); // Set up evaluation form submission trigger to handle edited/duplicate responses
 }
 
 /**
@@ -840,13 +841,18 @@ function processEvaluationResponse(e) {
       return;
     }
 
-    const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
-    if (responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) {
-      Logger.log(
-        'Evaluation received at ${responseTime} outside the window from ${evaluationWindowStart} to ${evaluationWindowEnd}. Response will be ignored.'
-      );
+    if (!evaluatorEmail || !submitterDiscordHandle || isNaN(grade)) {
+      Logger.log('Missing required data. Exiting processEvaluationResponse.');
       return;
     }
+
+    //const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
+    //if (responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) {
+    //  Logger.log(
+    //    'Evaluation received at ${responseTime} outside the window from ${evaluationWindowStart} to ${evaluationWindowEnd}. Response will be ignored.'
+    //  );
+    //  return;
+    //}
 
     // Retrieve assignments from Review Log and find expected submitters
     const assignments = getReviewLogAssignments();
