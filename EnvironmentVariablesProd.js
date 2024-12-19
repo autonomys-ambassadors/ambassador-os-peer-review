@@ -35,11 +35,14 @@ function setProductionVariables() {
   OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
 
   // Columns
+  AMBASSADOR_ID_COLUMN = 'Ambassador Id';
   AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
   AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
   AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
   GOOGLE_FORM_TIMESTAMP_COLUMN = 'Timestamp';
-  SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email';
+  SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Your Email Address';
+  EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Your Email Address';
+  GOOGLE_FORM_REAL_EMAIL_COLUMN = 'Email Address';
   GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = `Dear Ambassador,
 Please add text to your contributions during the month`;
   GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
