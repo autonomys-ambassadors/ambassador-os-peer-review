@@ -5,8 +5,9 @@ function requestSubmissionsModule() {
   Logger.log('Request Submissions Module started.');
 
   // activating OnForm submit trigger for detecting edited responses
-  setupFormSubmitTrigger();
-  Logger.log('Form submission trigger set up.');
+  // TODO: Discuss: We don't need (or want) this.
+  // setupFormSubmitTrigger();
+  // Logger.log('Form submission trigger set up.');
 
   // Update form titles with the current reporting month
   updateFormTitlesWithCurrentReportingMonth();
@@ -99,10 +100,12 @@ function requestSubmissionsModule() {
   Logger.log('Request Submissions completed.');
 }
 
+// TODO Discuss: This should all be deleted. We should not be deleting user submissions, and don't need to process submissions at all when received.
 /**
  * Sets up a trigger for form submission to handle new responses.
  * Ensures that only one trigger is active for the 'handleNewResponses' function.
  */
+/*
 function setupFormSubmitTrigger() {
   Logger.log('Setting up form submission trigger.');
 
@@ -124,22 +127,32 @@ function setupFormSubmitTrigger() {
   Logger.log('Form submission trigger created.');
 }
 
+*/
+// TODO Discuss: why this is happening, we should not be deleting user submissions.
+// The form for _submissions_ should only allow 1 submission, but can allow edits. Edits will trigger this again, and the last one wins.
+// (We want multiple responses for evaluations.)
+// If we don't want to rely on google forms for this (why not?) we could change processing on only pick the latest.
+
 /**
  * Handles new form submissions, ensuring only the latest response per user (real email) is kept.
  * Removes older responses for the same email within the submission window.
  * The real email collected by Google Forms is used instead of a user-inputted email field.
  */
+/*
 function handleNewResponses(e) {
   Logger.log('Processing new form submission.');
 
   // Open the Form Responses sheet
-  const formResponsesSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(FORM_RESPONSES_SHEET_NAME);
+  const formResponsesSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(
+    FORM_RESPONSES_SHEET_NAME
+  );
   if (!formResponsesSheet) {
     Logger.log('Error: Form Responses sheet not found.');
     return;
   }
 
   // Get the headers to find the indices of "Timestamp" and "Email Address" columns
+  // TODO Suggestion: Change to use getColumnIndexByName func for consistency. Not changing now to minimize non-functional changes.
   const headers = formResponsesSheet.getRange(1, 1, 1, formResponsesSheet.getLastColumn()).getValues()[0];
   const timestampColIndex = headers.indexOf(GOOGLE_FORM_TIMESTAMP_COLUMN) + 1; // Convert to 1-based index
   const realEmailColIndex = headers.indexOf(GOOGLE_FORM_REAL_EMAIL_COLUMN) + 1; // Automatically collected email column
@@ -160,7 +173,9 @@ function handleNewResponses(e) {
   }
 
   const submissionDate = new Date(newTimestamp).toDateString();
-  Logger.log(`New response from ${newRealEmail} on ${submissionDate} at row ${newRow}. Checking for older duplicates...`);
+  Logger.log(
+    `New response from ${newRealEmail} on ${submissionDate} at row ${newRow}. Checking for older duplicates...`
+  );
 
   // Loop through all rows except the new one to find duplicates
   const lastRow = formResponsesSheet.getLastRow();
@@ -178,12 +193,12 @@ function handleNewResponses(e) {
     ) {
       // Delete older responses from the same email and date
       formResponsesSheet.deleteRow(row);
-      Logger.log(`Deleted older response from ${newRealEmail} on ${submissionDate} at row ${row}.`);
+      Logger.log(`Would have deleted older response from ${newRealEmail} on ${submissionDate} at row ${row}.`);
     }
   }
-
   Logger.log('Form responses updated. Only the latest response for this email and date is kept.');
 }
+*/
 
 // Function to set up submission reminder trigger
 function setupSubmissionReminderTrigger(submissionStartTime) {
@@ -239,7 +254,9 @@ function checkNonRespondents() {
   const responseTimestampColIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
   // Fetch registry data and filter eligible emails
-  const registryData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn()).getValues();
+  const registryData = registrySheet
+    .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
+    .getValues();
   const eligibleEmails = registryData
     .filter((row) => !row[registryAmbassadorStatusColIndex - 1].includes('Expelled'))
     .map((row) => row[registryEmailColIndex - 1]);
@@ -247,7 +264,9 @@ function checkNonRespondents() {
   Logger.log(`Eligible emails: ${eligibleEmails}`);
 
   // Fetch form responses
-  const responseData = formResponseSheet.getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn()).getValues();
+  const responseData = formResponseSheet
+    .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())
+    .getValues();
 
   // Filter valid responses within submission window
   const validResponses = responseData.filter((row) => {
