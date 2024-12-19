@@ -184,17 +184,19 @@ function generateReviewMatrix() {
     } else {
       Logger.log('No assignments could be made in the given attempts.');
     }
-
   } catch (error) {
     Logger.log(`Error in generateReviewMatrix: ${error}`);
   }
 }
 
+// TODO Discuss: We cannot be deleting any user data. Also, we expect up to 3 per user!
+// Edits to a form will just edit the existing row. If we want to check for dupes, we have to check email + evaluating ambassador.
 /**
  * Sets up a trigger for evaluation form submission to handle new responses.
  * Ensures that only one trigger is active for the 'handleEvaluationNewResponses' function.
  * This will ensure form editing scenario is handled: only the latest response for each user per date is kept.
  */
+/*
 function setupEvaluationFormSubmitTrigger() {
   Logger.log('Setting up evaluation form submission trigger.');
 
@@ -206,7 +208,8 @@ function setupEvaluationFormSubmitTrigger() {
       Logger.log('Existing trigger for handleEvaluationNewResponses removed.');
     }
   });
-
+*/
+/*
   // Create a new trigger for 'handleEvaluationNewResponses'
   ScriptApp.newTrigger('handleEvaluationNewResponses')
     .forSpreadsheet(EVALUATION_RESPONSES_SPREADSHEET_ID)
@@ -215,18 +218,21 @@ function setupEvaluationFormSubmitTrigger() {
 
   Logger.log('Evaluation form submission trigger created.');
 }
+*/
 
 /**
  * Handles new evaluation form submissions, ensuring only the latest response per user (real email) is kept for that day.
  * Removes older responses for the same email and same date within the evaluation period.
  * Uses the real email automatically collected by Google Forms.
  */
+/*
 function handleEvaluationNewResponses(e) {
   Logger.log('Processing new evaluation form submission.');
 
   // Open the Evaluation Form Responses sheet
-  const formResponsesSheet = SpreadsheetApp.openById(EVALUATION_RESPONSES_SPREADSHEET_ID)
-    .getSheetByName(EVAL_FORM_RESPONSES_SHEET_NAME);
+  const formResponsesSheet = SpreadsheetApp.openById(EVALUATION_RESPONSES_SPREADSHEET_ID).getSheetByName(
+    EVAL_FORM_RESPONSES_SHEET_NAME
+  );
   if (!formResponsesSheet) {
     Logger.log('Error: Evaluation Form Responses sheet not found.');
     return;
@@ -253,7 +259,7 @@ function handleEvaluationNewResponses(e) {
   }
 
   const submissionDate = new Date(newTimestamp).toDateString();
-  Logger.log(`New evaluation response from ${newRealEmail} on ${submissionDate} at row ${newRow}. Checking for older duplicates...`);
+  Logger.log(`New evaluation response from ${newRealEmail} on ${submissionDate} at row ${newRow}.`);
 
   // Loop through all rows except the new one to find duplicates for the same user and date
   const lastRow = formResponsesSheet.getLastRow();
@@ -272,12 +278,15 @@ function handleEvaluationNewResponses(e) {
     ) {
       // Delete older responses from the same email on the same date
       formResponsesSheet.deleteRow(row);
-      Logger.log(`Deleted older evaluation response from ${newRealEmail} on ${submissionDate} at row ${row}.`);
+      Logger.log(
+        `Would have deleted older evaluation response from ${newRealEmail} on ${submissionDate} at row ${row}.`
+      );
     }
   }
 
   Logger.log('Evaluation form responses updated. Only the latest response for this email and date is kept.');
 }
+*/
 
 // ensure the 'Email Address' column name in the form is used or replaced with the actual column name from your environment or sheet.
 function attemptSingleAssignment() {
@@ -333,6 +342,7 @@ function attemptSingleAssignment() {
   Logger.log(`Submission window is from ${submissionWindowStart} to ${submissionWindowEnd}`);
 
   // Get responses from Submission form
+  // TODO Suggestion: pick a convention - -1 when assigning, or when using in getRange?
   const lastRow = formResponseSheet.getLastRow() - 1; // excluding headers
   if (lastRow < 1) {
     Logger.log('No submissions found in Form Responses sheet.');
@@ -347,11 +357,14 @@ function attemptSingleAssignment() {
   const timestampColumnIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
   // Replace 'Email Address' below with the exact column name you identified from your logs or environment
+  // TODO Confirm: make sure this is the intended email constant
   Logger.log('Looking for column: Email Address');
-  const emailColumnIndex = getColumnIndexByName(formResponseSheet, 'Email Address');
+  const emailColumnIndex = getColumnIndexByName(formResponseSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
 
   if (timestampColumnIndex === -1 || emailColumnIndex === -1) {
-    Logger.log(`Error: Required columns not found. Timestamp index: ${timestampColumnIndex}, Email index: ${emailColumnIndex}`);
+    Logger.log(
+      `Error: Required columns not found. Timestamp index: ${timestampColumnIndex}, Email index: ${emailColumnIndex}`
+    );
     return { assignments: [], countHasNoEvaluator: Infinity };
   }
 
@@ -371,7 +384,13 @@ function attemptSingleAssignment() {
 
   // Extract submitter emails
   Logger.log('Extracting submitter emails from valid responses.');
-  const submittersEmails = validResponses.map((row) => row[emailColumnIndex - 1] ? String(row[emailColumnIndex - 1]).trim().toLowerCase() : '');
+  const submittersEmails = validResponses.map((row) =>
+    row[emailColumnIndex - 1]
+      ? String(row[emailColumnIndex - 1])
+          .trim()
+          .toLowerCase()
+      : ''
+  );
   Logger.log(`Submitters Emails: ${JSON.stringify(submittersEmails)}`);
 
   // Retrieve all ambassadors from registry excluding those with 'Expelled' status
@@ -384,7 +403,9 @@ function attemptSingleAssignment() {
     return { assignments: [], countHasNoEvaluator: Infinity };
   }
 
-  const ambassadorData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn()).getValues();
+  const ambassadorData = registrySheet
+    .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
+    .getValues();
 
   Logger.log('Filtering ambassadors by status and valid email format.');
   const allAmbassadorsEmails = ambassadorData
@@ -397,7 +418,11 @@ function attemptSingleAssignment() {
       }
       return true;
     })
-    .map((row) => String(row[registryAmbassadorEmailColumnIndex - 1]).trim().toLowerCase());
+    .map((row) =>
+      String(row[registryAmbassadorEmailColumnIndex - 1])
+        .trim()
+        .toLowerCase()
+    );
 
   Logger.log(`Eligible Ambassadors Emails: ${JSON.stringify(allAmbassadorsEmails)}`);
 
@@ -571,7 +596,9 @@ function sendEvaluationRequests() {
       const reviewersEmails = [row[1], row[2], row[3]].filter((email) => email); // Evaluators' Emails
 
       Logger.log(
-        `String processing ${rowIndex + 2}: Email Submitter: ${submitterEmail}, Email Evaluators: ${reviewersEmails.join(', ')}`
+        `String processing ${
+          rowIndex + 2
+        }: Email Submitter: ${submitterEmail}, Email Evaluators: ${reviewersEmails.join(', ')}`
       );
 
       // Getting submitter's Discord handle
@@ -657,10 +684,7 @@ function getContributionDetailsByEmail(email) {
     );
     const contributionLinksColumnIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN);
 
-    const formResponseEmailColumnIndex = getColumnIndexByName(
-      formResponseSheet,
-      SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN
-    );
+    const formResponseEmailColumnIndex = getColumnIndexByName(formResponseSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
     const formData = formResponseSheet
       .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())
       .getValues();
@@ -818,8 +842,8 @@ function processEvaluationResponse(e) {
       const question = itemResponse.getItem().getTitle();
       const answer = itemResponse.getResponse();
       Logger.log(`Question: ${question}, Answer: ${answer}, Type of answer: ${typeof answer}`);
-
-      if (question === 'Your Email Address') {
+      // TODO Suggestion: change to use constants, changed this because forms has different value than what is hard coded
+      if (question === EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN) {
         evaluatorEmail = String(answer).trim();
       } else if (question === 'Discord handle of the ambassador you are evaluating?') {
         submitterDiscordHandle = String(answer).trim();
@@ -841,18 +865,15 @@ function processEvaluationResponse(e) {
       return;
     }
 
-    if (!evaluatorEmail || !submitterDiscordHandle || isNaN(grade)) {
-      Logger.log('Missing required data. Exiting processEvaluationResponse.');
+    // TODO Discuss: why is this filter commented out?
+    // confirmed that we are processing late evaluations; putting this back in.
+    const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
+    if (responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) {
+      Logger.log(
+        `Evaluation received at ${responseTime} outside the window from ${evaluationWindowStart} to ${evaluationWindowEnd}. Response will be ignored.`
+      );
       return;
     }
-
-    //const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
-    //if (responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) {
-    //  Logger.log(
-    //    'Evaluation received at ${responseTime} outside the window from ${evaluationWindowStart} to ${evaluationWindowEnd}. Response will be ignored.'
-    //  );
-    //  return;
-    //}
 
     // Retrieve assignments from Review Log and find expected submitters
     const assignments = getReviewLogAssignments();
