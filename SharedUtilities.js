@@ -2,7 +2,7 @@
 // Declare & initialize global variables; these will be updated by the setProductionVariables() or setTestVariables() functions
 
 // testing constant will be used to load production vs. test values for the global variables
-const testing = true; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
+const testing = false; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
 var SEND_EMAIL; // Will control whether emails are sent - must be true for production; may be true or false for testing depending on testing needs.
 
 // Provide the actual Id of the google sheet for the registry and scoreing sheets in EnvironmentVariables[Prod|Test].js:
@@ -157,7 +157,8 @@ function onOpen() {
     .addItem('Notify Upcoming Peer Review', 'notifyUpcomingPeerReview') // Peer Review notifications
     .addItem('Select CRT members', 'selectCRTMembers') // CRT
     .addItem('🔧️Force Authorization', 'forceAuthorization') // Authorization trigger
-    .addItem('🔧️Check missing Emails/DiscorHandles', 'check_missing_data') // Checks Registry sheet for completeness of data. Recommended to run every cycle if multiple changes were made.
+    // This function does not exist?
+    //.addItem('🔧️Check missing Emails/DiscorHandles', 'check_missing_data') // Checks Registry sheet for completeness of data. Recommended to run every cycle if multiple changes were made.
     .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers') // Optional item
     .addItem('🔧️Create/Sync Columns', 'syncRegistryColumnsToOverallScore') // creates Ambassador Status column in Overall score sheet; Syncs Ambassadors' Discord Handles and Ambassador Status columns between Registry and Overall score.
     .addToUi();
@@ -606,7 +607,7 @@ function getColumnIndexByName(sheet, columnName) {
   // const index = header.indexOf(columnName);
   const index = header.findIndex((h) => (h?.trim?.() ?? '') === columnName.trim());
   if (index == -1) {
-    AlertAndLog.log(`Column "${columnName}" not found in sheet "${sheet.name()}" header row: "${header}".`);
+    alertAndLog(`Column "${columnName}" not found in sheet "${sheet.getName()}" header row: "${header}".`);
     throw new Error('Required column not found in sheet header row');
   }
   return index + 1; // Convert to 1-based index
