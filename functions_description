@@ -151,13 +151,47 @@ g. getSubmissionWindowStart()
 
                                                             MODULE 3
 
-#### 1. `calculatePenaltyPointsForSubmissions()`
+#### 1. `CalculatePenaltyPoints()`
 
-- **Purpose**: Calculates and adds penalty points for ambassadors who fail to submit within the required window in the current reporting month.
+- **Purpose**: Calculates and adds penalty points for ambassadors who fail to submit/evaluate within the required window in the current reporting month.
 - **Details**:
-  - Fetches all submission responses within the designated submission window.
-  - Identifies ambassadors who missed the submission deadline and assigns penalty points to them.
-  - Marks missed submissions by setting cell background colors in the "Overall Scores" sheet.
+
+  - Initialize and Validate Sheets:
+    Opens the required sheets: Registry, Overall Scores, Review Log, Evaluation Responses, and Submissions.
+    Ensures all sheets are accessible. Logs an error and exits if any are missing.
+
+  - Fetch Headers and Indices:
+    Identifies column indices for Penalty Points and the current reporting month's column based on the evaluation window.
+
+  - Read Existing Penalty Points:
+    Reads the Penalty Points column into memory to track and increment penalties during processing.
+
+  - Identify Valid Submitters and Evaluators:
+    Collects valid submission and evaluation emails from Submissions and Evaluation Responses sheets.
+
+  - Retrieve Review Assignments:
+    Fetches evaluator assignments from the Review Log to cross-check evaluation statuses.
+
+  - Filter Ambassadors from Registry:
+    Filters out ambassadors marked as Expelled and extracts emails and Discord handles for valid ambassadors.
+
+  - Process Each Ambassador:
+    Find Row in Overall Scores: Locates the ambassador in the Overall Scores sheet using their Discord handle.
+    Determine Violations:
+    Missed Submission: Ambassador’s email is not in the list of valid submitters.
+    Missed Evaluation: Assigned to evaluate but not in the list of valid evaluators.
+    Both Missed: Neither submitted nor evaluated.
+    Increment Penalty Points:
+    +2 for missing both submission and evaluation.
+    +1 for missing only submission or evaluation.
+    Update Colors:
+    Sets cell background color based on the violation type.
+
+  - Write Updated Penalty Points:
+    Writes the incremented penalty points back to the Penalty Points column in the Overall Scores sheet.
+
+  - Complete Logging:
+    Logs the completion of the penalty points calculation.
 
 ---
 
@@ -165,10 +199,17 @@ g. getSubmissionWindowStart()
 
 - **Purpose**: Calculates the maximum penalty points accumulated over any six-month contiguous period for each ambassador.
 - **Details**:
-  - Iterates over month columns in the "Overall Scores" sheet.
-  - Checks each six-month period, adding points based on missed submission or evaluation markers.
-  - Updates the "Max 6-Month PP" column with the highest penalty point value for each ambassador.
-  - Sets the background color to red for ambassadors with a max penalty score of 3 or more.
+  - Opens Overall score sheet, extracts column headers. Identifies month columns - with date headers.
+  - Iterates through each row starting from the second:
+    - Extracts the background colors of all the month cells for the current row.
+    - If months > 6: Considers every possible 6-month period, starting from each month column.
+    - Calculates penalty points in those periods based on cell colors:
+      - COLOR_OLD_MISSED_SUBMISSION and COLOR_MISSED_SUBMISSION: add 1 point each.
+      - COLOR_MISSED_EVALUATION: adds 1 point.
+      - COLOR_MISSED_SUBM_AND_EVAL: adds 2 points.
+    - Otherwise, if months <= 6: The penalty points for all months in one cycle are counted and this value is stored in the Max 6-Month PP column.
+  - Updates the maxPP if the current period’s total is greater than the previously recorded maximum.
+  - If maxPP >= 3: It colors that cell with 'COLOR_EXPELLED'.
 
 ---
 
