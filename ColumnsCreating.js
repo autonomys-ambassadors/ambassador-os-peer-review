@@ -59,8 +59,10 @@ function syncRegistryColumnsToOverallScore() {
     // check that id matches current email hash or update if not
     // update the overall score sheet with the new hash if needed
     // ensure every ambassador from the registry can be found in the overall score sheet, or add them
+    // TODO Suggestion: change to use named columns
     for (let i = 1; i < registryData.length; i++) {
       let ambassadorId = registryData[i][0]; // expects ambassador is is first registry column
+      // TODO Decide: what to do wtih empty registry data - "" all generate same hash.
       const newHash = generateMD5Hash(registryData[i][1]); // expects email is second registry column
       const discordHandle = registryData[i][2]; // expects discord handle is third registry column
       const registryAmbassadorStatus = registryData[i][3]; // expects status is fourth registry column
