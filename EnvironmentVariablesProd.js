@@ -32,7 +32,7 @@ function setProductionVariables() {
   REGISTRY_SHEET_NAME = 'Registry';
   REVIEW_LOG_SHEET_NAME = 'Review Log';
   CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
-  OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
+  OVERALL_SCORE_SHEET_NAME = 'Overall Score'; // Overall score sheet in Ambassadors' Scores
 
   // Columns
   AMBASSADOR_ID_COLUMN = 'Ambassador Id';
