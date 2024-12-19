@@ -235,7 +235,7 @@ function checkNonRespondents() {
   // Get column indices for required headers
   const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
   const registryAmbassadorStatusColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
-  const responseEmailColIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN);
+  const responseEmailColIndex = getColumnIndexByName(formResponseSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
   const responseTimestampColIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
   // Fetch registry data and filter eligible emails

@@ -183,36 +183,145 @@ function generateReviewMatrix() {
     } else {
       Logger.log('No assignments could be made in the given attempts.');
     }
+
   } catch (error) {
     Logger.log(`Error in generateReviewMatrix: ${error}`);
   }
 }
 
-/**
- * Attempts one assignment of evaluators without changing the original logic.
- * Returns an object {assignments, countHasNoEvaluator}.
- */
++/**
++ * Sets up a trigger for evaluation form submission to handle new responses.
++ * Ensures that only one trigger is active for the 'handleEvaluationNewResponses' function.
++ * This will ensure form editing scenario is handled: only the latest response for each user per date is kept.
++ */
+function setupEvaluationFormSubmitTrigger() {
+  Logger.log('Setting up evaluation form submission trigger.');
+
+  // Remove any existing trigger for 'handleEvaluationNewResponses'
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach((trigger) => {
+    if (trigger.getHandlerFunction() === 'handleEvaluationNewResponses') {
+      ScriptApp.deleteTrigger(trigger);
+      Logger.log('Existing trigger for handleEvaluationNewResponses removed.');
+    }
+  });
+
+  // Create a new trigger for 'handleEvaluationNewResponses'
+  ScriptApp.newTrigger('handleEvaluationNewResponses')
+    .forSpreadsheet(EVALUATION_RESPONSES_SPREADSHEET_ID)
+    .onFormSubmit()
+    .create();
+
+  Logger.log('Evaluation form submission trigger created.');
+}
+
++/**
++ * Handles new evaluation form submissions, ensuring only the latest response per user (real email) is kept for that day.
++ * Removes older responses for the same email and same date within the evaluation period.
++ * Uses the real email automatically collected by Google Forms.
++ */
+function handleEvaluationNewResponses(e) {
+  Logger.log('Processing new evaluation form submission.');
+
+  // Open the Evaluation Form Responses sheet
+  const formResponsesSheet = SpreadsheetApp.openById(EVALUATION_RESPONSES_SPREADSHEET_ID)
+    .getSheetByName(EVAL_FORM_RESPONSES_SHEET_NAME);
+  if (!formResponsesSheet) {
+    Logger.log('Error: Evaluation Form Responses sheet not found.');
+    return;
+  }
+
+  // Get the headers to find the indices of "Timestamp" and real email column
+  const headers = formResponsesSheet.getRange(1, 1, 1, formResponsesSheet.getLastColumn()).getValues()[0];
+  const timestampColIndex = headers.indexOf(GOOGLE_FORM_TIMESTAMP_COLUMN) + 1; // Convert to 1-based index
+  const realEmailColIndex = headers.indexOf(GOOGLE_FORM_REAL_EMAIL_COLUMN) + 1;
+
+  if (timestampColIndex === 0 || realEmailColIndex === 0) {
+    Logger.log('Error: Required columns (Timestamp or Real Email) not found in Evaluation Form Responses Sheet.');
+    return;
+  }
+
+  // Access the newly submitted row via the event object 'e'
+  const newRow = e.range.getRow();
+  const newTimestamp = formResponsesSheet.getRange(newRow, timestampColIndex).getValue();
+  const newRealEmail = formResponsesSheet.getRange(newRow, realEmailColIndex).getValue();
+
+  if (!newRealEmail || !newTimestamp) {
+    Logger.log('New evaluation response missing real email or timestamp. No action taken.');
+    return;
+  }
+
+  const submissionDate = new Date(newTimestamp).toDateString();
+  Logger.log(`New evaluation response from ${newRealEmail} on ${submissionDate} at row ${newRow}. Checking for older duplicates...`);
+
+  // Loop through all rows except the new one to find duplicates for the same user and date
+  const lastRow = formResponsesSheet.getLastRow();
+  for (let row = lastRow; row >= 2; row--) {
+    if (row === newRow) continue; // Skip the newly submitted row
+
+    const rowTimestamp = formResponsesSheet.getRange(row, timestampColIndex).getValue();
+    const rowRealEmail = formResponsesSheet.getRange(row, realEmailColIndex).getValue();
+
+    if (!rowRealEmail || !rowTimestamp) continue;
+
+    // Check if same user (by email) and same date
+    if (
+      rowRealEmail.trim().toLowerCase() === newRealEmail.trim().toLowerCase() &&
+      new Date(rowTimestamp).toDateString() === submissionDate
+    ) {
+      // Delete older responses from the same email on the same date
+      formResponsesSheet.deleteRow(row);
+      Logger.log(`Deleted older evaluation response from ${newRealEmail} on ${submissionDate} at row ${row}.`);
+    }
+  }
+
+  Logger.log('Evaluation form responses updated. Only the latest response for this email and date is kept.');
+}
+
+// ensure the 'Email Address' column name in the form is used or replaced with the actual column name from your environment or sheet.
 function attemptSingleAssignment() {
+  // Logging start of the function
   Logger.log('Starting single attempt of generateReviewMatrix.');
 
+  // Define and compile a regex for validating email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Access the Registry Spreadsheet and Registry Sheet
+  Logger.log('Accessing registry spreadsheet and sheet.');
   const registrySpreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
   const registrySheet = registrySpreadsheet.getSheetByName(REGISTRY_SHEET_NAME);
-  const formResponseSheet = getSubmissionFormResponseSheet(); // Use common function for getting Form Responses sheet
+  if (!registrySheet) {
+    Logger.log('Error: Registry sheet not found.');
+    return { assignments: [], countHasNoEvaluator: Infinity };
+  }
+
+  // Get the Submission Form Responses sheet
+  Logger.log('Accessing submission form responses sheet.');
+  const formResponseSheet = getSubmissionFormResponseSheet(); // Must be defined in SharedUtilities
+  if (!formResponseSheet) {
+    Logger.log('Error: Submission form responses sheet not found.');
+    return { assignments: [], countHasNoEvaluator: Infinity };
+  }
+
+  // Get Review Log Sheet
+  Logger.log('Accessing Review Log sheet.');
   const reviewLogSheet = registrySpreadsheet.getSheetByName(REVIEW_LOG_SHEET_NAME);
+  if (!reviewLogSheet) {
+    Logger.log('Error: Review Log sheet not found.');
+    return { assignments: [], countHasNoEvaluator: Infinity };
+  }
 
-  Logger.log('Accessed Registry, Form Responses, and Review Log sheets.');
-
-  // Initializing Review Log (just for this attempt in memory)
+  // Clear and initialize Review Log for this attempt
+  Logger.log('Clearing and initializing Review Log sheet.');
   reviewLogSheet.clearContents();
   reviewLogSheet.getRange(1, 1).setValue('Submitter');
   reviewLogSheet.getRange(1, 2).setValue('Reviewer 1');
   reviewLogSheet.getRange(1, 3).setValue('Reviewer 2');
   reviewLogSheet.getRange(1, 4).setValue('Reviewer 3');
-  Logger.log('Initialized Review Log sheet for this attempt.');
 
-  // Get Submission Window start time
-  const submissionWindowStart = getSubmissionWindowStart(); // use Shared Utilities
+  // Get Submission Window start and end times
+  Logger.log('Retrieving submission window start time.');
+  const submissionWindowStart = getSubmissionWindowStart(); // must be defined in SharedUtilities
   if (!submissionWindowStart) {
     Logger.log('Submission window start time not found. Exiting this attempt.');
     return { assignments: [], countHasNoEvaluator: Infinity };
@@ -223,19 +332,30 @@ function attemptSingleAssignment() {
   Logger.log(`Submission window is from ${submissionWindowStart} to ${submissionWindowEnd}`);
 
   // Get responses from Submission form
-  const lastRow = formResponseSheet.getLastRow() - 1;
+  const lastRow = formResponseSheet.getLastRow() - 1; // excluding headers
   if (lastRow < 1) {
     Logger.log('No submissions found in Form Responses sheet.');
     return { assignments: [], countHasNoEvaluator: Infinity };
   }
 
+  Logger.log(`Retrieving submission form responses (without header). Rows of data: ${lastRow}`);
   const responseData = formResponseSheet.getRange(2, 1, lastRow, formResponseSheet.getLastColumn()).getValues();
-  Logger.log(`Retrieved ${responseData.length} Submission form responses.`);
 
+  // Dynamically get column indices for timestamp and email columns in the form responses sheet
+  Logger.log(`Looking for column: ${GOOGLE_FORM_TIMESTAMP_COLUMN}`);
   const timestampColumnIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
-  const emailColumnIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN);
 
-  // Filtering responses by Submission window
+  // Replace 'Email Address' below with the exact column name you identified from your logs or environment
+  Logger.log('Looking for column: Email Address');
+  const emailColumnIndex = getColumnIndexByName(formResponseSheet, 'Email Address');
+
+  if (timestampColumnIndex === -1 || emailColumnIndex === -1) {
+    Logger.log(`Error: Required columns not found. Timestamp index: ${timestampColumnIndex}, Email index: ${emailColumnIndex}`);
+    return { assignments: [], countHasNoEvaluator: Infinity };
+  }
+
+  // Filter responses by Submission window
+  Logger.log('Filtering responses by submission window.');
   const validResponses = responseData.filter((row) => {
     const timestamp = new Date(row[timestampColumnIndex - 1]);
     return timestamp >= submissionWindowStart && timestamp <= submissionWindowEnd;
@@ -248,46 +368,59 @@ function attemptSingleAssignment() {
     return { assignments: [], countHasNoEvaluator: Infinity };
   }
 
-  // Getting email of submitters
-  const submittersEmails = validResponses.map((row) => row[emailColumnIndex - 1]);
+  // Extract submitter emails
+  Logger.log('Extracting submitter emails from valid responses.');
+  const submittersEmails = validResponses.map((row) => row[emailColumnIndex - 1] ? String(row[emailColumnIndex - 1]).trim().toLowerCase() : '');
   Logger.log(`Submitters Emails: ${JSON.stringify(submittersEmails)}`);
 
-  // Get all ambassador emails from the registry, excluding those with 'Expelled' status
+  // Retrieve all ambassadors from registry excluding those with 'Expelled' status
+  Logger.log('Retrieving ambassadors data from registry.');
   const registryAmbassadorEmailColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
   const registryAmbassadorStatusColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
-  const ambassadorData = registrySheet
-    .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
-    .getValues();
+
+  if (registryAmbassadorEmailColumnIndex === -1 || registryAmbassadorStatusColumnIndex === -1) {
+    Logger.log('Error: Required columns (Email or Status) not found in Registry sheet.');
+    return { assignments: [], countHasNoEvaluator: Infinity };
+  }
+
+  const ambassadorData = registrySheet.getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn()).getValues();
+
+  Logger.log('Filtering ambassadors by status and valid email format.');
   const allAmbassadorsEmails = ambassadorData
-    .filter((row) => !row[registryAmbassadorStatusColumnIndex - 1].includes('Expelled')) // Exclude those marked as 'Expelled'
+    .filter((row) => !row[registryAmbassadorStatusColumnIndex - 1].includes('Expelled')) // exclude expelled
     .filter((row) => {
-      if (!emailRegex.test(row[registryAmbassadorEmailColumnIndex - 1])) {
-        Logger.log(`Invalid email for Discord Handle ${row[1]}: "${row[0]}". Skipping.`);
-        return false; // Exclude invalid emails
+      const email = row[registryAmbassadorEmailColumnIndex - 1];
+      if (!emailRegex.test(email)) {
+        Logger.log(`Invalid email format encountered: "${email}". Excluding.`);
+        return false;
       }
       return true;
     })
-    .map((row) => row[registryAmbassadorEmailColumnIndex - 1]); // Extract email addresses
+    .map((row) => String(row[registryAmbassadorEmailColumnIndex - 1]).trim().toLowerCase());
+
   Logger.log(`Eligible Ambassadors Emails: ${JSON.stringify(allAmbassadorsEmails)}`);
 
-  // Create a pool of potential evaluators, allowing each evaluator to be picked up to 3 times
+  // Create pool of potential evaluators (each evaluator can appear up to 3 times)
+  Logger.log('Creating pool of potential evaluators.');
   const potentialEvaluators = [...allAmbassadorsEmails, ...allAmbassadorsEmails, ...allAmbassadorsEmails];
+
+  // Dictionary to track how many times an evaluator is assigned
   const ambassadorCount = {};
 
   // Initialize assignments
   const assignments = [];
   let countHasNoEvaluator = 0;
 
-  // Assign evaluators to submissions (same logic as before)
+  // Assign evaluators to each submitter
+  Logger.log('Assigning evaluators to submitters.');
   submittersEmails.forEach((submitter) => {
     const reviewers = [];
-
     for (let i = 0; i < 3; i++) {
       const availableEvaluators = potentialEvaluators.filter(
         (evaluator) =>
-          evaluator !== submitter && // Exclude the submitter themselves
-          (ambassadorCount[evaluator] || 0) < 3 && // Ensure no evaluator is assigned more than 3 times
-          !reviewers.includes(evaluator) // Ensure unique evaluators for the same submitter
+          evaluator !== submitter && // exclude submitter evaluating themselves
+          (ambassadorCount[evaluator] || 0) < 3 && // no more than 3 assignments per evaluator
+          !reviewers.includes(evaluator) // no duplicate evaluators for same submitter
       );
 
       if (availableEvaluators.length === 0) {
@@ -297,48 +430,67 @@ function attemptSingleAssignment() {
         continue;
       }
 
-      // Select a random evaluator
       const randomIndex = Math.floor(Math.random() * availableEvaluators.length);
       const selectedEvaluator = availableEvaluators[randomIndex];
 
-      // Assign the evaluator
       reviewers.push(selectedEvaluator);
       ambassadorCount[selectedEvaluator] = (ambassadorCount[selectedEvaluator] || 0) + 1;
       Logger.log(`Assigned ${selectedEvaluator} to ${submitter} in round ${i + 1}`);
     }
-
     assignments.push({ submitter, reviewers });
   });
 
   // Determine which evaluators were never used
+  Logger.log('Determining unassigned evaluators.');
   const assignedEvaluators = Object.keys(ambassadorCount);
   const unassignedEvaluators = allAmbassadorsEmails.filter((email) => !assignedEvaluators.includes(email));
-  // TOOD this has to move outside the loop in case we run multiple assignement attempts.
+
+  // Send exemption emails to unassigned evaluators
+  Logger.log('Sending exemption emails to unassigned evaluators.');
   sendExemptionEmails(allAmbassadorsEmails, unassignedEvaluators);
 
+  Logger.log(`Attempt result: ${assignments.length} assignments, countHasNoEvaluator = ${countHasNoEvaluator}`);
   return { assignments, countHasNoEvaluator };
 }
 
 /**
  * Writes the given assignments to the Review Log sheet.
+ * Ensures the correct headers and assignments are written dynamically.
  */
 function writeAssignmentsToReviewLog(assignments) {
-  const registrySpreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
-  const reviewLogSheet = registrySpreadsheet.getSheetByName(REVIEW_LOG_SHEET_NAME);
+  try {
+    const registrySpreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
+    const reviewLogSheet = registrySpreadsheet.getSheetByName(REVIEW_LOG_SHEET_NAME);
 
-  // Clear and initialize
-  reviewLogSheet.clearContents();
-  reviewLogSheet.getRange(1, 1).setValue('Submitter');
-  reviewLogSheet.getRange(1, 2).setValue('Reviewer 1');
-  reviewLogSheet.getRange(1, 3).setValue('Reviewer 2');
-  reviewLogSheet.getRange(1, 4).setValue('Reviewer 3');
+    if (!reviewLogSheet) {
+      Logger.log(`Error: Review Log sheet not found.`);
+      return;
+    }
 
-  assignments.forEach((assignment, index) => {
-    reviewLogSheet.getRange(index + 2, 1).setValue(assignment.submitter);
-    assignment.reviewers.forEach((reviewer, idx) => {
-      reviewLogSheet.getRange(index + 2, idx + 2).setValue(reviewer);
+    // Clear the sheet and write headers
+    Logger.log(`Clearing contents of the Review Log sheet.`);
+    reviewLogSheet.clearContents();
+    const headers = ['Submitter', 'Reviewer 1', 'Reviewer 2', 'Reviewer 3'];
+    reviewLogSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+    // Write assignments dynamically
+    Logger.log(`Writing assignments to the Review Log sheet.`);
+    const dataToWrite = assignments.map((assignment) => {
+      const row = [assignment.submitter, ...assignment.reviewers];
+      return row;
     });
-  });
+
+    if (dataToWrite.length === 0) {
+      Logger.log(`No assignments to write to Review Log.`);
+      return;
+    }
+
+    reviewLogSheet.getRange(2, 1, dataToWrite.length, headers.length).setValues(dataToWrite);
+
+    Logger.log(`Assignments successfully written to Review Log sheet.`);
+  } catch (error) {
+    Logger.log(`Error in writeAssignmentsToReviewLog: ${error.message}`);
+  }
 }
 
 /**
@@ -506,7 +658,7 @@ function getContributionDetailsByEmail(email) {
 
     const formResponseEmailColumnIndex = getColumnIndexByName(
       formResponseSheet,
-      GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN
+      SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN
     );
     const formData = formResponseSheet
       .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())
@@ -666,7 +818,7 @@ function processEvaluationResponse(e) {
       const answer = itemResponse.getResponse();
       Logger.log(`Question: ${question}, Answer: ${answer}, Type of answer: ${typeof answer}`);
 
-      if (question === 'Email') {
+      if (question === 'Your Email Address') {
         evaluatorEmail = String(answer).trim();
       } else if (question === 'Discord handle of the ambassador you are evaluating?') {
         submitterDiscordHandle = String(answer).trim();
@@ -729,7 +881,7 @@ function processEvaluationResponse(e) {
     Logger.log(`Evaluator Discord Handle: ${evaluatorDiscordHandle}`);
 
     // Get the month before the submissions were collected as teh deliverable Month
-    submissionStart = getSubmissionWindowTimes().submissionWindowStart;
+    const submissionStart = getSubmissionWindowTimes().submissionWindowStart;
     const deliverableMonthDate = getStartOfPriorMonth(spreadsheetTimeZone, submissionStart); // getting reporting month
 
     const monthSheetName = Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
@@ -747,10 +899,7 @@ function processEvaluationResponse(e) {
       .getValues();
     let row = null;
     for (let i = 0; i < submitterRows.length; i++) {
-      if (
-        submitterRows[i][submitterDiscordColumnIndex - 1] &&
-        submitterRows[i][submitterDiscordColumnIndex - 1].toLowerCase() === submitterDiscordHandle.toLowerCase()
-      ) {
+      if (submitterRows[i][0] && submitterRows[i][0].toLowerCase() === submitterDiscordHandle.toLowerCase()) {
         row = i + 2; // Offset for header row
         break;
       }
@@ -944,6 +1093,15 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
       return;
     }
 
+    // Get column indices dynamically
+    const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+    const registryDiscordColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+
+    if (registryEmailColIndex === -1 || registryDiscordColIndex === -1) {
+      Logger.log('Error: Required columns (Email or Discord Handle) not found in Registry sheet.');
+      return;
+    }
+
     // Define regex for email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -963,9 +1121,8 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
       const result = registrySheet.createTextFinder(evaluatorEmail).findNext(); // Find evaluator's row by email
       if (result) {
         const row = result.getRow();
-        const discordHandle = registrySheet.getRange(row, 2).getValue(); // Get Discord handle
-        const email = registrySheet.getRange(row, 1).getValue(); // Get email
-
+        const discordHandle = registrySheet.getRange(row, registryDiscordColIndex).getValue();
+        const email = registrySheet.getRange(row, registryEmailColIndex).getValue(); // Get email dynamically
         const message = REMINDER_EMAIL_TEMPLATE.replace('{AmbassadorDiscordHandle}', discordHandle);
 
         if (SEND_EMAIL) {

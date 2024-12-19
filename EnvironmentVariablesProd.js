@@ -39,7 +39,7 @@ function setProductionVariables() {
   AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
   AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
   GOOGLE_FORM_TIMESTAMP_COLUMN = 'Timestamp';
-  GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email';
+  SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email';
   GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = `Dear Ambassador,
 Please add text to your contributions during the month`;
   GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,

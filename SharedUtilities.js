@@ -260,7 +260,7 @@ function getEvaluationWindowTimes() {
 
 /**
  * Extracts the list of valid submission emails from the request log sheet within the submission time window.
- * Assumes the review log is for the current / correct period, and that the submitter email is in the first column for the request log sheet.
+ * Uses dynamic column indexing for the submitter email and timestamp columns.
  * @param {Sheet} submissionSheet - The sheet containing submissions.
  * @returns {Array} - A list of valid submission emails within the submission time window.
  */
@@ -275,29 +275,46 @@ function getValidSubmissionEmails(submissionSheet) {
 
   const { submissionWindowStart, submissionWindowEnd } = getSubmissionWindowTimes();
 
-  // Extract valid requests within the submission time window
-  // only grabs the firts column, assumes that is the submitter's email address
+  // Dynamically get column indices by header name
   const submitterEmailColumnIndex = getColumnIndexByName(submissionSheet, GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN);
   const submitterTimestampColumnIndex = getColumnIndexByName(submissionSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
+
+  if (submitterEmailColumnIndex === -1 || submitterTimestampColumnIndex === -1) {
+    Logger.log(
+      `Error: Required columns (Email: ${GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN}, Timestamp: ${GOOGLE_FORM_TIMESTAMP_COLUMN}) not found.`
+    );
+    return [];
+  }
+
+  // Extract valid requests within the submission time window
   const validSubmitters = submissionSheet
     .getRange(2, 1, lastRow - 1, submissionSheet.getLastColumn())
     .getValues()
-    .filter((row) => {
+    .filter((row, index) => {
       const submissionTimestamp = new Date(row[submitterTimestampColumnIndex - 1]);
-      // Check if the response is within the evaluation time window
-      const isWithinWindow = submissionTimestamp >= submissionWindowStart && submissionTimestamp <= submissionWindowEnd;
-      if (isWithinWindow) {
-        Logger.log(
-          `Valid submission found: ${row[submitterEmailColumnIndex - 1]} (Response time: ${row[submitterTimestampColumnIndex - 1]})`
-        );
-        return true;
+      const submitterEmail = row[submitterEmailColumnIndex - 1]?.trim();
+
+      // Validate timestamp and email
+      if (!submissionTimestamp || isNaN(submissionTimestamp)) {
+        Logger.log(`Row ${index + 2}: Invalid timestamp.`);
+        return false;
       }
+
+      if (!submitterEmail) {
+        Logger.log(`Row ${index + 2}: Missing email.`);
+        return false;
+      }
+
+      // Check if the submission is within the time window
+      const isWithinWindow =
+        submissionTimestamp >= submissionWindowStart && submissionTimestamp <= submissionWindowEnd;
+
       Logger.log(
-        `Invalid submission found - outside sumbission window: ${row[submitterEmailColumnIndex - 1]} (Response time: ${row[submitterTimestampColumnIndex - 1]})`
+        `Row ${index + 2}: Submission - Email: ${submitterEmail}, Timestamp: ${submissionTimestamp}, Within Window: ${isWithinWindow}`
       );
-      return false;
+
+      return isWithinWindow;
     })
-    //TODO: get column for Email instead of assuming
     .map((row) => row[submitterEmailColumnIndex - 1]?.trim().toLowerCase()); // Extract and clean submitter emails
 
   Logger.log(`Valid submitters (within time window): ${validSubmitters.join(', ')}`);
@@ -321,34 +338,41 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
   // Get the evaluation time window from the stored properties
   const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
 
-  // Extract valid responses within the evaluation time window
-  //TODO: get column from 'Email' header
+  // Dynamically retrieve column indices
   const evalEmailColumnIndex = getColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN);
   const evalTimestampColumnIndex = getColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
+
+  if (evalEmailColumnIndex === -1 || evalTimestampColumnIndex === -1) {
+    Logger.log('Error: Required columns not found in evaluation responses sheet.');
+    return [];
+  }
+
+  // Extract valid responses within the evaluation time window
   const validEvaluators = evaluationResponsesSheet
     .getRange(2, 1, lastRow - 1, evaluationResponsesSheet.getLastColumn())
     .getValues()
     .filter((row) => {
-      const responseTimestamp = new Date(row[evalEmailColumnIndex - 1]); // Assuming the first column is the timestamp
+      const responseTimestamp = new Date(row[evalTimestampColumnIndex - 1]); // Use correct column index for timestamp
       // Check if the response is within the evaluation time window
       const isWithinWindow = responseTimestamp >= evaluationWindowStart && responseTimestamp <= evaluationWindowEnd;
       if (isWithinWindow) {
         Logger.log(
-          `Valid evaluator found: ${row[evalTimestampColumnIndex - 1]} (Response time: ${row[evalEmailColumnIndex - 1]})`
+          `Valid evaluator found: ${row[evalEmailColumnIndex - 1]} (Response time: ${row[evalTimestampColumnIndex - 1]})`
         );
         return true;
       }
       return false;
     })
-    .map((row) => row[evalTimestampColumnIndex - 1].trim().toLowerCase()); // Extracting the evaluator email
+    .map((row) => row[evalEmailColumnIndex - 1].trim().toLowerCase()); // Extract evaluator email using correct column index
 
   Logger.log(`Valid evaluators (within time window): ${validEvaluators.join(', ')}`);
   return validEvaluators;
 }
 
 /**
- * Fetches and returns the submitter-evaluator assignments from the Review Log
- * @returns list of { submitter: [evaluators] }
+ * Fetches and returns the submitter-evaluator assignments from the Review Log.
+ * Dynamically determines column indices based on header names to avoid hardcoded indices.
+ * @returns {Object} - A map of submitter emails to a list of evaluator emails.
  */
 function getReviewLogAssignments() {
   Logger.log('Fetching submitter-evaluator assignments from Review Log.');
@@ -356,21 +380,41 @@ function getReviewLogAssignments() {
   const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
     REVIEW_LOG_SHEET_NAME
   );
+
+  if (!reviewLogSheet) {
+    Logger.log('Error: Review Log sheet not found.');
+    return {};
+  }
+
   const lastRow = reviewLogSheet.getLastRow();
+  const lastColumn = reviewLogSheet.getLastColumn();
 
   if (lastRow < 2) {
     Logger.log('No data found in Review Log sheet.');
     return {};
   }
 
-  const reviewData = reviewLogSheet.getRange(2, 1, lastRow - 1, 4).getValues(); // Fetches submitter and evaluator data
+  // Get header row to determine column indices dynamically
+  const headers = reviewLogSheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+  const submitterColIndex = headers.indexOf('Submitter') + 1; // +1 to convert to 1-based index
+  const evaluatorCols = ['Reviewer 1', 'Reviewer 2', 'Reviewer 3'].map((header) => headers.indexOf(header) + 1);
+
+  if (submitterColIndex === 0 || evaluatorCols.some((index) => index === 0)) {
+    Logger.log('Error: Required columns (Submitter or Reviewer columns) not found in Review Log sheet.');
+    return {};
+  }
+
+  // Fetch data for the entire sheet
+  const reviewData = reviewLogSheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
 
   // Structure the data as { submitter: [evaluators] }
   const assignments = {};
   reviewData.forEach((row) => {
-    const submitterEmail = row[0];
-    const evaluators = [row[1], row[2], row[3]].filter((email) => email); // Collect evaluators' emails
-    assignments[submitterEmail] = evaluators;
+    const submitterEmail = row[submitterColIndex - 1];
+    const evaluators = evaluatorCols.map((colIndex) => row[colIndex - 1]).filter((email) => email); // Collect evaluators' emails
+    if (submitterEmail) {
+      assignments[submitterEmail] = evaluators;
+    }
   });
 
   Logger.log(`Review Log assignments: ${JSON.stringify(assignments)}`);
@@ -537,20 +581,25 @@ function updateFormTitlesWithCurrentReportingMonth() {
   Logger.log(`Updated Evaluation Form title to: ${newEvaluationTitle}`);
 }
 
-/////////////  INDEX UTILITIES for COLUMNS and SHEETS
-// returns 1-based column index
+//        INDEX UTILITIES for COLUMNS and SHEETS
+/**
+ * Finds the column index for a given column name in the header row of the sheet.
+ * @param {Sheet} sheet - The sheet to search.
+ * @param {string} columnName - The name of the column to find.
+ * @returns {number} The column index (1-based), or -1 if not found.
+ */
 function getColumnIndexByName(sheet, columnName) {
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const columnIndex = headers.findIndex((header) => (header?.trim?.() ?? '') === columnName.trim());
-
-  if (columnIndex !== -1) {
-    return columnIndex + 1; // Convert 0-based index to 1-based index for Apps Script
-  } else {
-    Logger.log(`Header for "${columnName}" not found in sheet "${sheet.getName()}" with headers: ${headers}`);
+  try {
+    Logger.log(`Looking for column: ${columnName}`);
+    const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    Logger.log(`Header row: ${JSON.stringify(header)}`);
+    const index = header.indexOf(columnName);
+    return index !== -1 ? index + 1 : -1; // Convert to 1-based index
+  } catch (error) {
+    Logger.log(`Error in getColumnIndexByName: ${error}`);
     return -1;
   }
 }
-
 
 /**
  * This function helps to determine if a column already exists for a given month to avoid duplicate columns in the "Overall score" sheet.
