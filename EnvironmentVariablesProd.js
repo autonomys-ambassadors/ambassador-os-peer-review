@@ -1,7 +1,7 @@
 function setProductionVariables() {
   // Always send emails in production
 
-  SEND_EMAIL = true;
+  SEND_EMAIL = false;
   // Real sheets:
   //
   // Provide the Id of the google sheet for the registry and scoreing sheets:
