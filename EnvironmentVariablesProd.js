@@ -32,7 +32,7 @@ function setProductionVariables() {
   REGISTRY_SHEET_NAME = 'Registry';
   REVIEW_LOG_SHEET_NAME = 'Review Log';
   CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
-  OVERALL_SCORE_SHEET_NAME = 'Overall score'; // Overall score sheet in Ambassadors' Scores
+  OVERALL_SCORE_SHEET_NAME = 'Overall Score'; // Overall score sheet in Ambassadors' Scores
 
   // Columns
   AMBASSADOR_ID_COLUMN = 'Ambassador Id';
@@ -40,13 +40,13 @@ function setProductionVariables() {
   AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
   AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
   GOOGLE_FORM_TIMESTAMP_COLUMN = 'Timestamp';
-  SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Your Email Address';
-  EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Your Email Address';
+  SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email Address';
+  EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email Address';
   GOOGLE_FORM_REAL_EMAIL_COLUMN = 'Email Address';
   GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = `Dear Ambassador,
 Please add text to your contributions during the month`;
   GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
-Please add links your contributions during the month`;
+Please add links to your contributions during the month`;
 
   // Sponsor Email (for notifications when ambassadors are expelled)
   SPONSOR_EMAIL = 'community@autonomys.xyz'; // Sponsor's email
