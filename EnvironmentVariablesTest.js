@@ -1,6 +1,6 @@
 function setTestVariables() {
   // controls wether email will be sent or just logged for troubleshooting - should always be true for production.
-  const TESTER = 'Wilyam'; // 'Wilyam' or 'Jonathan'
+  const TESTER = 'Jonathan'; // 'Wilyam' or 'Jonathan'
 
   if (TESTER === 'Wilyam') {
     SEND_EMAIL = true;
@@ -99,8 +99,8 @@ Please add links your contributions during the month `;
     AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
     AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
     GOOGLE_FORM_TIMESTAMP_COLUMN = 'Timestamp';
-    SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Your Email Address';
-    EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Your Email Address';
+    SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email';
+    EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email';
     GOOGLE_FORM_REAL_EMAIL_COLUMN = 'Email Address';
     GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = `Dear Ambassador,
 Please add text to your contributions during the month`;
