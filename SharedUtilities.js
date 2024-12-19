@@ -27,13 +27,16 @@ var EVAL_FORM_RESPONSES_SHEET_NAME = ''; // Evaluation Form responses sheet
 
 // Columns in Registry Sheet:
 // set the actual values in EnvironmentVariables[Prod|Test].js
+var AMBASSADOR_ID_COLUMN = '';
 var AMBASSADOR_EMAIL_COLUMN = '';
 var AMBASSADOR_DISCORD_HANDLE_COLUMN = '';
 var AMBASSADOR_STATUS_COLUMN = '';
 var GOOGLE_FORM_TIMESTAMP_COLUMN = '';
-var GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN = '';
 var GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = '';
 var GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = '';
+var SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = '';
+var EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = '';
+var GOOGLE_FORM_REAL_EMAIL_COLUMN = '';
 // Sponsor Email (for notifications when ambassadors are expelled)
 // set the actual values in EnvironmentVariables[Prod|Test].js
 var SPONSOR_EMAIL = ''; // Sponsor's email
@@ -276,12 +279,13 @@ function getValidSubmissionEmails(submissionSheet) {
   const { submissionWindowStart, submissionWindowEnd } = getSubmissionWindowTimes();
 
   // Dynamically get column indices by header name
-  const submitterEmailColumnIndex = getColumnIndexByName(submissionSheet, GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN);
+  // TODO Confirm: FYI - changed to Submission form, not generic google form email
+  const submitterEmailColumnIndex = getColumnIndexByName(submissionSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
   const submitterTimestampColumnIndex = getColumnIndexByName(submissionSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
   if (submitterEmailColumnIndex === -1 || submitterTimestampColumnIndex === -1) {
     Logger.log(
-      `Error: Required columns (Email: ${GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN}, Timestamp: ${GOOGLE_FORM_TIMESTAMP_COLUMN}) not found.`
+      `Error: Required columns (Email: ${SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN}, Timestamp: ${GOOGLE_FORM_TIMESTAMP_COLUMN}) not found.`
     );
     return [];
   }
@@ -306,11 +310,12 @@ function getValidSubmissionEmails(submissionSheet) {
       }
 
       // Check if the submission is within the time window
-      const isWithinWindow =
-        submissionTimestamp >= submissionWindowStart && submissionTimestamp <= submissionWindowEnd;
+      const isWithinWindow = submissionTimestamp >= submissionWindowStart && submissionTimestamp <= submissionWindowEnd;
 
       Logger.log(
-        `Row ${index + 2}: Submission - Email: ${submitterEmail}, Timestamp: ${submissionTimestamp}, Within Window: ${isWithinWindow}`
+        `Row ${
+          index + 2
+        }: Submission - Email: ${submitterEmail}, Timestamp: ${submissionTimestamp}, Within Window: ${isWithinWindow}`
       );
 
       return isWithinWindow;
@@ -339,7 +344,8 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
   const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
 
   // Dynamically retrieve column indices
-  const evalEmailColumnIndex = getColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_USER_PROVIDED_EMAIL_COLUMN);
+  // TODO Confirm: FYI changed to eval form column
+  const evalEmailColumnIndex = getColumnIndexByName(evaluationResponsesSheet, EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN);
   const evalTimestampColumnIndex = getColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
   if (evalEmailColumnIndex === -1 || evalTimestampColumnIndex === -1) {
@@ -357,7 +363,9 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
       const isWithinWindow = responseTimestamp >= evaluationWindowStart && responseTimestamp <= evaluationWindowEnd;
       if (isWithinWindow) {
         Logger.log(
-          `Valid evaluator found: ${row[evalEmailColumnIndex - 1]} (Response time: ${row[evalTimestampColumnIndex - 1]})`
+          `Valid evaluator found: ${row[evalEmailColumnIndex - 1]} (Response time: ${
+            row[evalTimestampColumnIndex - 1]
+          })`
         );
         return true;
       }
@@ -495,7 +503,7 @@ function getPreviousMonthDate(timeZone) {
   }
 
   // Create a Date object for the first day of the previous month at 7:00 UTC (to match the time of the previous columns)
-  //TODO: fix timezone assumption
+  //TODO Suggestion: fix timezone assumption
   const targetDate = new Date(Date.UTC(prevYear, prevMonth - 1, 1, 7, 0, 0, 0));
   Logger.log(`Calculated date of the previous month: ${targetDate} (ISO: ${targetDate.toISOString()})`);
 
@@ -525,7 +533,7 @@ function getStartOfPriorMonth(timeZone, startingDate) {
   }
 
   // Create a Date object for the first day of the previous month at 7:00 UTC (to match the time of the previous columns)
-  //TODO: fix timezone assumption
+  //TODO Suggestion: fix timezone assumption
   const targetDate = new Date(Date.UTC(prevYear, prevMonth - 1, 1, 7, 0, 0, 0));
   Logger.log(`Calculated date of the previous month: ${targetDate} (ISO: ${targetDate.toISOString()})`);
 
@@ -588,17 +596,20 @@ function updateFormTitlesWithCurrentReportingMonth() {
  * @param {string} columnName - The name of the column to find.
  * @returns {number} The column index (1-based), or -1 if not found.
  */
+// TODO Discuss: FYI changed this to only log not found to reduce log volume, and to throw (and not catch.)
+// if an expected header is missing, better to alert and stop processing.
 function getColumnIndexByName(sheet, columnName) {
-  try {
-    Logger.log(`Looking for column: ${columnName}`);
-    const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    Logger.log(`Header row: ${JSON.stringify(header)}`);
-    const index = header.indexOf(columnName);
-    return index !== -1 ? index + 1 : -1; // Convert to 1-based index
-  } catch (error) {
-    Logger.log(`Error in getColumnIndexByName: ${error}`);
-    return -1;
+  //Logger.log(`Looking for column: ${columnName}`);
+  const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  //Logger.log(`Header row: ${JSON.stringify(header)}`);
+  // TODO: Discuss - reverted back to my code that handles trimming headers names to match google forms with extra space
+  // const index = header.indexOf(columnName);
+  const index = header.findIndex((h) => (h?.trim?.() ?? '') === columnName.trim());
+  if (index == -1) {
+    AlertAndLog.log(`Column "${columnName}" not found in sheet "${sheet.name()}" header row: "${header}".`);
+    throw new Error('Required column not found in sheet header row');
   }
+  return index + 1; // Convert to 1-based index
 }
 
 /**
