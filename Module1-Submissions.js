@@ -4,11 +4,6 @@
 function requestSubmissionsModule() {
   Logger.log('Request Submissions Module started.');
 
-  // activating OnForm submit trigger for detecting edited responses
-  // TODO: Discuss: We don't need (or want) this.
-  // setupFormSubmitTrigger();
-  // Logger.log('Form submission trigger set up.');
-
   // Update form titles with the current reporting month
   updateFormTitlesWithCurrentReportingMonth();
   Logger.log('Form titles updated with the current reporting month.');
@@ -99,106 +94,6 @@ function requestSubmissionsModule() {
 
   Logger.log('Request Submissions completed.');
 }
-
-// TODO Discuss: This should all be deleted. We should not be deleting user submissions, and don't need to process submissions at all when received.
-/**
- * Sets up a trigger for form submission to handle new responses.
- * Ensures that only one trigger is active for the 'handleNewResponses' function.
- */
-/*
-function setupFormSubmitTrigger() {
-  Logger.log('Setting up form submission trigger.');
-
-  // Remove any existing trigger for 'handleNewResponses'
-  const triggers = ScriptApp.getProjectTriggers();
-  triggers.forEach((trigger) => {
-    if (trigger.getHandlerFunction() === 'handleNewResponses') {
-      ScriptApp.deleteTrigger(trigger);
-      Logger.log('Existing trigger for handleNewResponses removed.');
-    }
-  });
-
-  // Create a new trigger for 'handleNewResponses'
-  ScriptApp.newTrigger('handleNewResponses')
-    .forSpreadsheet(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID)
-    .onFormSubmit()
-    .create();
-
-  Logger.log('Form submission trigger created.');
-}
-
-*/
-// TODO Discuss: why this is happening, we should not be deleting user submissions.
-// The form for _submissions_ should only allow 1 submission, but can allow edits. Edits will trigger this again, and the last one wins.
-// (We want multiple responses for evaluations.)
-// If we don't want to rely on google forms for this (why not?) we could change processing on only pick the latest.
-
-/**
- * Handles new form submissions, ensuring only the latest response per user (real email) is kept.
- * Removes older responses for the same email within the submission window.
- * The real email collected by Google Forms is used instead of a user-inputted email field.
- */
-/*
-function handleNewResponses(e) {
-  Logger.log('Processing new form submission.');
-
-  // Open the Form Responses sheet
-  const formResponsesSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(
-    FORM_RESPONSES_SHEET_NAME
-  );
-  if (!formResponsesSheet) {
-    Logger.log('Error: Form Responses sheet not found.');
-    return;
-  }
-
-  // Get the headers to find the indices of "Timestamp" and "Email Address" columns
-  // TODO Suggestion: Change to use getColumnIndexByName func for consistency. Not changing now to minimize non-functional changes.
-  const headers = formResponsesSheet.getRange(1, 1, 1, formResponsesSheet.getLastColumn()).getValues()[0];
-  const timestampColIndex = headers.indexOf(GOOGLE_FORM_TIMESTAMP_COLUMN) + 1; // Convert to 1-based index
-  const realEmailColIndex = headers.indexOf(GOOGLE_FORM_REAL_EMAIL_COLUMN) + 1; // Automatically collected email column
-
-  if (timestampColIndex === 0 || realEmailColIndex === 0) {
-    Logger.log('Error: Required columns (Timestamp or Real Email) not found in Form Responses Sheet.');
-    return;
-  }
-
-  // Access the newly submitted row via the event object 'e'
-  const newRow = e.range.getRow();
-  const newTimestamp = formResponsesSheet.getRange(newRow, timestampColIndex).getValue();
-  const newRealEmail = formResponsesSheet.getRange(newRow, realEmailColIndex).getValue();
-
-  if (!newRealEmail || !newTimestamp) {
-    Logger.log('New response missing real email or timestamp. No action taken.');
-    return;
-  }
-
-  const submissionDate = new Date(newTimestamp).toDateString();
-  Logger.log(
-    `New response from ${newRealEmail} on ${submissionDate} at row ${newRow}. Checking for older duplicates...`
-  );
-
-  // Loop through all rows except the new one to find duplicates
-  const lastRow = formResponsesSheet.getLastRow();
-  for (let row = lastRow; row >= 2; row--) {
-    if (row === newRow) continue; // Skip the newly submitted row
-
-    const rowTimestamp = formResponsesSheet.getRange(row, timestampColIndex).getValue();
-    const rowRealEmail = formResponsesSheet.getRange(row, realEmailColIndex).getValue();
-
-    if (!rowRealEmail || !rowTimestamp) continue;
-
-    if (
-      rowRealEmail.trim().toLowerCase() === newRealEmail.trim().toLowerCase() &&
-      new Date(rowTimestamp).toDateString() === submissionDate
-    ) {
-      // Delete older responses from the same email and date
-      formResponsesSheet.deleteRow(row);
-      Logger.log(`Would have deleted older response from ${newRealEmail} on ${submissionDate} at row ${row}.`);
-    }
-  }
-  Logger.log('Form responses updated. Only the latest response for this email and date is kept.');
-}
-*/
 
 // Function to set up submission reminder trigger
 function setupSubmissionReminderTrigger(submissionStartTime) {
