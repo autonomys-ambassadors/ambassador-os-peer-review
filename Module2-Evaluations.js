@@ -26,7 +26,6 @@ function requestEvaluationsModule() {
   // Step 6: Setting triggers
   setupEvaluationResponseTrigger(); // Setting the onFormSubmit trigger to process evaluation responses
   setupEvaluationTriggers(evaluationWindowStart); // Setting triggers for reminders and closures
-  setupEvaluationFormSubmitTrigger(); // Set up evaluation form submission trigger to handle edited/duplicate responses
 }
 
 /**
@@ -141,6 +140,7 @@ function createMonthSheetAndOverallColumn() {
  * Generates the review matrix by assigning evaluators to submitters multiple times
  * and chooses the attempt with the fewest "Has No Evaluator" results.
  * If an attempt finds a perfect solution (0 "Has No Evaluator"), it stops early and uses that result.
+ * Filters out invalid submitters (e.g., those with emails not in Registry or empty rows).
  */
 function generateReviewMatrix() {
   try {
@@ -148,212 +148,95 @@ function generateReviewMatrix() {
 
     const MAX_ATTEMPTS = 5;
     let bestAssignments = null;
-    let bestScore = Infinity; // The lower the score, the better (score = count of "Has No Evaluator")
+    let bestScore = Infinity; // The lower the score, the better (score = count of "Has No Evaluator").
 
-    // Try multiple times and choose the best result
+    // Access the Registry and Submission Form Sheets
+    const registrySpreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
+    const registrySheet = registrySpreadsheet.getSheetByName(REGISTRY_SHEET_NAME);
+    const formResponseSheet = getSubmissionFormResponseSheet();
+    const reviewLogSheet = registrySpreadsheet.getSheetByName(REVIEW_LOG_SHEET_NAME);
+
+    if (!registrySheet || !formResponseSheet || !reviewLogSheet) {
+      Logger.log('Error: Required sheets not found.');
+      return;
+    }
+
+    // Get valid submitters from the Submission Form sheet
+    const validSubmitters = getValidSubmissionEmails(formResponseSheet);
+    Logger.log(`Valid submitters: ${JSON.stringify(validSubmitters)}`);
+
+    // Get eligible evaluators from the Registry
+    const allEvaluators = getEligibleAmbassadorsEmails();
+    Logger.log(`Eligible evaluators: ${JSON.stringify(allEvaluators)}`);
+
+    // Try multiple attempts to generate a valid assignment matrix
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       Logger.log(`Attempt ${attempt} of ${MAX_ATTEMPTS}`);
-      const { assignments, countHasNoEvaluator } = attemptSingleAssignment();
+      const { assignments, countHasNoEvaluator } = attemptSingleAssignment(validSubmitters, allEvaluators);
 
       if (!assignments || assignments.length === 0) {
-        // If no assignments were made, consider this attempt as a failure
+        Logger.log(`Attempt ${attempt} failed to generate assignments.`);
         continue;
       }
 
-      Logger.log(`HasNoEvaluator count: ${countHasNoEvaluator}`);
+      Logger.log(`Attempt ${attempt} resulted in ${countHasNoEvaluator} "Has No Evaluator".`);
 
-      // If we found an attempt with zero "Has No Evaluator", use it immediately
+      // Stop early if a perfect solution is found
       if (countHasNoEvaluator === 0) {
         bestAssignments = assignments;
         bestScore = 0;
-        Logger.log(`Found a perfect assignment with no "Has No Evaluator" on attempt ${attempt}.`);
+        Logger.log(`Perfect assignment found on attempt ${attempt}.`);
         break;
       }
 
-      // Otherwise, keep track if this is the best so far
+      // Keep track of the best result so far
       if (countHasNoEvaluator < bestScore) {
         bestAssignments = assignments;
         bestScore = countHasNoEvaluator;
       }
     }
 
+    // Write the best assignments to the Review Log
     if (bestAssignments) {
-      // Write the best assignments to the Review Log
       writeAssignmentsToReviewLog(bestAssignments);
       Logger.log(`Final assignments chosen with ${bestScore} "Has No Evaluator".`);
     } else {
-      Logger.log('No assignments could be made in the given attempts.');
+      Logger.log('Failed to generate valid assignments after multiple attempts.');
     }
   } catch (error) {
-    Logger.log(`Error in generateReviewMatrix: ${error}`);
+    Logger.log(`Error in generateReviewMatrix: ${error.message}`);
   }
 }
 
-// ensure the 'Email Address' column name in the form is used or replaced with the actual column name from your environment or sheet.
-function attemptSingleAssignment() {
-  // Logging start of the function
-  Logger.log('Starting single attempt of generateReviewMatrix.');
+/**
+ * Attempts to assign evaluators to submitters in a single attempt.
+ * Filters out invalid or empty data during the process.
+ * @param {Array} validSubmitters - Array of valid submitters.
+ * @param {Array} allEvaluators - Array of eligible evaluators.
+ * @returns {Object} - Contains assignments and count of "Has No Evaluator".
+ */
+function attemptSingleAssignment(validSubmitters, allEvaluators) {
+  Logger.log('Starting single attempt to assign evaluators.');
 
-  // Define and compile a regex for validating email format
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  // Access the Registry Spreadsheet and Registry Sheet
-  Logger.log('Accessing registry spreadsheet and sheet.');
-  const registrySpreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
-  const registrySheet = registrySpreadsheet.getSheetByName(REGISTRY_SHEET_NAME);
-  if (!registrySheet) {
-    Logger.log('Error: Registry sheet not found.');
-    return { assignments: [], countHasNoEvaluator: Infinity };
-  }
-
-  // Get the Submission Form Responses sheet
-  Logger.log('Accessing submission form responses sheet.');
-  const formResponseSheet = getSubmissionFormResponseSheet(); // Must be defined in SharedUtilities
-  if (!formResponseSheet) {
-    Logger.log('Error: Submission form responses sheet not found.');
-    return { assignments: [], countHasNoEvaluator: Infinity };
-  }
-
-  // Get Review Log Sheet
-  Logger.log('Accessing Review Log sheet.');
-  const reviewLogSheet = registrySpreadsheet.getSheetByName(REVIEW_LOG_SHEET_NAME);
-  if (!reviewLogSheet) {
-    Logger.log('Error: Review Log sheet not found.');
-    return { assignments: [], countHasNoEvaluator: Infinity };
-  }
-
-  // Clear and initialize Review Log for this attempt
-  Logger.log('Clearing and initializing Review Log sheet.');
-  reviewLogSheet.clearContents();
-  reviewLogSheet.getRange(1, 1).setValue('Submitter');
-  reviewLogSheet.getRange(1, 2).setValue('Reviewer 1');
-  reviewLogSheet.getRange(1, 3).setValue('Reviewer 2');
-  reviewLogSheet.getRange(1, 4).setValue('Reviewer 3');
-
-  // Get Submission Window start and end times
-  Logger.log('Retrieving submission window start time.');
-  const submissionWindowStart = getSubmissionWindowStart(); // must be defined in SharedUtilities
-  if (!submissionWindowStart) {
-    Logger.log('Submission window start time not found. Exiting this attempt.');
-    return { assignments: [], countHasNoEvaluator: Infinity };
-  }
-  const submissionWindowEnd = new Date(submissionWindowStart);
-  submissionWindowEnd.setMinutes(submissionWindowStart.getMinutes() + SUBMISSION_WINDOW_MINUTES);
-
-  Logger.log(`Submission window is from ${submissionWindowStart} to ${submissionWindowEnd}`);
-
-  // Get responses from Submission form
-  // TODO Suggestion: pick a convention - -1 when assigning, or when using in getRange?
-  const lastRow = formResponseSheet.getLastRow() - 1; // excluding headers
-  if (lastRow < 1) {
-    Logger.log('No submissions found in Form Responses sheet.');
-    return { assignments: [], countHasNoEvaluator: Infinity };
-  }
-
-  Logger.log(`Retrieving submission form responses (without header). Rows of data: ${lastRow}`);
-  const responseData = formResponseSheet.getRange(2, 1, lastRow, formResponseSheet.getLastColumn()).getValues();
-
-  // Dynamically get column indices for timestamp and email columns in the form responses sheet
-  Logger.log(`Looking for column: ${GOOGLE_FORM_TIMESTAMP_COLUMN}`);
-  const timestampColumnIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
-
-  // Replace 'Email Address' below with the exact column name you identified from your logs or environment
-  // TODO Confirm: make sure this is the intended email constant
-  Logger.log('Looking for column: Email Address');
-  const emailColumnIndex = getColumnIndexByName(formResponseSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
-
-  if (timestampColumnIndex === -1 || emailColumnIndex === -1) {
-    Logger.log(
-      `Error: Required columns not found. Timestamp index: ${timestampColumnIndex}, Email index: ${emailColumnIndex}`
-    );
-    return { assignments: [], countHasNoEvaluator: Infinity };
-  }
-
-  // Filter responses by Submission window
-  Logger.log('Filtering responses by submission window.');
-  const validResponses = responseData.filter((row) => {
-    const timestamp = new Date(row[timestampColumnIndex - 1]);
-    return timestamp >= submissionWindowStart && timestamp <= submissionWindowEnd;
-  });
-
-  Logger.log(`Found ${validResponses.length} valid submissions within the submission window.`);
-
-  if (validResponses.length === 0) {
-    Logger.log('No valid submissions found within the submission window.');
-    return { assignments: [], countHasNoEvaluator: Infinity };
-  }
-
-  // Extract submitter emails
-  Logger.log('Extracting submitter emails from valid responses.');
-  const submittersEmails = validResponses.map((row) =>
-    row[emailColumnIndex - 1]
-      ? String(row[emailColumnIndex - 1])
-          .trim()
-          .toLowerCase()
-      : ''
-  );
-  Logger.log(`Submitters Emails: ${JSON.stringify(submittersEmails)}`);
-
-  // Retrieve all ambassadors from registry excluding those with 'Expelled' status
-  Logger.log('Retrieving ambassadors data from registry.');
-  const registryAmbassadorEmailColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
-  const registryAmbassadorStatusColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
-
-  if (registryAmbassadorEmailColumnIndex === -1 || registryAmbassadorStatusColumnIndex === -1) {
-    Logger.log('Error: Required columns (Email or Status) not found in Registry sheet.');
-    return { assignments: [], countHasNoEvaluator: Infinity };
-  }
-
-  const ambassadorData = registrySheet
-    .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
-    .getValues();
-
-  Logger.log('Filtering ambassadors by status and valid email format.');
-  const allAmbassadorsEmails = ambassadorData
-    .filter((row) => !row[registryAmbassadorStatusColumnIndex - 1].includes('Expelled')) // exclude expelled
-    .filter((row) => {
-      const email = row[registryAmbassadorEmailColumnIndex - 1];
-      if (!emailRegex.test(email)) {
-        Logger.log(`Invalid email format encountered: "${email}". Excluding.`);
-        return false;
-      }
-      return true;
-    })
-    .map((row) =>
-      String(row[registryAmbassadorEmailColumnIndex - 1])
-        .trim()
-        .toLowerCase()
-    );
-
-  Logger.log(`Eligible Ambassadors Emails: ${JSON.stringify(allAmbassadorsEmails)}`);
-
-  // Create pool of potential evaluators (each evaluator can appear up to 3 times)
-  Logger.log('Creating pool of potential evaluators.');
-  const potentialEvaluators = [...allAmbassadorsEmails, ...allAmbassadorsEmails, ...allAmbassadorsEmails];
-
-  // Dictionary to track how many times an evaluator is assigned
-  const ambassadorCount = {};
-
-  // Initialize assignments
   const assignments = [];
+  const evaluatorPool = [...allEvaluators, ...allEvaluators, ...allEvaluators]; // Triplicate evaluator pool for flexibility
+  const evaluatorCounts = {}; // Track evaluator usage
   let countHasNoEvaluator = 0;
 
-  // Assign evaluators to each submitter
-  Logger.log('Assigning evaluators to submitters.');
-  submittersEmails.forEach((submitter) => {
+  validSubmitters.forEach((submitter) => {
     const reviewers = [];
     for (let i = 0; i < 3; i++) {
-      const availableEvaluators = potentialEvaluators.filter(
+      const availableEvaluators = evaluatorPool.filter(
         (evaluator) =>
-          evaluator !== submitter && // exclude submitter evaluating themselves
-          (ambassadorCount[evaluator] || 0) < 3 && // no more than 3 assignments per evaluator
-          !reviewers.includes(evaluator) // no duplicate evaluators for same submitter
+          evaluator !== submitter && // Exclude self-evaluation
+          (evaluatorCounts[evaluator] || 0) < 3 && // Limit evaluators to 3 assignments
+          !reviewers.includes(evaluator) // Avoid duplicate evaluators for the same submitter
       );
 
       if (availableEvaluators.length === 0) {
         reviewers.push('Has No Evaluator');
-        Logger.log(`No available evaluators for ${submitter} in round ${i + 1}`);
         countHasNoEvaluator++;
+        Logger.log(`No available evaluators for submitter ${submitter} in round ${i + 1}.`);
         continue;
       }
 
@@ -361,22 +244,13 @@ function attemptSingleAssignment() {
       const selectedEvaluator = availableEvaluators[randomIndex];
 
       reviewers.push(selectedEvaluator);
-      ambassadorCount[selectedEvaluator] = (ambassadorCount[selectedEvaluator] || 0) + 1;
-      Logger.log(`Assigned ${selectedEvaluator} to ${submitter} in round ${i + 1}`);
+      evaluatorCounts[selectedEvaluator] = (evaluatorCounts[selectedEvaluator] || 0) + 1;
+      Logger.log(`Assigned evaluator ${selectedEvaluator} to submitter ${submitter} in round ${i + 1}.`);
     }
     assignments.push({ submitter, reviewers });
   });
 
-  // Determine which evaluators were never used
-  Logger.log('Determining unassigned evaluators.');
-  const assignedEvaluators = Object.keys(ambassadorCount);
-  const unassignedEvaluators = allAmbassadorsEmails.filter((email) => !assignedEvaluators.includes(email));
-
-  // Send exemption emails to unassigned evaluators
-  Logger.log('Sending exemption emails to unassigned evaluators.');
-  sendExemptionEmails(allAmbassadorsEmails, unassignedEvaluators);
-
-  Logger.log(`Attempt result: ${assignments.length} assignments, countHasNoEvaluator = ${countHasNoEvaluator}`);
+  Logger.log(`Single attempt completed. "Has No Evaluator" count: ${countHasNoEvaluator}`);
   return { assignments, countHasNoEvaluator };
 }
 
@@ -751,7 +625,7 @@ function processEvaluationResponse(e) {
       } else if (question === 'Please assign a grade on a scale of 0 to 5') {
         const gradeMatch = String(answer).match(/\d+/);
         if (gradeMatch) grade = parseFloat(gradeMatch[0]);
-      } else if (question === 'Remarks (optional)') {
+      } else if (question === 'Remarks') {
         remarks = answer;
       }
     });

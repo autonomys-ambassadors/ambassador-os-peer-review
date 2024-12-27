@@ -380,16 +380,12 @@ function calculatePenaltyPoints() {
  * - Middle tone for "Didn't evaluate" events - adds 1 point
  * - Dark tone for "Didn't submit"+"didn't evaluate" events - adds 2 penalty points
  */
-/**
- * This function calculates the maximum number of penalty points for any full 6-month contiguous period for each ambassador,
- * and records this value in the "Max 6-Month PP" column.
- */
 function calculateMaxPenaltyPointsForSixMonths() {
   Logger.log('Starting calculation of Max 6-Month Penalty Points.');
 
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
   const headers = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
-  // TODO Suggestion: switch to header constant vars
+  // TODO Suggestion: switch to header constant vars (👍️)
   const penaltyPointsCol = headers.indexOf('Penalty Points') + 1;
   const maxPPCol = headers.indexOf('Max 6-Month PP') + 1;
 

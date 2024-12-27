@@ -1,6 +1,6 @@
 function setTestVariables() {
   // controls wether email will be sent or just logged for troubleshooting - should always be true for production.
-  const TESTER = 'Jonathan'; // 'Wilyam' or 'Jonathan'
+  const TESTER = 'Wilyam'; // 'Wilyam' or 'Jonathan'
 
   if (TESTER === 'Wilyam') {
     SEND_EMAIL = true;
@@ -46,13 +46,13 @@ Please add text to your contributions during the month`;
     GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
 Please add links your contributions during the month `;
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
-    SUBMISSION_WINDOW_MINUTES = 10;
+    SUBMISSION_WINDOW_MINUTES = 15;
     SUBMISSION_WINDOW_REMINDER_MINUTES = 5; // how many minutes after Submission Requests sent to remind
-    EVALUATION_WINDOW_MINUTES = 10;
+    EVALUATION_WINDOW_MINUTES = 135;
     EVALUATION_WINDOW_REMINDER_MINUTES = 5; // how many minutes after Evaluation Requests sent to remind
 
     // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
-    MAX_PENALTY_POINTS_TO_EXPEL = 2;
+    MAX_PENALTY_POINTS_TO_EXPEL = 3;
 
     /** Reinitialize color variables to ensure consistency in color-based logic.
      * The color hex string must be in lowercase!
@@ -114,7 +114,7 @@ Please add links your contributions during the month`;
     EVALUATION_WINDOW_REMINDER_MINUTES = 15; // how many minutes after Evaluation Requests sent to remind
 
     // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
-    MAX_PENALTY_POINTS_TO_EXPEL = 2;
+    MAX_PENALTY_POINTS_TO_EXPEL = 3;
 
     /** Reinitialize color variables to ensure consistency in color-based logic.
      * The color hex string must be in lowercase!

@@ -264,12 +264,20 @@ function getEvaluationWindowTimes() {
 
 /**
  * Extracts the list of valid submission emails from the request log sheet within the submission time window.
+ * Filters out emails not present in Registry.
  * Uses dynamic column indexing for the submitter email and timestamp columns.
  * @param {Sheet} submissionSheet - The sheet containing submissions.
  * @returns {Array} - A list of valid submission emails within the submission time window.
  */
 function getValidSubmissionEmails(submissionSheet) {
   Logger.log('Extracting valid submission emails.');
+
+  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
+  const registryEmails = registrySheet
+    .getRange(2, getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN), registrySheet.getLastRow() - 1, 1)
+    .getValues()
+    .flat()
+    .map((email) => email.trim().toLowerCase());
 
   const lastRow = submissionSheet.getLastRow();
   if (lastRow < 2) {
@@ -279,51 +287,44 @@ function getValidSubmissionEmails(submissionSheet) {
 
   const { submissionWindowStart, submissionWindowEnd } = getSubmissionWindowTimes();
 
-  // Dynamically get column indices by header name
-  // TODO Confirm: FYI - changed to Submission form, not generic google form email
-  const submitterEmailColumnIndex = getColumnIndexByName(submissionSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
-  const submitterTimestampColumnIndex = getColumnIndexByName(submissionSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
+  const headers = submissionSheet.getRange(1, 1, 1, submissionSheet.getLastColumn()).getValues()[0];
+  const submitterEmailColumnIndex = headers.indexOf(SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN) + 1;
+  const submitterTimestampColumnIndex = headers.indexOf(GOOGLE_FORM_TIMESTAMP_COLUMN) + 1;
 
-  if (submitterEmailColumnIndex === -1 || submitterTimestampColumnIndex === -1) {
-    Logger.log(
-      `Error: Required columns (Email: ${SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN}, Timestamp: ${GOOGLE_FORM_TIMESTAMP_COLUMN}) not found.`
-    );
+  if (submitterEmailColumnIndex === 0 || submitterTimestampColumnIndex === 0) {
+    Logger.log(`Error: Required columns not found.`);
     return [];
   }
 
-  // Extract valid requests within the submission time window
   const validSubmitters = submissionSheet
     .getRange(2, 1, lastRow - 1, submissionSheet.getLastColumn())
     .getValues()
     .filter((row, index) => {
       const submissionTimestamp = new Date(row[submitterTimestampColumnIndex - 1]);
-      const submitterEmail = row[submitterEmailColumnIndex - 1]?.trim();
+      const submitterEmail = row[submitterEmailColumnIndex - 1]?.trim().toLowerCase();
 
-      // Validate timestamp and email
-      if (!submissionTimestamp || isNaN(submissionTimestamp)) {
-        Logger.log(`Row ${index + 2}: Invalid timestamp.`);
+      if (!submissionTimestamp || !submitterEmail) {
+        Logger.log(`Row ${index + 2}: Missing timestamp or email.`);
         return false;
       }
 
-      if (!submitterEmail) {
-        Logger.log(`Row ${index + 2}: Missing email.`);
-        return false;
-      }
-
-      // Check if the submission is within the time window
       const isWithinWindow = submissionTimestamp >= submissionWindowStart && submissionTimestamp <= submissionWindowEnd;
 
-      Logger.log(
-        `Row ${
-          index + 2
-        }: Submission - Email: ${submitterEmail}, Timestamp: ${submissionTimestamp}, Within Window: ${isWithinWindow}`
-      );
+      if (!isWithinWindow) {
+        Logger.log(`Row ${index + 2}: Submission outside time window.`);
+        return false;
+      }
 
-      return isWithinWindow;
+      if (!registryEmails.includes(submitterEmail)) {
+        Logger.log(`Row ${index + 2}: Email ${submitterEmail} not found in Registry. Skipping.`);
+        return false;
+      }
+
+      return true;
     })
-    .map((row) => row[submitterEmailColumnIndex - 1]?.trim().toLowerCase()); // Extract and clean submitter emails
+    .map((row) => row[submitterEmailColumnIndex - 1]?.trim().toLowerCase());
 
-  Logger.log(`Valid submitters (within time window): ${validSubmitters.join(', ')}`);
+  Logger.log(`Valid submitters: ${validSubmitters.join(', ')}`);
   return validSubmitters;
 }
 
@@ -464,7 +465,7 @@ function getEligibleAmbassadorsEmails() {
 
 //
 //
-//////////// DATE UTILITS
+//       DATE UTILITS
 
 ///**
 // * Get the time zone of the script (all spreadsheets).
