@@ -48,7 +48,7 @@ Please add links your contributions during the month `;
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 15;
     SUBMISSION_WINDOW_REMINDER_MINUTES = 5; // how many minutes after Submission Requests sent to remind
-    EVALUATION_WINDOW_MINUTES = 15;
+    EVALUATION_WINDOW_MINUTES = 10;
     EVALUATION_WINDOW_REMINDER_MINUTES = 5; // how many minutes after Evaluation Requests sent to remind
 
     // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled

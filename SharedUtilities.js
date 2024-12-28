@@ -345,12 +345,12 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
   // Get the evaluation time window from the stored properties
   const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
 
-  // Dynamically retrieve column indices
-  // TODO Confirm: FYI changed to eval form column
-  const evalEmailColumnIndex = getColumnIndexByName(evaluationResponsesSheet, EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN);
-  const evalTimestampColumnIndex = getColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
+  // Dynamically retrieve column indices using headers
+  const headers = evaluationResponsesSheet.getRange(1, 1, 1, evaluationResponsesSheet.getLastColumn()).getValues()[0];
+  const evalEmailColumnIndex = headers.indexOf(EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN) + 1; // Index for "Your Email Address"
+  const evalTimestampColumnIndex = headers.indexOf(GOOGLE_FORM_TIMESTAMP_COLUMN) + 1; // Index for timestamp
 
-  if (evalEmailColumnIndex === -1 || evalTimestampColumnIndex === -1) {
+  if (evalEmailColumnIndex === 0 || evalTimestampColumnIndex === 0) {
     Logger.log('Error: Required columns not found in evaluation responses sheet.');
     return [];
   }
@@ -359,21 +359,26 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
   const validEvaluators = evaluationResponsesSheet
     .getRange(2, 1, lastRow - 1, evaluationResponsesSheet.getLastColumn())
     .getValues()
-    .filter((row) => {
+    .filter((row, index) => {
       const responseTimestamp = new Date(row[evalTimestampColumnIndex - 1]); // Use correct column index for timestamp
-      // Check if the response is within the evaluation time window
-      const isWithinWindow = responseTimestamp >= evaluationWindowStart && responseTimestamp <= evaluationWindowEnd;
-      if (isWithinWindow) {
-        Logger.log(
-          `Valid evaluator found: ${row[evalEmailColumnIndex - 1]} (Response time: ${
-            row[evalTimestampColumnIndex - 1]
-          })`
-        );
-        return true;
+      const evaluatorEmail = row[evalEmailColumnIndex - 1]?.trim().toLowerCase(); // Use correct column index for email
+
+      if (!responseTimestamp || !evaluatorEmail) {
+        Logger.log(`Row ${index + 2}: Missing timestamp or email.`);
+        return false;
       }
-      return false;
+
+      const isWithinWindow = responseTimestamp >= evaluationWindowStart && responseTimestamp <= evaluationWindowEnd;
+
+      if (!isWithinWindow) {
+        Logger.log(`Row ${index + 2}: Response outside evaluation time window.`);
+        return false;
+      }
+
+      Logger.log(`Row ${index + 2}: Valid response found for email: ${evaluatorEmail}`);
+      return true;
     })
-    .map((row) => row[evalEmailColumnIndex - 1].trim().toLowerCase()); // Extract evaluator email using correct column index
+    .map((row) => row[evalEmailColumnIndex - 1]?.trim().toLowerCase()); // Extract evaluator email
 
   Logger.log(`Valid evaluators (within time window): ${validEvaluators.join(', ')}`);
   return validEvaluators;
