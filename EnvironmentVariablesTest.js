@@ -48,6 +48,10 @@ Please add links your contributions during the month `;
     GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating?';
     GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5';
     GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks';
+    SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points';
+    SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';
+    GRADE_SUBMITTER_COLUMN = 'Submitter';
+    GRADE_FINAL_SCORE_COLUMN = 'Final Score';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 15;
@@ -113,6 +117,10 @@ Please add links your contributions during the month`;
     GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating?';
     GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5';
     GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks (optional)';
+    SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points';
+    SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';
+    GRADE_SUBMITTER_COLUMN = 'Submitter';
+    GRADE_FINAL_SCORE_COLUMN = 'Final Score';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 20;

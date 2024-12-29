@@ -40,6 +40,10 @@ var GOOGLE_FORM_REAL_EMAIL_COLUMN = '';
 var GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = '';
 var GOOGLE_FORM_EVALUATION_GRADE_COLUMN = '';
 var GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = '';
+var SCORE_PENALTY_POINTS_COLUMN = '';
+var SCORE_AVERAGE_SCORE_COLUMN = '';
+var GRADE_SUBMITTER_COLUMN = '';
+var GRADE_FINAL_SCORE_COLUMN = '';
 
 // Sponsor Email (for notifications when ambassadors are expelled)
 // set the actual values in EnvironmentVariables[Prod|Test].js
@@ -602,23 +606,32 @@ function updateFormTitlesWithCurrentReportingMonth() {
 
 //        INDEX UTILITIES for COLUMNS and SHEETS
 /**
+ * Wraps getColumnIndexByName -fFinds the column index for a given column name in the header row of the sheet, or throws exception.
+ * @param {Sheet} sheet - The sheet to search.
+ * @param {string} columnName - The name of the column to find.
+ * @returns {number} The column index (1-based), or throws an error if not found
+ */
+function getRequiredColumnIndexByName(sheet, columnName) {
+  const index = getColumnIndexByName(sheet, columnName);
+  if (index == -1) {
+    alertAndLog(`Expected Column "${columnName}" not found in sheet "${sheet.getName()}" header row: "${header}".`);
+    throw new Error('Required column not found');
+  }
+  return index;
+}
+
+/**
  * Finds the column index for a given column name in the header row of the sheet.
  * @param {Sheet} sheet - The sheet to search.
  * @param {string} columnName - The name of the column to find.
  * @returns {number} The column index (1-based), or -1 if not found.
  */
-// TODO Discuss: FYI changed this to only log not found to reduce log volume, and to throw (and not catch.)
-// if an expected header is missing, better to alert and stop processing.
 function getColumnIndexByName(sheet, columnName) {
-  //Logger.log(`Looking for column: ${columnName}`);
   const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  //Logger.log(`Header row: ${JSON.stringify(header)}`);
-  // TODO: Discuss - reverted back to my code that handles trimming headers names to match google forms with extra space
-  // const index = header.indexOf(columnName);
   const index = header.findIndex((h) => (h?.trim?.() ?? '') === columnName.trim());
   if (index == -1) {
-    alertAndLog(`Column "${columnName}" not found in sheet "${sheet.getName()}" header row: "${header}".`);
-    throw new Error('Required column not found in sheet header row');
+    Logger.log(`Expected Column "${columnName}" not found in sheet "${sheet.getName()}" header row: "${header}".`);
+    return -1;
   }
   return index + 1; // Convert to 1-based index
 }
