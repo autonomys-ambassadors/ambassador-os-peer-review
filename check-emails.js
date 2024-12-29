@@ -39,11 +39,6 @@ function validateEmailsInSubmissionForm(formResponseSheetId, registrySheetId) {
     const emailColumnIndex = getRequiredColumnIndexByName(formResponseSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
     const timestampColumnIndex = getRequiredColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
-    if (emailColumnIndex === -1 || timestampColumnIndex === -1) {
-      Logger.log('Error: Required columns not found in the Submission Form Responses sheet.');
-      return false;
-    }
-
     // Get all rows from the Submission Form Responses sheet
     const allRows = formResponseSheet
       .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())

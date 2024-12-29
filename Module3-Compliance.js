@@ -264,12 +264,7 @@ function calculatePenaltyPoints() {
 
   // Get headers and indices
   const headersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
-  const penaltyPointsColIndex = headersRange.indexOf('Penalty Points') + 1;
-  if (penaltyPointsColIndex === 0) {
-    Logger.log('Error: Penalty Points column not found.');
-    return;
-  }
-
+  const penaltyPointsColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
   const spreadsheetTimeZone = getProjectTimeZone();
   const evaluationMonthDate = getEvaluationWindowTimes().evaluationWindowStart;
   const currentReportingMonth = getStartOfPriorMonth(spreadsheetTimeZone, evaluationMonthDate); // getting reporting month based on evaluation window start

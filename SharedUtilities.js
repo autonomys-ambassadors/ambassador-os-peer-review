@@ -303,11 +303,6 @@ function getValidSubmissionEmails(submissionSheet) {
   const submitterEmailColumnIndex = getRequiredColumnIndexByName(submissionSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
   const submitterTimestampColumnIndex = getRequiredColumnIndexByName(submissionSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
-  if (submitterEmailColumnIndex === -1 || submitterTimestampColumnIndex === -1) {
-    Logger.log(`Error: Required columns not found.`);
-    return [];
-  }
-
   const validSubmitters = submissionSheet
     .getRange(2, 1, lastRow - 1, submissionSheet.getLastColumn())
     .getValues()
@@ -363,10 +358,6 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
     EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN
   );
   const evalTimestampColumnIndex = getRequiredColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
-  if (evalEmailColumnIndex === -1 || evalTimestampColumnIndex === -1) {
-    Logger.log('Error: Required columns not found in evaluation responses sheet.');
-    return [];
-  }
 
   // Extract valid responses within the evaluation time window
   const validEvaluators = evaluationResponsesSheet
@@ -424,10 +415,10 @@ function getReviewLogAssignments() {
 
   // Get header row to determine column indices dynamically
   const headers = reviewLogSheet.getRange(1, 1, 1, lastColumn).getValues()[0];
-  const submitterColIndex = headers.indexOf('Submitter') + 1; // +1 to convert to 1-based index
+  const submitterColIndex = getRequiredColumnIndexByName(reviewLogSheet, GRADE_SUBMITTER_COLUMN);
   const evaluatorCols = ['Reviewer 1', 'Reviewer 2', 'Reviewer 3'].map((header) => headers.indexOf(header) + 1);
 
-  if (submitterColIndex === 0 || evaluatorCols.some((index) => index === 0)) {
+  if (evaluatorCols.some((index) => index === 0)) {
     Logger.log('Error: Required columns (Submitter or Reviewer columns) not found in Review Log sheet.');
     return {};
   }
