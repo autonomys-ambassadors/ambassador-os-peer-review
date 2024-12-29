@@ -964,3 +964,38 @@ function setupEvaluationReminderTrigger(evaluationWindowStart) {
     Logger.log(`Error in setupEvaluationReminderTrigger: ${error}`);
   }
 }
+
+/**
+ * Function to reprocess all evaluation forms within the evaluation window
+ */
+function batchProcessEvaluationResponses() {
+  try {
+    Logger.log('Starting batch processing of evaluation responses.');
+
+    const form = FormApp.openById(EVALUATION_FORM_ID);
+    if (!form) {
+      Logger.log('Error: Form not found with the given ID.');
+      return;
+    }
+
+    const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
+    Logger.log(`Evaluation window: ${evaluationWindowStart} to ${evaluationWindowEnd}`);
+
+    const formResponses = form.getResponses();
+    const filteredResponses = formResponses.filter((response) => {
+      const timestamp = new Date(response.getTimestamp());
+      return timestamp >= evaluationWindowStart && timestamp <= evaluationWindowEnd;
+    });
+
+    Logger.log(`Total form responses to process: ${filteredResponses.length}`);
+
+    filteredResponses.forEach((formResponse) => {
+      const event = { response: formResponse };
+      processEvaluationResponse(event);
+    });
+
+    Logger.log('Batch processing of evaluation responses completed.');
+  } catch (error) {
+    Logger.log(`Error in batchProcessEvaluationResponses: ${error}`);
+  }
+}
