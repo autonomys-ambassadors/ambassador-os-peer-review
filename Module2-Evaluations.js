@@ -146,10 +146,6 @@ function generateReviewMatrix() {
   try {
     Logger.log('Starting generateReviewMatrix with multiple attempts.');
 
-    const MAX_ATTEMPTS = 5;
-    let bestAssignments = null;
-    let bestScore = Infinity; // The lower the score, the better (score = count of "Has No Evaluator").
-
     // Access the Registry and Submission Form Sheets
     const registrySpreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
     const registrySheet = registrySpreadsheet.getSheetByName(REGISTRY_SHEET_NAME);
@@ -169,42 +165,26 @@ function generateReviewMatrix() {
     const allEvaluators = getEligibleAmbassadorsEmails();
     Logger.log(`Eligible evaluators: ${JSON.stringify(allEvaluators)}`);
 
-    // Try multiple attempts to generate a valid assignment matrix
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      Logger.log(`Attempt ${attempt} of ${MAX_ATTEMPTS}`);
-      const { assignments, countHasNoEvaluator } = attemptSingleAssignment(validSubmitters, allEvaluators);
+    const { assignments, countHasNoEvaluator } = attemptSingleAssignment(validSubmitters, allEvaluators);
 
-      if (!assignments || assignments.length === 0) {
-        Logger.log(`Attempt ${attempt} failed to generate assignments.`);
-        continue;
-      }
-
-      Logger.log(`Attempt ${attempt} resulted in ${countHasNoEvaluator} "Has No Evaluator".`);
-
-      // Stop early if a perfect solution is found
-      if (countHasNoEvaluator === 0) {
-        bestAssignments = assignments;
-        bestScore = 0;
-        Logger.log(`Perfect assignment found on attempt ${attempt}.`);
-        break;
-      }
-
-      // Keep track of the best result so far
-      if (countHasNoEvaluator < bestScore) {
-        bestAssignments = assignments;
-        bestScore = countHasNoEvaluator;
-      }
+    if (!assignments || assignments.length === 0) {
+      alertAndLog(`Attempt ${attempt} failed to generate assignments.`);
+      throw new Error('Failed to generate assignements. Notify developers.');
     }
+
+    Logger.log(`Attempt ${attempt} resulted in ${countHasNoEvaluator} "Has No Evaluator".`);
 
     // Write the best assignments to the Review Log
-    if (bestAssignments) {
-      writeAssignmentsToReviewLog(bestAssignments);
-      Logger.log(`Final assignments chosen with ${bestScore} "Has No Evaluator".`);
+    if (countHasNoEvaluator === 0) {
+      writeAssignmentsToReviewLog(assignments);
+      Logger.log(`Final assignments chosen with ${countHasNoEvaluator} "Has No Evaluator".`);
     } else {
-      Logger.log('Failed to generate valid assignments after multiple attempts.');
+      alertAndLog('Failed to generate valid assignments after one attempt.');
+      throw new Error('Failed to generate valid assignments after one attempt. Notify Developers.');
     }
   } catch (error) {
-    Logger.log(`Error in generateReviewMatrix: ${error.message}`);
+    alertAndLog(`Error in generateReviewMatrix: ${error.message}`);
+    throw new Error('Failed to generate review matrix. Notify developers.');
   }
 }
 
