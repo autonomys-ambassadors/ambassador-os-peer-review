@@ -587,7 +587,7 @@ function processEvaluationResponse(e) {
         evaluatorEmail = String(answer).trim();
       } else if (question === GOOGLE_FORM_EVALUATION_HANDLE_COLUMN) {
         submitterDiscordHandle = String(answer).trim();
-      } else if (question === GOOGLE_FORM_EVALUATION_SCORE_COLUMN) {
+      } else if (question === GOOGLE_FORM_EVALUATION_GRADE_COLUMN) {
         const gradeMatch = String(answer).match(/\d+/);
         if (gradeMatch) grade = parseFloat(gradeMatch[0]);
       } else if (question === GOOGLE_FORM_EVALUATION_REMARKS_COLUMN) {
