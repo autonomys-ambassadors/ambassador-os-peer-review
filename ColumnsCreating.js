@@ -33,22 +33,12 @@ function syncRegistryColumnsToOverallScore() {
     }
 
     // Verify columns "Ambassadors' Discord Handles" in overall score
-    const discordHandleColumnIndex = getColumnIndexByName(overallScoreSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
-    if (discordHandleColumnIndex === 0) {
-      alertAndLog('Error: "Ambassadors\' Discord Handles" column not found.');
-      return;
-    }
-
-    // Verify "Ambassador Id" in overall score
-    const ambassadorIdColumnIndex = getColumnIndexByName(overallScoreSheet, 'Ambassador Id');
-    if (ambassadorIdColumnIndex === 0) {
-      alertAndLog('Error: "Ambassador Id" column not found in Overall Score Sheet.');
-      return;
-    }
+    const discordHandleColumnIndex = getRequiredColumnIndexByName(overallScoreSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+    const ambassadorIdColumnIndex = getRequiredColumnIndexByName(overallScoreSheet, 'Ambassador Id');
 
     // Ensure "Ambassador Status" column is in overall score, add to the end if it is not found
     let statusColumnIndex = getColumnIndexByName(overallScoreSheet, 'Ambassador Status');
-    if (statusColumnIndex === 0) {
+    if (statusColumnIndex === -1) {
       statusColumnIndex = overallScoreSheet.getLastColumn() + 1;
       overallScoreSheet.getRange(1, statusColumnIndex).setValue('Ambassador Status');
       Logger.log(`Created "Ambassador Status" column at index ${statusColumnIndex}.`);

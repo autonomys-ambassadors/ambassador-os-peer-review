@@ -1,6 +1,6 @@
 function setTestVariables() {
   // controls wether email will be sent or just logged for troubleshooting - should always be true for production.
-  const TESTER = 'Wilyam'; // 'Wilyam' or 'Jonathan'
+  const TESTER = 'Jonathan'; // 'Wilyam' or 'Jonathan'
 
   if (TESTER === 'Wilyam') {
     SEND_EMAIL = true;

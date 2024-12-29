@@ -24,17 +24,22 @@ function validateEmailsInSubmissionForm(formResponseSheetId, registrySheetId) {
 
     // Get all emails from the Registry sheet
     const registryEmails = registrySheet
-      .getRange(2, getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN), registrySheet.getLastRow() - 1, 1)
+      .getRange(
+        2,
+        getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN),
+        registrySheet.getLastRow() - 1,
+        1
+      )
       .getValues()
       .flat()
       .map((email) => email.trim().toLowerCase());
     Logger.log(`Loaded ${registryEmails.length} emails from the Registry.`);
 
     // Get headers and column indices dynamically
-    const emailColumnIndex = getColumnIndexByName(formResponseSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
-    const timestampColumnIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
+    const emailColumnIndex = getRequiredColumnIndexByName(formResponseSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
+    const timestampColumnIndex = getRequiredColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
-    if (emailColumnIndex === 0 || timestampColumnIndex === 0) {
+    if (emailColumnIndex === -1 || timestampColumnIndex === -1) {
       Logger.log('Error: Required columns not found in the Submission Form Responses sheet.');
       return false;
     }

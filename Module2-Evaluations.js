@@ -432,14 +432,23 @@ function getContributionDetailsByEmail(email) {
     Logger.log(`Submission window: ${submissionWindowStart} to ${submissionWindowEnd}`);
 
     // Get form responses
-    const formResponseTimestampColumnIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
-    const contributionDetailsColumnIndex = getColumnIndexByName(
+    const formResponseTimestampColumnIndex = getRequiredColumnIndexByName(
+      formResponseSheet,
+      GOOGLE_FORM_TIMESTAMP_COLUMN
+    );
+    const contributionDetailsColumnIndex = getRequiredColumnIndexByName(
       formResponseSheet,
       GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN
     );
-    const contributionLinksColumnIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN);
+    const contributionLinksColumnIndex = getRequiredColumnIndexByName(
+      formResponseSheet,
+      GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN
+    );
 
-    const formResponseEmailColumnIndex = getColumnIndexByName(formResponseSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
+    const formResponseEmailColumnIndex = getRequiredColumnIndexByName(
+      formResponseSheet,
+      SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN
+    );
     const formData = formResponseSheet
       .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())
       .getValues();
@@ -640,7 +649,7 @@ function processEvaluationResponse(e) {
     }
 
     // Find row for submitter
-    const submitterDiscordColumnIndex = getColumnIndexByName(monthSheet, 'Submitter');
+    const submitterDiscordColumnIndex = getRequiredColumnIndexByName(monthSheet, 'Submitter');
     const submitterRows = monthSheet
       .getRange(2, submitterDiscordColumnIndex, monthSheet.getLastRow() - 1, 1)
       .getValues();
@@ -841,13 +850,8 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
     }
 
     // Get column indices dynamically
-    const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
-    const registryDiscordColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
-
-    if (registryEmailColIndex === -1 || registryDiscordColIndex === -1) {
-      Logger.log('Error: Required columns (Email or Discord Handle) not found in Registry sheet.');
-      return;
-    }
+    const registryEmailColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+    const registryDiscordColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
 
     // Define regex for email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

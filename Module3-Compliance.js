@@ -100,8 +100,8 @@ function copyFinalScoresToOverallScore() {
     const monthColumnIndex =
       existingColumns.findIndex((header) => header instanceof Date && header.getTime() === currentMonthDate.getTime()) +
       1;
-    const monthDiscordColIndex = getColumnIndexByName(monthSheet, GRADE_SUBMITTER_COLUMN);
-    const monthFinalScoreColIndex = getColumnIndexByName(monthSheet, GRADE_FINAL_SCORE_COLUMN);
+    const monthDiscordColIndex = getRequiredColumnIndexByName(monthSheet, GRADE_SUBMITTER_COLUMN);
+    const monthFinalScoreColIndex = getRequiredColumnIndexByName(monthSheet, GRADE_FINAL_SCORE_COLUMN);
 
     if (monthColumnIndex === 0) {
       alertAndLog(`Column for "${monthSheetName}" not found in Overall score sheet.`);
@@ -120,7 +120,7 @@ function copyFinalScoresToOverallScore() {
     Logger.log(`Retrieved ${finalScores.length} scores from "${monthSheetName}" sheet.`);
 
     //Copy Final Score values to proper rows Overall score" by Discord Handles
-    const overallSheetDiscordColumn = getColumnIndexByName(overallScoreSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+    const overallSheetDiscordColumn = getRequiredColumnIndexByName(overallScoreSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
     const overallHandles = overallScoreSheet
       .getRange(2, overallSheetDiscordColumn, overallScoreSheet.getLastRow() - 1, 1)
       .getValues()
@@ -187,13 +187,7 @@ function detectNonRespondersPastMonths() {
   Logger.log('Executing detectNonRespondersPastMonths for the first time.');
 
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  const penaltyPointsColIndex = getColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
-
-  if (penaltyPointsColIndex === 0) {
-    Logger.log('Error: Penalty Points column not found.');
-    return;
-  }
-
+  const penaltyPointsColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
   const spreadsheetTimeZone = getProjectTimeZone();
   const currentMonthDate = getPreviousMonthDate(spreadsheetTimeZone);
   const currentMonthName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
@@ -302,9 +296,9 @@ function calculatePenaltyPoints() {
   const registryData = registrySheet
     .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
     .getValues();
-  const registryEmailColumn = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN) - 1;
-  const registryDiscordColumn = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN) - 1;
-  const registryStatusColumn = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN) - 1;
+  const registryEmailColumn = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN) - 1;
+  const registryDiscordColumn = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN) - 1;
+  const registryStatusColumn = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN) - 1;
 
   const ambassadorData = registryData
     .filter((row) => row[registryEmailColumn]?.trim() && !row[registryStatusColumn]?.includes('Expelled'))
@@ -378,13 +372,8 @@ function calculateMaxPenaltyPointsForSixMonths() {
   Logger.log('Starting calculation of Max 6-Month Penalty Points.');
 
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  const penaltyPointsCol = getColumnIndexByName(overallScoresSheet, 'Penalty Points');
-  const maxPPCol = getColumnIndexByName(overallScoresSheet, 'Max 6-Month PP');
-
-  if (penaltyPointsCol === 0 || maxPPCol === 0) {
-    Logger.log('Error: Either "Penalty Points" or "Max 6-Month PP" column not found.');
-    return;
-  }
+  const penaltyPointsCol = getRequiredColumnIndexByName(overallScoresSheet, 'Penalty Points');
+  const maxPPCol = getRequiredColumnIndexByName(overallScoresSheet, 'Max 6-Month PP');
 
   const lastRow = overallScoresSheet.getLastRow();
   const lastColumn = overallScoresSheet.getLastColumn();
@@ -485,10 +474,10 @@ function expelAmbassadors() {
 
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  const scoreMaxPenaltiesColIndex = getColumnIndexByName(overallScoresSheet, SCORE_MAX_6M_PP_COLUMN);
-  const scoreDiscordHandleColIndex = getColumnIndexByName(overallScoresSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
-  const registryDiscordHandleColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
-  const registryStatusColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
+  const scoreMaxPenaltiesColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_MAX_6M_PP_COLUMN);
+  const scoreDiscordHandleColIndex = getRequiredColumnIndexByName(overallScoresSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+  const registryDiscordHandleColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+  const registryStatusColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
 
   const newlyExpelled = [];
 
@@ -535,15 +524,8 @@ function sendExpulsionNotifications(discordHandle) {
   Logger.log(`Sending expulsion notifications for ambassador with discord handle: ${discordHandle}`);
 
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
-  const registryDiscordColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
-
-  if (registryEmailColIndex === 0 || registryDiscordColIndex === 0) {
-    Logger.log(
-      `Error: Column '${AMBASSADOR_EMAIL_COLUMN}' or '${AMBASSADOR_DISCORD_HANDLE_COLUMN}' not found in registry headers.`
-    );
-    return;
-  }
+  const registryEmailColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+  const registryDiscordColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
 
   // Find ambassador's row by discord handle
   const registryRowIndex =

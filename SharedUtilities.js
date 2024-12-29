@@ -283,7 +283,12 @@ function getValidSubmissionEmails(submissionSheet) {
 
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
   const registryEmails = registrySheet
-    .getRange(2, getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN), registrySheet.getLastRow() - 1, 1)
+    .getRange(
+      2,
+      getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN),
+      registrySheet.getLastRow() - 1,
+      1
+    )
     .getValues()
     .flat()
     .map((email) => email.trim().toLowerCase());
@@ -459,8 +464,8 @@ function getEligibleAmbassadorsEmails() {
       Logger.log('Registry sheet not found.');
       return [];
     }
-    const registryAmbassadorStatusColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
-    const registryAmbassadorEmailColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+    const registryAmbassadorStatusColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
+    const registryAmbassadorEmailColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
     const registryData = registrySheet
       .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
       .getValues(); // Columns: Email, Discord Handle, Status
@@ -562,8 +567,8 @@ function getStartOfPriorMonth(timeZone, startingDate) {
 
 function getDiscordHandleFromEmail(email) {
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const emailColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
-  const discordColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+  const emailColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+  const discordColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const emailColumn = registrySheet
     .getRange(2, emailColumnIndex, registrySheet.getLastRow() - 1, 1)
     .getValues()
@@ -746,7 +751,7 @@ function findRowByDiscordHandle(discordHandle) {
   const overallScoresSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID).getSheetByName(
     OVERALL_SCORE_SHEET_NAME
   );
-  const discordHandleColIndex = getColumnIndexByName(overallScoresSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+  const discordHandleColIndex = getRequiredColumnIndexByName(overallScoresSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const handlesColumn = overallScoresSheet
     .getRange(2, discordHandleColIndex, overallScoresSheet.getLastRow() - 1, 1)
     .getValues()
