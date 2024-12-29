@@ -295,12 +295,10 @@ function getValidSubmissionEmails(submissionSheet) {
   }
 
   const { submissionWindowStart, submissionWindowEnd } = getSubmissionWindowTimes();
+  const submitterEmailColumnIndex = getRequiredColumnIndexByName(submissionSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
+  const submitterTimestampColumnIndex = getRequiredColumnIndexByName(submissionSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
-  const headers = submissionSheet.getRange(1, 1, 1, submissionSheet.getLastColumn()).getValues()[0];
-  const submitterEmailColumnIndex = headers.indexOf(SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN) + 1;
-  const submitterTimestampColumnIndex = headers.indexOf(GOOGLE_FORM_TIMESTAMP_COLUMN) + 1;
-
-  if (submitterEmailColumnIndex === 0 || submitterTimestampColumnIndex === 0) {
+  if (submitterEmailColumnIndex === -1 || submitterTimestampColumnIndex === -1) {
     Logger.log(`Error: Required columns not found.`);
     return [];
   }
@@ -355,11 +353,12 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
   const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
 
   // Dynamically retrieve column indices using headers
-  const headers = evaluationResponsesSheet.getRange(1, 1, 1, evaluationResponsesSheet.getLastColumn()).getValues()[0];
-  const evalEmailColumnIndex = headers.indexOf(EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN) + 1; // Index for "Your Email Address"
-  const evalTimestampColumnIndex = headers.indexOf(GOOGLE_FORM_TIMESTAMP_COLUMN) + 1; // Index for timestamp
-
-  if (evalEmailColumnIndex === 0 || evalTimestampColumnIndex === 0) {
+  const evalEmailColumnIndex = getRequiredColumnIndexByName(
+    evaluationResponsesSheet,
+    EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN
+  );
+  const evalTimestampColumnIndex = getRequiredColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
+  if (evalEmailColumnIndex === -1 || evalTimestampColumnIndex === -1) {
     Logger.log('Error: Required columns not found in evaluation responses sheet.');
     return [];
   }
