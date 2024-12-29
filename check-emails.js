@@ -6,7 +6,9 @@ function validateEmailsInSubmissionForm(formResponseSheetId, registrySheetId) {
     const formResponseSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(
       FORM_RESPONSES_SHEET_NAME
     );
-    const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
+    const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
+      REGISTRY_SHEET_NAME
+    );
 
     if (!formResponseSheet) {
       Logger.log('Error: Submission Form Responses sheet not found.');
@@ -29,8 +31,8 @@ function validateEmailsInSubmissionForm(formResponseSheetId, registrySheetId) {
     Logger.log(`Loaded ${registryEmails.length} emails from the Registry.`);
 
     // Get headers and column indices dynamically
-    const emailColumnIndex = getColumnIndexByName(formResponseSheet, 'Your Email Address');
-    const timestampColumnIndex = getColumnIndexByName(formResponseSheet, 'Timestamp');
+    const emailColumnIndex = getColumnIndexByName(formResponseSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
+    const timestampColumnIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
     if (emailColumnIndex === 0 || timestampColumnIndex === 0) {
       Logger.log('Error: Required columns not found in the Submission Form Responses sheet.');
