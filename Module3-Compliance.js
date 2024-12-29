@@ -384,10 +384,8 @@ function calculateMaxPenaltyPointsForSixMonths() {
   Logger.log('Starting calculation of Max 6-Month Penalty Points.');
 
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  const headers = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
-  // TODO Suggestion: switch to header constant vars (👍️)
-  const penaltyPointsCol = headers.indexOf('Penalty Points') + 1;
-  const maxPPCol = headers.indexOf('Max 6-Month PP') + 1;
+  const penaltyPointsCol = getColumnIndexByName(overallScoresSheet, 'Penalty Points');
+  const maxPPCol = getColumnIndexByName(overallScoresSheet, 'Max 6-Month PP');
 
   if (penaltyPointsCol === 0 || maxPPCol === 0) {
     Logger.log('Error: Either "Penalty Points" or "Max 6-Month PP" column not found.');
@@ -399,6 +397,7 @@ function calculateMaxPenaltyPointsForSixMonths() {
   const spreadsheetTimeZone = getProjectTimeZone();
 
   // Collect indices of all month columns
+  const headers = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
   const monthColumns = [];
   for (let col = 1; col <= lastColumn; col++) {
     const cellValue = headers[col - 1];
