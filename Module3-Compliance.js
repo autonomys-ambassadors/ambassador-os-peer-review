@@ -100,8 +100,8 @@ function copyFinalScoresToOverallScore() {
     const monthColumnIndex =
       existingColumns.findIndex((header) => header instanceof Date && header.getTime() === currentMonthDate.getTime()) +
       1;
-    const monthDiscordColIndex = getColumnIndexByName(monthSheet, 'Submitter');
-    const monthFinalScoreColIndex = getColumnIndexByName(monthSheet, 'Final Score');
+    const monthDiscordColIndex = getColumnIndexByName(monthSheet, GRADE_SUBMITTER_COLUMN);
+    const monthFinalScoreColIndex = getColumnIndexByName(monthSheet, GRADE_FINAL_SCORE_COLUMN);
 
     if (monthColumnIndex === 0) {
       alertAndLog(`Column for "${monthSheetName}" not found in Overall score sheet.`);
@@ -145,33 +145,28 @@ function checkAndCreateColumns() {
   const headersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
 
   // Find the index of the "Average Score" column
-  const averageScoreColIndex = headersRange.indexOf('Average Score') + 1;
-  if (averageScoreColIndex === 0) {
-    Logger.log('Error: "Average Score" column not found.');
-    return;
-  }
 
+  const averageScoreColIndex = getColumnIndexByName(overallScoresSheet, SCORE_AVERAGE_SCORE_COLUMN);
   let nextColIndex = averageScoreColIndex; // Start position for the next column
 
   // Check if "Penalty Points" column exists
-  let penaltyPointsColIndex = headersRange.indexOf('Penalty Points') + 1;
-  if (penaltyPointsColIndex === 0) {
+
+  let penaltyPointsColIndex = getColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
+
+  if (penaltyPointsColIndex === -1) {
     nextColIndex += 1; // Next column after "Average Score"
     overallScoresSheet.insertColumnAfter(averageScoreColIndex);
-    overallScoresSheet.getRange(1, nextColIndex).setValue('Penalty Points');
+    overallScoresSheet.getRange(1, nextColIndex).setValue(SCORE_PENALTY_POINTS_COLUMN);
     Logger.log('Created "Penalty Points" column.');
     penaltyPointsColIndex = nextColIndex; // Update index for the newly created column
   }
 
-  // Refresh headers to account for the newly added column
-  const updatedHeadersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
-
   // Check if "Max 6-Month PP" column exists
-  let maxPenaltyPointsColIndex = updatedHeadersRange.indexOf('Max 6-Month PP') + 1;
-  if (maxPenaltyPointsColIndex === 0) {
+  let maxPenaltyPointsColIndex = getColumnIndexByName(overallScoresSheet, SCORE_MAX_6M_PP_COLUMN);
+  if (maxPenaltyPointsColIndex === -1) {
     nextColIndex = penaltyPointsColIndex + 1; // Next column after "Penalty Points"
     overallScoresSheet.insertColumnAfter(penaltyPointsColIndex);
-    overallScoresSheet.getRange(1, nextColIndex).setValue('Max 6-Month PP');
+    overallScoresSheet.getRange(1, nextColIndex).setValue(SCORE_MAX_6M_PP_COLUMN);
     Logger.log('Created "Max 6-Month PP" column.');
   }
 }
@@ -192,8 +187,7 @@ function detectNonRespondersPastMonths() {
   Logger.log('Executing detectNonRespondersPastMonths for the first time.');
 
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  const headersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
-  const penaltyPointsColIndex = headersRange.indexOf('Penalty Points') + 1;
+  const penaltyPointsColIndex = getColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
 
   if (penaltyPointsColIndex === 0) {
     Logger.log('Error: Penalty Points column not found.');
@@ -491,8 +485,7 @@ function expelAmbassadors() {
 
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  // TODO Suggestion: move max 6-month PP to a constant
-  const scoreMaxPenaltiesColIndex = getColumnIndexByName(overallScoresSheet, 'Max 6-Month PP');
+  const scoreMaxPenaltiesColIndex = getColumnIndexByName(overallScoresSheet, SCORE_MAX_6M_PP_COLUMN);
   const scoreDiscordHandleColIndex = getColumnIndexByName(overallScoresSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const registryDiscordHandleColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const registryStatusColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);

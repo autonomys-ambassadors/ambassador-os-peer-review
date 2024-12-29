@@ -52,6 +52,7 @@ Please add links to your contributions during the month`;
   GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks (optional)';
   SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points';
   SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';
+  SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
   GRADE_SUBMITTER_COLUMN = 'Submitter';
   GRADE_FINAL_SCORE_COLUMN = 'Final Score';
 
