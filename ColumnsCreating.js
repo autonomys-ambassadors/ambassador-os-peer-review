@@ -85,7 +85,7 @@ function syncRegistryColumnsToOverallScore() {
             overallScoreSheet.getRange(newRowIndex, discordHandleColumnIndex).setValue(discordHandle);
           }
           ambassadorId = newHash;
-          registrySheet.getRange(i + 1, 1).setValue(ambassadorId); // Update registry with new hash
+          registrySheet.getRange(i + 1, ambassadorIdColumnIndex).setValue(ambassadorId); // Update registry with new hash
         } catch (error) {
           alertAndLog('Error in updating ambassador id in overall score and registry', error);
           alertAndLog('Ambassador Id may be in unknown state:', ambassadorId);
