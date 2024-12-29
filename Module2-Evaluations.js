@@ -236,8 +236,8 @@ function attemptSingleAssignment(validSubmitters, allEvaluators) {
       if (availableEvaluators.length === 0) {
         reviewers.push('Has No Evaluator');
         countHasNoEvaluator++;
-        Logger.log(`No available evaluators for submitter ${submitter} in round ${i + 1}.`);
-        continue;
+        alertAndLog(`No available evaluators for submitter ${submitter} in round ${i + 1}.`);
+        throw new Error('No available evaluators found. Notify developers.');
       }
 
       const randomIndex = Math.floor(Math.random() * availableEvaluators.length);
@@ -585,12 +585,12 @@ function processEvaluationResponse(e) {
       // TODO Suggestion: change to use constants, changed this because forms has different value than what is hard coded
       if (question === EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN) {
         evaluatorEmail = String(answer).trim();
-      } else if (question === 'Discord handle of the ambassador you are evaluating?') {
+      } else if (question === GOOGLE_FORM_EVALUATION_HANDLE_COLUMN) {
         submitterDiscordHandle = String(answer).trim();
-      } else if (question === 'Please assign a grade on a scale of 0 to 5') {
+      } else if (question === GOOGLE_FORM_EVALUATION_SCORE_COLUMN) {
         const gradeMatch = String(answer).match(/\d+/);
         if (gradeMatch) grade = parseFloat(gradeMatch[0]);
-      } else if (question === 'Remarks') {
+      } else if (question === GOOGLE_FORM_EVALUATION_REMARKS_COLUMN) {
         remarks = answer;
       }
     });

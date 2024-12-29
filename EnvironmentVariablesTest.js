@@ -1,6 +1,6 @@
 function setTestVariables() {
   // controls wether email will be sent or just logged for troubleshooting - should always be true for production.
-  const TESTER = 'Wilyam'; // 'Wilyam' or 'Jonathan'
+  const TESTER = 'Jonathan'; // 'Wilyam' or 'Jonathan'
 
   if (TESTER === 'Wilyam') {
     SEND_EMAIL = true;
@@ -45,6 +45,10 @@ function setTestVariables() {
 Please add text to your contributions during the month`;
     GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
 Please add links your contributions during the month `;
+    GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating?';
+    GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5';
+    GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks';
+
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 15;
     SUBMISSION_WINDOW_REMINDER_MINUTES = 5; // how many minutes after Submission Requests sent to remind
@@ -106,6 +110,9 @@ Please add links your contributions during the month `;
 Please add text to your contributions during the month`;
     GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
 Please add links your contributions during the month`;
+    GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating?';
+    GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5';
+    GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks (optional)';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 20;

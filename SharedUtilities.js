@@ -37,6 +37,10 @@ var GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = '';
 var SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = '';
 var EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = '';
 var GOOGLE_FORM_REAL_EMAIL_COLUMN = '';
+var GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = '';
+var GOOGLE_FORM_EVALUATION_GRADE_COLUMN = '';
+var GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = '';
+
 // Sponsor Email (for notifications when ambassadors are expelled)
 // set the actual values in EnvironmentVariables[Prod|Test].js
 var SPONSOR_EMAIL = ''; // Sponsor's email
