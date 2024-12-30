@@ -557,7 +557,6 @@ function processEvaluationResponse(e) {
       return;
     }
     Logger.log(`Form Submitter's Email from google form: ${formSubmitterEmail}`);
-
     const responseTime = formResponse.getTimestamp();
     Logger.log(`Evaluation response received at: ${responseTime}`);
 
@@ -566,6 +565,7 @@ function processEvaluationResponse(e) {
     let submitterDiscordHandle = '';
     let grade = NaN;
     let remarks = '';
+    evaluatorEmail = formSubmitterEmail;
 
     itemResponses.forEach((itemResponse) => {
       const question = itemResponse.getItem().getTitle();
