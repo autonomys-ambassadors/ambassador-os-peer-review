@@ -26,7 +26,6 @@ function requestEvaluationsModule() {
   // Step 6: Setting triggers
   setupEvaluationResponseTrigger(); // Setting the onFormSubmit trigger to process evaluation responses
   setupEvaluationTriggers(evaluationWindowStart); // Setting triggers for reminders and closures
-  setupEvaluationFormSubmitTrigger(); // Set up evaluation form submission trigger to handle edited/duplicate responses
 }
 
 /**
@@ -729,7 +728,6 @@ function processEvaluationResponse(e) {
       return;
     }
     Logger.log(`Form Submitter's Email from google form: ${formSubmitterEmail}`);
-
     const responseTime = formResponse.getTimestamp();
     Logger.log(`Evaluation response received at: ${responseTime}`);
 
@@ -738,17 +736,16 @@ function processEvaluationResponse(e) {
     let submitterDiscordHandle = '';
     let grade = NaN;
     let remarks = '';
+    evaluatorEmail = formSubmitterEmail;
 
     itemResponses.forEach((itemResponse) => {
       const question = itemResponse.getItem().getTitle();
       const answer = itemResponse.getResponse();
       Logger.log(`Question: ${question}, Answer: ${answer}, Type of answer: ${typeof answer}`);
       // TODO Suggestion: change to use constants, changed this because forms has different value than what is hard coded
-      if (question === EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN) {
-        evaluatorEmail = String(answer).trim();
-      } else if (question === 'Discord handle of the ambassador you are evaluating?') {
+      if (question === 'Discord handle of the ambassador you are evaluating? (Not your own D-Handle)') {
         submitterDiscordHandle = String(answer).trim();
-      } else if (question === 'Please assign a grade on a scale of 0 to 5') {
+      } else if (question === 'Please assign a grade on a scale of 0 to 5 ') {
         const gradeMatch = String(answer).match(/\d+/);
         if (gradeMatch) grade = parseFloat(gradeMatch[0]);
       } else if (question === 'Remarks (optional)') {
