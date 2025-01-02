@@ -168,11 +168,11 @@ function generateReviewMatrix() {
     const { assignments, countHasNoEvaluator } = attemptSingleAssignment(validSubmitters, allEvaluators);
 
     if (!assignments || assignments.length === 0) {
-      alertAndLog(`Attempt ${attempt} failed to generate assignments.`);
+      alertAndLog(`Failed to generate assignments.`);
       throw new Error('Failed to generate assignements. Notify developers.');
     }
 
-    Logger.log(`Attempt ${attempt} resulted in ${countHasNoEvaluator} "Has No Evaluator".`);
+    Logger.log(`Assignment attempt resulted in ${countHasNoEvaluator} "Has No Evaluator".`);
 
     // Write the best assignments to the Review Log
     if (countHasNoEvaluator === 0) {
