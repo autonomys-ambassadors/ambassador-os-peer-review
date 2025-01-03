@@ -16,9 +16,9 @@ function requestSubmissionsModule() {
   Logger.log('Opened "Registry" sheet from "Ambassador Registry" spreadsheet.');
 
   // Fetch data from Registry sheet (Emails and Status)
-  const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
-  const registryAmbassadorStatus = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
-  const registryAmbassadorDiscordHandle = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+  const registryEmailColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+  const registryAmbassadorStatus = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
+  const registryAmbassadorDiscordHandle = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const registryData = registrySheet
     .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
     .getValues(); // Fetch Emails, Discord Handles, and Status
@@ -30,8 +30,8 @@ function requestSubmissionsModule() {
     .map((row) => [row[registryEmailColIndex - 1], row[registryAmbassadorDiscordHandle - 1]]); // Extract only emails
   Logger.log(`Eligible ambassadors emails: ${JSON.stringify(eligibleEmails)}`);
 
-  // Get deliverable date (previous month date)
-  const deliverableDate = getPreviousMonthDate(spreadsheetTimeZone); // Call from SharedUtilities.gs
+  // Get deliverable date of the reporting month at first time (previous month date)
+  const deliverableDate = getPreviousMonthDate();
   Logger.log(`Deliverable date: ${deliverableDate}`);
 
   const month = Utilities.formatDate(deliverableDate, spreadsheetTimeZone, 'MMMM'); // Format the deliverable date to get the month name
@@ -143,10 +143,10 @@ function checkNonRespondents() {
   Logger.log('Sheets successfully fetched.');
 
   // Get column indices for required headers
-  const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
-  const registryAmbassadorStatusColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
-  const responseEmailColIndex = getColumnIndexByName(formResponseSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
-  const responseTimestampColIndex = getColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
+  const registryEmailColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+  const registryAmbassadorStatusColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
+  const responseEmailColIndex = getRequiredColumnIndexByName(formResponseSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
+  const responseTimestampColIndex = getRequiredColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
   // Fetch registry data and filter eligible emails
   const registryData = registrySheet
@@ -197,14 +197,8 @@ function sendReminderEmails(nonRespondents) {
   }
 
   // Dynamically fetch column indices
-  const registryEmailColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN); // Email column index
-  const registryDiscordHandleColIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN); // Discord Handle column index
-
-  // Validate column indices
-  if (registryEmailColIndex === -1 || registryDiscordHandleColIndex === -1) {
-    Logger.log('Error: One or more required columns not found in Registry sheet.');
-    return;
-  }
+  const registryEmailColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN); // Email column index
+  const registryDiscordHandleColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN); // Discord Handle column index
 
   nonRespondents.forEach((email) => {
     // Validate email format
