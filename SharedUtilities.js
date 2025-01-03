@@ -165,11 +165,10 @@ function onOpen() {
     .addItem('Compliance Audit', 'runComplianceAudit') // Process Scores and Penalties
     .addItem('Notify Upcoming Peer Review', 'notifyUpcomingPeerReview') // Peer Review notifications
     .addItem('Select CRT members', 'selectCRTMembers') // CRT
-    .addItem('🔧️Force Authorization', 'forceAuthorization') // Authorization trigger
-    // This function does not exist?
-    //.addItem('🔧️Check missing Emails/DiscorHandles', 'check_missing_data') // Checks Registry sheet for completeness of data. Recommended to run every cycle if multiple changes were made.
-    .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers') // Optional item
     .addItem('🔧️Create/Sync Columns', 'syncRegistryColumnsToOverallScore') // creates Ambassador Status column in Overall score sheet; Syncs Ambassadors' Discord Handles and Ambassador Status columns between Registry and Overall score.
+    .addItem('🔧️Check Emails in Submission Form responses', 'validateEmailsInSubmissionForm') // Checks completance of emails in 'Your Email Address' field of Submission Form. Recommended to run before Evaluation Requests to avoid errors caused by users' typo.
+    .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers') // Optional item
+    .addItem('🔧️Force Authorization', 'forceAuthorization') // Authorization trigger
     .addToUi();
   Logger.log('Menu initialized.');
 }
@@ -239,8 +238,10 @@ function getSubmissionWindowStart() {
     return null;
   }
 
+  // date parsing without time zone shifts
   const startDate = new Date(startDateStr);
-  Logger.log(`Submission window started at: ${startDate}`);
+  const timeZone = getProjectTimeZone();
+  Logger.log(`Submission window start at: ${Utilities.formatDate(startDate, timeZone, 'yyyy-MM-dd HH:mm:ss z')}`);
   return startDate;
 }
 
@@ -472,37 +473,28 @@ function getEligibleAmbassadorsEmails() {
   }
 }
 
-//
-//
 //       DATE UTILITS
 
-///**
-// * Get the time zone of the script (all spreadsheets).
+// Get the time zone of the script (all spreadsheets).
 function getProjectTimeZone() {
   return Session.getScriptTimeZone(); // Using Project's time zone
 }
 
 /**
- * Get the formatted month name for a given date and time zone.
- * @param {Date} date - The date object.
- * @param {string} timeZone - The time zone for formatting.
- * @returns {string} - Formatted string for the month and year (e.g., "September 2024").
- */
-function getMonthNameForDate(date, timeZone) {
-  return Utilities.formatDate(date, timeZone, 'MMMM yyyy');
-}
-
-/**
- * A helper function to retrieve the first day of the previous month based on time zone.
- * This function returns a Date object that represents the first day of the previous month.
- * The time is set to 7:00 (feel free to adjust as needed) to match the time set in the previous columns.
- * @param {string} timeZone - The time zone of the table.
+ * A helper function to retrieve the first day of the previous month based on the project time zone.
+ * Returns a Date object that represents the first day of the previous month.
  * @returns {Date} - The date of the first day of the previous month.
  */
-function getPreviousMonthDate(timeZone) {
+function getPreviousMonthDate() {
+  Logger.log('Calculating the first day of the previous month.');
+
+  // Retrieve the project time zone
+  const timeZone = Session.getScriptTimeZone();
+  Logger.log(`Using project time zone: ${timeZone}`);
+
   const now = new Date();
 
-  // Get the current year and month in the time zone of the table
+  // Get the current year and month in the project time zone
   const formattedYear = Utilities.formatDate(now, timeZone, 'yyyy');
   const formattedMonth = Utilities.formatDate(now, timeZone, 'MM');
 
@@ -513,47 +505,51 @@ function getPreviousMonthDate(timeZone) {
     prevYear -= 1;
   }
 
-  // Create a Date object for the first day of the previous month at 7:00 UTC (to match the time of the previous columns)
-  //TODO Suggestion: fix timezone assumption
-  const targetDate = new Date(Date.UTC(prevYear, prevMonth - 1, 1, 7, 0, 0, 0));
+  // Create a Date object for the first day of the previous month at 00:00:00 (Pacific Time)
+  const targetDate = new Date(prevYear, prevMonth - 1, 1, 0, 0, 0, 0);
   Logger.log(`Calculated date of the previous month: ${targetDate} (ISO: ${targetDate.toISOString()})`);
 
   return targetDate;
 }
 
 /**
- * A helper function to retrieve the first day of the previous month based on time zone and a starting date.
- * This function returns a Date object that represents the first day of the month before the starting date.
- * The time is set to 7:00 (feel free to adjust as needed) to match the time set in the previous columns.
- * @param {string} timeZone - The time zone of the table.
- * @param {Date} startingDate - The starting date for the calculation.
- * @returns {Date} - The date of the first day of the previous month.
+ * Returns the first day of the month prior to the given date in the "submissionWindowStart" property.
+ * Uses the time zone set in the Google Apps Script Project settings.
+ * @returns {Date} - Date object representing the first day of the previous month.
  */
-function getStartOfPriorMonth(timeZone, startingDate) {
-  const now = new Date();
+/**
+ * Returns the first day of the previous month based on the submission window start date.
+ * The date returned is the local time, ignoring UTC shifts.
+ */
+function getFirstDayOfReportingMonth() {
+    try {
+        const scriptProperties = PropertiesService.getScriptProperties();
+        const submissionWindowStart = scriptProperties.getProperty('submissionWindowStart');
 
-  // Get the current year and month in the time zone of the table
-  const formattedYear = Utilities.formatDate(startingDate, timeZone, 'yyyy');
-  const formattedMonth = Utilities.formatDate(startingDate, timeZone, 'MM');
+        if (!submissionWindowStart) {
+            throw new Error('submissionWindowStart is not defined in Script Properties.');
+        }
 
-  let prevMonth = parseInt(formattedMonth) - 1;
-  let prevYear = parseInt(formattedYear);
-  if (prevMonth === 0) {
-    prevMonth = 12;
-    prevYear -= 1;
-  }
+        // Parsing the stored date string as a Date object in local time (not UTC)
+        const startDate = new Date(submissionWindowStart);
+        if (isNaN(startDate)) {
+            throw new Error('Invalid date format in submissionWindowStart.');
+        }
 
-  // Create a Date object for the first day of the previous month at 7:00 UTC (to match the time of the previous columns)
-  //TODO Suggestion: fix timezone assumption
-  const targetDate = new Date(Date.UTC(prevYear, prevMonth - 1, 1, 7, 0, 0, 0));
-  Logger.log(`Calculated date of the previous month: ${targetDate} (ISO: ${targetDate.toISOString()})`);
+        const timeZone = getProjectTimeZone();
+        Logger.log(`Using project time zone: ${timeZone}`);
 
-  return targetDate;
+        // Calculate the first day of the previous month with local time only
+        const previousMonth = new Date(startDate.getFullYear(), startDate.getMonth() - 1, 1);
+        Logger.log(`First day of the previous month (Local Time): ${Utilities.formatDate(previousMonth, timeZone, 'yyyy-MM-dd HH:mm:ss z')}`);
+
+        return previousMonth;
+    } catch (error) {
+        Logger.log(`Error in getFirstDayOfReportingMonth: ${error.message}`);
+        return null;
+    }
 }
 
-//
-//
-//
 // ======= email-Discord Handle Converters =======
 
 function getDiscordHandleFromEmail(email) {
@@ -578,11 +574,7 @@ function getDiscordHandleFromEmail(email) {
 // Main function to update the form titles based on the current reporting month
 function updateFormTitlesWithCurrentReportingMonth() {
   // Retrieve the reporting month in "MMMM yyyy" format, e.g., "August 2024"
-  const reportingMonth = Utilities.formatDate(
-    getPreviousMonthDate(Session.getScriptTimeZone()),
-    Session.getScriptTimeZone(),
-    'MMMM yyyy'
-  );
+  const reportingMonth = Utilities.formatDate(getPreviousMonthDate(), Session.getScriptTimeZone(), 'MMMM yyyy');
 
   // Open each form by its ID
   const submissionForm = FormApp.openById(SUBMISSION_FORM_ID);

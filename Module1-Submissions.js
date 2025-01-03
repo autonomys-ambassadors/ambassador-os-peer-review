@@ -30,8 +30,8 @@ function requestSubmissionsModule() {
     .map((row) => [row[registryEmailColIndex - 1], row[registryAmbassadorDiscordHandle - 1]]); // Extract only emails
   Logger.log(`Eligible ambassadors emails: ${JSON.stringify(eligibleEmails)}`);
 
-  // Get deliverable date (previous month date)
-  const deliverableDate = getPreviousMonthDate(spreadsheetTimeZone); // Call from SharedUtilities.gs
+  // Get deliverable date of the reporting month at first time (previous month date)
+  const deliverableDate = getPreviousMonthDate();
   Logger.log(`Deliverable date: ${deliverableDate}`);
 
   const month = Utilities.formatDate(deliverableDate, spreadsheetTimeZone, 'MMMM'); // Format the deliverable date to get the month name

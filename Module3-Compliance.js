@@ -81,9 +81,7 @@ function copyFinalScoresToOverallScore() {
     }
 
     const spreadsheetTimeZone = getProjectTimeZone(); // Get project time zone
-    // Instead of assuming previous month (audit could be run later), let's use the previous month from evaluation window start
-    const evaluationMonthDate = getEvaluationWindowTimes().evaluationWindowStart;
-    const currentMonthDate = getStartOfPriorMonth(spreadsheetTimeZone, evaluationMonthDate); // getting reporting month
+    const currentMonthDate = getFirstDayOfReportingMonth(); // getting reporting month based on Submission window
     Logger.log(`Current month date for copying scores: ${currentMonthDate.toISOString()}`);
 
     const monthSheetName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
@@ -189,7 +187,7 @@ function detectNonRespondersPastMonths() {
   const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
   const penaltyPointsColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
   const spreadsheetTimeZone = getProjectTimeZone();
-  const currentMonthDate = getPreviousMonthDate(spreadsheetTimeZone);
+  const currentMonthDate = getFirstDayOfReportingMonth(); // getting reporting month based on Submission window
   const currentMonthName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
   Logger.log(`Current reporting month: ${currentMonthName}`);
 
@@ -265,9 +263,7 @@ function calculatePenaltyPoints() {
   // Get headers and indices
   const headersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
   const penaltyPointsColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
-  const spreadsheetTimeZone = getProjectTimeZone();
-  const evaluationMonthDate = getEvaluationWindowTimes().evaluationWindowStart;
-  const currentReportingMonth = getStartOfPriorMonth(spreadsheetTimeZone, evaluationMonthDate); // getting reporting month based on evaluation window start
+  const currentReportingMonth = getFirstDayOfReportingMonth(); // getting reporting month based on Submission window
   const currentMonthColIndex =
     headersRange.findIndex((header) => header instanceof Date && header.getTime() === currentReportingMonth.getTime()) +
     1;

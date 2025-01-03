@@ -48,8 +48,8 @@ function createMonthSheetAndOverallColumn() {
     const spreadsheetTimeZone = getProjectTimeZone();
     Logger.log(`Time zone of the table: ${spreadsheetTimeZone}`);
 
-    // Get first day of previous month
-    const deliverableMonthDate = getPreviousMonthDate(spreadsheetTimeZone);
+    // Get first day of previous month based on Submission Window start date
+    const deliverableMonthDate = getFirstDayOfReportingMonth();
     Logger.log(
       `Previous month date: ${Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`
     );
@@ -119,8 +119,7 @@ function createMonthSheetAndOverallColumn() {
     Logger.log(`Insert date in cell: Column ${insertIndex + 1}, Row 1`);
 
     // Set type of header as Date object (with same time as other columns are)
-    const safeDate = new Date(deliverableMonthDate.getTime());
-    safeDate.setUTCHours(7, 0, 0, 0); // Set time on 7:00 UTC, to match other columns
+    const safeDate = new Date(deliverableMonthDate.getFullYear(), deliverableMonthDate.getMonth(), deliverableMonthDate.getDate());
     newHeaderCell.setValue(safeDate);
 
     // Set cells format as 'MMMM yyyy', to display only month and year
@@ -337,7 +336,7 @@ function sendEvaluationRequests() {
     Logger.log(`Retrieved ${reviewData.length} rows of data for the review.`);
 
     // Get the name of the previous month for sending requests
-    const deliverableMonthDate = getPreviousMonthDate(spreadsheetTimeZone); // Use shared utility
+    const deliverableMonthDate = getFirstDayOfReportingMonth(); // getting reporting month based on Submission Window start date
     const deliverableMonthName = Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
     Logger.log(`Name of previous month: ${deliverableMonthName}`);
 
@@ -486,7 +485,7 @@ function populateMonthSheetWithEvaluators() {
 
     // Open the Ambassadors' Scores spreadsheet and get the month sheet
     const scoresSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
-    const monthSheetName = Utilities.formatDate(getPreviousMonthDate(projectTimeZone), projectTimeZone, 'MMMM yyyy');
+    const monthSheetName = Utilities.formatDate(getFirstDayOfReportingMonth(), projectTimeZone, 'MMMM yyyy');
     const monthSheet = scoresSheet.getSheetByName(monthSheetName);
 
     if (!monthSheet) {
@@ -636,10 +635,8 @@ function processEvaluationResponse(e) {
     }
     Logger.log(`Evaluator Discord Handle: ${evaluatorDiscordHandle}`);
 
-    // Get the month before the submissions were collected as teh deliverable Month
-    const submissionStart = getSubmissionWindowTimes().submissionWindowStart;
-    const deliverableMonthDate = getStartOfPriorMonth(spreadsheetTimeZone, submissionStart); // getting reporting month
-
+    // Get the reporting month name based on Submission Window start
+    const deliverableMonthDate = getFirstDayOfReportingMonth();
     const monthSheetName = Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
     const monthSheet = scoresSpreadsheet.getSheetByName(monthSheetName);
 
