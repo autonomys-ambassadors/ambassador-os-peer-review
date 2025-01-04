@@ -32,24 +32,32 @@ function syncRegistryColumnsToOverallScore() {
       return;
     }
 
+    const registryAmbassadorIdColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_ID_COLUMN);
+    const registryEmailColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+    const registryDiscordColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+    const registryStatusColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
+
     // Verify columns "Ambassadors' Discord Handles" in overall score
-    const discordHandleColumnIndex = getRequiredColumnIndexByName(overallScoreSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
-    const ambassadorIdColumnIndex = getRequiredColumnIndexByName(overallScoreSheet, 'Ambassador Id');
+    const scoreDiscordHandleColumnIndex = getRequiredColumnIndexByName(
+      overallScoreSheet,
+      AMBASSADOR_DISCORD_HANDLE_COLUMN
+    );
+    const scoreAmbassadorIdColumnIndex = getRequiredColumnIndexByName(overallScoreSheet, AMBASSADOR_ID_COLUMN);
 
     // Ensure "Ambassador Status" column is in overall score, add to the end if it is not found
-    let statusColumnIndex = getColumnIndexByName(overallScoreSheet, 'Ambassador Status');
-    if (statusColumnIndex === -1) {
-      statusColumnIndex = overallScoreSheet.getLastColumn() + 1;
-      overallScoreSheet.getRange(1, statusColumnIndex).setValue('Ambassador Status');
-      Logger.log(`Created "Ambassador Status" column at index ${statusColumnIndex}.`);
+    let scoreStatusColumnIndex = getColumnIndexByName(overallScoreSheet, AMBASSADOR_STATUS_COLUMN);
+    if (scoreStatusColumnIndex === -1) {
+      scoreStatusColumnIndex = overallScoreSheet.getLastColumn() + 1;
+      overallScoreSheet.getRange(1, scoreStatusColumnIndex).setValue(AMBASSADOR_STATUS_COLUMN);
+      Logger.log(`Created "Ambassador Status" column at index ${scoreStatusColumnIndex}.`);
     }
 
     // Sync "Ambassadors' Discord Handles" and "Ambassador Id"
     for (let i = 1; i < registryData.length; i++) {
-      let ambassadorId = registryData[i][0]; // Ambassador Id from registry
-      const email = registryData[i][1]?.trim().toLowerCase(); // Ensure email is lowercased and trimmed
-      const discordHandle = registryData[i][2]; // Discord Handle
-      const registryAmbassadorStatus = registryData[i][3]; // Ambassador Status
+      let ambassadorId = registryData[i][registryAmbassadorIdColumnIndex - 1]; // Ambassador Id from registry
+      const email = registryData[i][registryEmailColumnIndex - 1]?.trim().toLowerCase(); // Ensure email is lowercased and trimmed
+      const discordHandle = registryData[i][registryDiscordColumnIndex - 1]; // Discord Handle
+      const registryAmbassadorStatus = registryData[i][registryStatusColumnIndex - 1]; // Ambassador Status
 
       // Ensure email is not empty before generating hash
       if (!email) {
@@ -68,14 +76,14 @@ function syncRegistryColumnsToOverallScore() {
             existingRow = overallScoreSheet.createTextFinder(discordHandle).findNext()?.getRow();
           }
           if (existingRow) {
-            overallScoreSheet.getRange(existingRow, ambassadorIdColumnIndex).setValue(newHash);
+            overallScoreSheet.getRange(existingRow, scoreAmbassadorIdColumnIndex).setValue(newHash);
           } else {
             const newRowIndex = overallScoreSheet.getLastRow() + 1;
-            overallScoreSheet.getRange(newRowIndex, ambassadorIdColumnIndex).setValue(newHash);
-            overallScoreSheet.getRange(newRowIndex, discordHandleColumnIndex).setValue(discordHandle);
+            overallScoreSheet.getRange(newRowIndex, scoreAmbassadorIdColumnIndex).setValue(newHash);
+            overallScoreSheet.getRange(newRowIndex, scoreDiscordHandleColumnIndex).setValue(discordHandle);
           }
           ambassadorId = newHash;
-          registrySheet.getRange(i + 1, ambassadorIdColumnIndex).setValue(ambassadorId); // Update registry with new hash
+          registrySheet.getRange(i + 1, registryAmbassadorIdColumnIndex).setValue(ambassadorId); // Update registry with new hash
         } catch (error) {
           alertAndLog('Error in updating ambassador id in overall score and registry', error);
           alertAndLog('Ambassador Id may be in unknown state:', ambassadorId);
@@ -88,24 +96,28 @@ function syncRegistryColumnsToOverallScore() {
         }
         if (!existingRow) {
           const newRowIndex = overallScoreSheet.getLastRow() + 1;
-          overallScoreSheet.getRange(newRowIndex, discordHandleColumnIndex).setValue(discordHandle);
-          overallScoreSheet.getRange(newRowIndex, ambassadorIdColumnIndex).setValue(ambassadorId);
+          overallScoreSheet.getRange(newRowIndex, scoreDiscordHandleColumnIndex).setValue(discordHandle);
+          overallScoreSheet.getRange(newRowIndex, scoreAmbassadorIdColumnIndex).setValue(ambassadorId);
         } else {
-          overallScoreSheet.getRange(existingRow, ambassadorIdColumnIndex).setValue(ambassadorId);
+          overallScoreSheet.getRange(existingRow, scoreAmbassadorIdColumnIndex).setValue(ambassadorId);
         }
       }
       const ambassadorOverallScoreRow = overallScoreSheet.createTextFinder(ambassadorId).findNext()?.getRow();
       if (ambassadorOverallScoreRow) {
-        overallScoreSheet.getRange(ambassadorOverallScoreRow, statusColumnIndex).setValue(registryAmbassadorStatus);
+        overallScoreSheet
+          .getRange(ambassadorOverallScoreRow, scoreStatusColumnIndex)
+          .setValue(registryAmbassadorStatus);
       }
     }
 
     overallScoreSheet
-      .getRange(2, discordHandleColumnIndex, overallScoreSheet.getLastRow() - 1)
+      .getRange(2, scoreDiscordHandleColumnIndex, overallScoreSheet.getLastRow() - 1)
       .setHorizontalAlignment('left');
     Logger.log('"Ambassadors\' Discord Handles" column synchronized and aligned to the left.');
 
-    overallScoreSheet.getRange(2, statusColumnIndex, overallScoreSheet.getLastRow() - 1).setHorizontalAlignment('left');
+    overallScoreSheet
+      .getRange(2, scoreStatusColumnIndex, overallScoreSheet.getLastRow() - 1)
+      .setHorizontalAlignment('left');
     Logger.log('"Ambassador Status" column synchronized and aligned to the left.');
 
     Logger.log('Synchronization completed successfully.');
