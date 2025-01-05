@@ -77,7 +77,7 @@ function copyFinalScoresToOverallScore() {
 
     if (!overallScoreSheet) {
       alertAndLog(`Sheet "${OVERALL_SCORE_SHEET_NAME}" isn't found.`);
-      return;
+      throw new Error('Overall Score sheet not found.');
     }
 
     const spreadsheetTimeZone = getProjectTimeZone(); // Get project time zone
@@ -89,7 +89,7 @@ function copyFinalScoresToOverallScore() {
 
     if (!monthSheet) {
       alertAndLog(`Month sheet "${monthSheetName}" not found.`);
-      return;
+      throw new Error('Month sheet not found.');
     }
 
     // Searching column index in "Overall score" by date
@@ -103,7 +103,7 @@ function copyFinalScoresToOverallScore() {
 
     if (monthColumnIndex === 0) {
       alertAndLog(`Column for "${monthSheetName}" not found in Overall score sheet.`);
-      return;
+      throw new Error('Column for monthly score not found in Overall score sheet.');
     }
 
     // Fetch data from Final Score on month sheet
@@ -134,6 +134,7 @@ function copyFinalScoresToOverallScore() {
     Logger.log('Copy of Final Scores to Overall Score sheet completed.');
   } catch (error) {
     alertAndLog(`Error in copyFinalScoresToOverallScore: ${error}`);
+    throw error;
   }
 }
 
@@ -257,7 +258,7 @@ function calculatePenaltyPoints() {
 
   if (!registrySheet || !overallScoresSheet || !reviewLogSheet || !evaluationResponsesSheet) {
     Logger.log('Error: One or more required sheets not found.');
-    return;
+    throw new Error('Overall Score, Review Log, or Evaluation Response sheets are missing');
   }
 
   // Get headers and indices
@@ -269,7 +270,7 @@ function calculatePenaltyPoints() {
     1;
   if (currentMonthColIndex === 0) {
     Logger.log('Error: Current reporting month column not found.');
-    return;
+    throw new Error('Current reporting month column not found.');
   }
   Logger.log(`Current reporting month column index: ${currentMonthColIndex}`);
 
@@ -389,7 +390,7 @@ function calculateMaxPenaltyPointsForSixMonths() {
 
   if (monthColumns.length === 0) {
     Logger.log('No month columns found. Exiting calculation.');
-    return;
+    throw new Error('No month columns found in the Overall Scores sheet.');
   }
 
   // Set the period length to the minimum of 6 or available months
