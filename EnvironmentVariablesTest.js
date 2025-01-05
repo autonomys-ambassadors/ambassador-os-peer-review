@@ -53,6 +53,7 @@ Please add links your contributions during the month `;
     SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
     GRADE_SUBMITTER_COLUMN = 'Submitter';
     GRADE_FINAL_SCORE_COLUMN = 'Final Score';
+    CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 15;
@@ -123,6 +124,7 @@ Please add links your contributions during the month`;
     SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
     GRADE_SUBMITTER_COLUMN = 'Submitter';
     GRADE_FINAL_SCORE_COLUMN = 'Final Score';
+    CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 20;

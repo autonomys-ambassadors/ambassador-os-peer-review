@@ -55,6 +55,7 @@ Please add links to your contributions during the month`;
   SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
   GRADE_SUBMITTER_COLUMN = 'Submitter';
   GRADE_FINAL_SCORE_COLUMN = 'Final Score';
+  CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
 
   // Sponsor Email (for notifications when ambassadors are expelled)
   SPONSOR_EMAIL = 'community@autonomys.xyz'; // Sponsor's email
