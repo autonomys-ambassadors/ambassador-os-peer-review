@@ -140,11 +140,10 @@ function copyFinalScoresToOverallScore() {
 
 // Function to check and create "Penalty Points" and "Max 6-Month PP" columns in the correct order
 function checkAndCreateColumns() {
-  const overallScoresSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  const headersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
+  const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
+  const overallScoresSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
 
   // Find the index of the "Average Score" column
-
   const averageScoreColIndex = getColumnIndexByName(overallScoresSheet, SCORE_AVERAGE_SCORE_COLUMN);
   let nextColIndex = averageScoreColIndex; // Start position for the next column
 
