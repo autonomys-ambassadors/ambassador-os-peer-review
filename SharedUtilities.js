@@ -2,7 +2,7 @@
 // Declare & initialize global variables; these will be updated by the setProductionVariables() or setTestVariables() functions
 
 // testing constant will be used to load production vs. test values for the global variables
-const testing = true; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
+const testing = false; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
 var SEND_EMAIL; // Will control whether emails are sent - must be true for production; may be true or false for testing depending on testing needs.
 
 // Provide the actual Id of the google sheet for the registry and scoreing sheets in EnvironmentVariables[Prod|Test].js:
@@ -522,32 +522,34 @@ function getPreviousMonthDate() {
  * The date returned is the local time, ignoring UTC shifts.
  */
 function getFirstDayOfReportingMonth() {
-    try {
-        const scriptProperties = PropertiesService.getScriptProperties();
-        const submissionWindowStart = scriptProperties.getProperty('submissionWindowStart');
+  try {
+    const scriptProperties = PropertiesService.getScriptProperties();
+    const submissionWindowStart = scriptProperties.getProperty('submissionWindowStart');
 
-        if (!submissionWindowStart) {
-            throw new Error('submissionWindowStart is not defined in Script Properties.');
-        }
-
-        // Parsing the stored date string as a Date object in local time (not UTC)
-        const startDate = new Date(submissionWindowStart);
-        if (isNaN(startDate)) {
-            throw new Error('Invalid date format in submissionWindowStart.');
-        }
-
-        const timeZone = getProjectTimeZone();
-        Logger.log(`Using project time zone: ${timeZone}`);
-
-        // Calculate the first day of the previous month with local time only
-        const previousMonth = new Date(startDate.getFullYear(), startDate.getMonth() - 1, 1);
-        Logger.log(`First day of the previous month (Local Time): ${Utilities.formatDate(previousMonth, timeZone, 'yyyy-MM-dd HH:mm:ss z')}`);
-
-        return previousMonth;
-    } catch (error) {
-        Logger.log(`Error in getFirstDayOfReportingMonth: ${error.message}`);
-        return null;
+    if (!submissionWindowStart) {
+      throw new Error('submissionWindowStart is not defined in Script Properties.');
     }
+
+    // Parsing the stored date string as a Date object in local time (not UTC)
+    const startDate = new Date(submissionWindowStart);
+    if (isNaN(startDate)) {
+      throw new Error('Invalid date format in submissionWindowStart.');
+    }
+
+    const timeZone = getProjectTimeZone();
+    Logger.log(`Using project time zone: ${timeZone}`);
+
+    // Calculate the first day of the previous month with local time only
+    const previousMonth = new Date(startDate.getFullYear(), startDate.getMonth() - 1, 1);
+    Logger.log(
+      `First day of the previous month (Local Time): ${Utilities.formatDate(previousMonth, timeZone, 'yyyy-MM-dd HH:mm:ss z')}`
+    );
+
+    return previousMonth;
+  } catch (error) {
+    Logger.log(`Error in getFirstDayOfReportingMonth: ${error.message}`);
+    return null;
+  }
 }
 
 // ======= email-Discord Handle Converters =======
