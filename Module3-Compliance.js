@@ -1,6 +1,7 @@
 // MODULE 3
 function runComplianceAudit() {
   // Run evaluation window check and exit if the user presses "Cancel"
+  SEND_EMAIL = false;
   if (!checkEvaluationWindowStart()) {
     Logger.log('runComplianceAudit process stopped by user.');
     return;
