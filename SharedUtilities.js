@@ -165,6 +165,7 @@ function onOpen() {
     .addItem('Compliance Audit', 'runComplianceAudit') // Process Scores and Penalties
     .addItem('Notify Upcoming Peer Review', 'notifyUpcomingPeerReview') // Peer Review notifications
     .addItem('Select CRT members', 'selectCRTMembers') // CRT
+    .addItem('🔧️Batch process scores', 'batchProcessEvaluationResponses') //Re-runs score responses
     .addItem('🔧️Create/Sync Columns', 'syncRegistryColumnsToOverallScore') // creates Ambassador Status column in Overall score sheet; Syncs Ambassadors' Discord Handles and Ambassador Status columns between Registry and Overall score.
     .addItem('🔧️Check Emails in Submission Form responses', 'validateEmailsInSubmissionForm') // Checks completance of emails in 'Your Email Address' field of Submission Form. Recommended to run before Evaluation Requests to avoid errors caused by users' typo.
     .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers') // Optional item
