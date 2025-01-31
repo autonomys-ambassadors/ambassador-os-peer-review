@@ -47,6 +47,15 @@ function setProductionVariables() {
 Please add text to your contributions during the month`;
   GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
 Please add links to your contributions during the month`;
+  GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating?';
+  GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5';
+  GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks (optional)';
+  SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points';
+  SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';
+  SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
+  GRADE_SUBMITTER_COLUMN = 'Submitter';
+  GRADE_FINAL_SCORE_COLUMN = 'Final Score';
+  CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
 
   // Sponsor Email (for notifications when ambassadors are expelled)
   SPONSOR_EMAIL = 'community@autonomys.xyz'; // Sponsor's email

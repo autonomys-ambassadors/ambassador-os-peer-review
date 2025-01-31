@@ -37,6 +37,15 @@ var GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = '';
 var SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = '';
 var EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = '';
 var GOOGLE_FORM_REAL_EMAIL_COLUMN = '';
+var GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = '';
+var GOOGLE_FORM_EVALUATION_GRADE_COLUMN = '';
+var GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = '';
+var SCORE_PENALTY_POINTS_COLUMN = '';
+var SCORE_AVERAGE_SCORE_COLUMN = '';
+var SCORE_MAX_6M_PP_COLUMN = '';
+var GRADE_SUBMITTER_COLUMN = '';
+var GRADE_FINAL_SCORE_COLUMN = '';
+
 // Sponsor Email (for notifications when ambassadors are expelled)
 // set the actual values in EnvironmentVariables[Prod|Test].js
 var SPONSOR_EMAIL = ''; // Sponsor's email
@@ -156,11 +165,11 @@ function onOpen() {
     .addItem('Compliance Audit', 'runComplianceAudit') // Process Scores and Penalties
     .addItem('Notify Upcoming Peer Review', 'notifyUpcomingPeerReview') // Peer Review notifications
     .addItem('Select CRT members', 'selectCRTMembers') // CRT
-    .addItem('🔧️Force Authorization', 'forceAuthorization') // Authorization trigger
-    // This function does not exist?
-    //.addItem('🔧️Check missing Emails/DiscorHandles', 'check_missing_data') // Checks Registry sheet for completeness of data. Recommended to run every cycle if multiple changes were made.
-    .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers') // Optional item
+    .addItem('🔧️Batch process scores', 'batchProcessEvaluationResponses') //Re-runs score responses
     .addItem('🔧️Create/Sync Columns', 'syncRegistryColumnsToOverallScore') // creates Ambassador Status column in Overall score sheet; Syncs Ambassadors' Discord Handles and Ambassador Status columns between Registry and Overall score.
+    .addItem('🔧️Check Emails in Submission Form responses', 'validateEmailsInSubmissionForm') // Checks completance of emails in 'Your Email Address' field of Submission Form. Recommended to run before Evaluation Requests to avoid errors caused by users' typo.
+    .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers') // Optional item
+    .addItem('🔧️Force Authorization', 'forceAuthorization') // Authorization trigger
     .addToUi();
   Logger.log('Menu initialized.');
 }
@@ -230,8 +239,10 @@ function getSubmissionWindowStart() {
     return null;
   }
 
+  // date parsing without time zone shifts
   const startDate = new Date(startDateStr);
-  Logger.log(`Submission window started at: ${startDate}`);
+  const timeZone = getProjectTimeZone();
+  Logger.log(`Submission window start at: ${Utilities.formatDate(startDate, timeZone, 'yyyy-MM-dd HH:mm:ss z')}`);
   return startDate;
 }
 
@@ -264,12 +275,25 @@ function getEvaluationWindowTimes() {
 
 /**
  * Extracts the list of valid submission emails from the request log sheet within the submission time window.
+ * Filters out emails not present in Registry.
  * Uses dynamic column indexing for the submitter email and timestamp columns.
  * @param {Sheet} submissionSheet - The sheet containing submissions.
  * @returns {Array} - A list of valid submission emails within the submission time window.
  */
 function getValidSubmissionEmails(submissionSheet) {
   Logger.log('Extracting valid submission emails.');
+
+  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
+  const registryEmails = registrySheet
+    .getRange(
+      2,
+      getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN),
+      registrySheet.getLastRow() - 1,
+      1
+    )
+    .getValues()
+    .flat()
+    .map((email) => email.trim().toLowerCase());
 
   const lastRow = submissionSheet.getLastRow();
   if (lastRow < 2) {
@@ -278,52 +302,38 @@ function getValidSubmissionEmails(submissionSheet) {
   }
 
   const { submissionWindowStart, submissionWindowEnd } = getSubmissionWindowTimes();
+  const submitterEmailColumnIndex = getRequiredColumnIndexByName(submissionSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
+  const submitterTimestampColumnIndex = getRequiredColumnIndexByName(submissionSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
-  // Dynamically get column indices by header name
-  // TODO Confirm: FYI - changed to Submission form, not generic google form email
-  const submitterEmailColumnIndex = getColumnIndexByName(submissionSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
-  const submitterTimestampColumnIndex = getColumnIndexByName(submissionSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
-
-  if (submitterEmailColumnIndex === -1 || submitterTimestampColumnIndex === -1) {
-    Logger.log(
-      `Error: Required columns (Email: ${SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN}, Timestamp: ${GOOGLE_FORM_TIMESTAMP_COLUMN}) not found.`
-    );
-    return [];
-  }
-
-  // Extract valid requests within the submission time window
   const validSubmitters = submissionSheet
     .getRange(2, 1, lastRow - 1, submissionSheet.getLastColumn())
     .getValues()
     .filter((row, index) => {
       const submissionTimestamp = new Date(row[submitterTimestampColumnIndex - 1]);
-      const submitterEmail = row[submitterEmailColumnIndex - 1]?.trim();
+      const submitterEmail = row[submitterEmailColumnIndex - 1]?.trim().toLowerCase();
 
-      // Validate timestamp and email
-      if (!submissionTimestamp || isNaN(submissionTimestamp)) {
-        Logger.log(`Row ${index + 2}: Invalid timestamp.`);
+      if (!submissionTimestamp || !submitterEmail) {
+        Logger.log(`Row ${index + 2}: Missing timestamp or email.`);
         return false;
       }
 
-      if (!submitterEmail) {
-        Logger.log(`Row ${index + 2}: Missing email.`);
-        return false;
-      }
-
-      // Check if the submission is within the time window
       const isWithinWindow = submissionTimestamp >= submissionWindowStart && submissionTimestamp <= submissionWindowEnd;
 
-      Logger.log(
-        `Row ${
-          index + 2
-        }: Submission - Email: ${submitterEmail}, Timestamp: ${submissionTimestamp}, Within Window: ${isWithinWindow}`
-      );
+      if (!isWithinWindow) {
+        Logger.log(`Row ${index + 2}: Submission outside time window.`);
+        return false;
+      }
 
-      return isWithinWindow;
+      if (!registryEmails.includes(submitterEmail)) {
+        Logger.log(`Row ${index + 2}: Email ${submitterEmail} not found in Registry. Skipping.`);
+        return false;
+      }
+
+      return true;
     })
-    .map((row) => row[submitterEmailColumnIndex - 1]?.trim().toLowerCase()); // Extract and clean submitter emails
+    .map((row) => row[submitterEmailColumnIndex - 1]?.trim().toLowerCase());
 
-  Logger.log(`Valid submitters (within time window): ${validSubmitters.join(', ')}`);
+  Logger.log(`Valid submitters: ${validSubmitters.join(', ')}`);
   return validSubmitters;
 }
 
@@ -344,35 +354,37 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
   // Get the evaluation time window from the stored properties
   const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
 
-  // Dynamically retrieve column indices
-  // TODO Confirm: FYI changed to eval form column
-  const evalEmailColumnIndex = getColumnIndexByName(evaluationResponsesSheet, EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN);
-  const evalTimestampColumnIndex = getColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
-
-  if (evalEmailColumnIndex === -1 || evalTimestampColumnIndex === -1) {
-    Logger.log('Error: Required columns not found in evaluation responses sheet.');
-    return [];
-  }
+  // Dynamically retrieve column indices using headers
+  const evalEmailColumnIndex = getRequiredColumnIndexByName(
+    evaluationResponsesSheet,
+    EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN
+  );
+  const evalTimestampColumnIndex = getRequiredColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
   // Extract valid responses within the evaluation time window
   const validEvaluators = evaluationResponsesSheet
     .getRange(2, 1, lastRow - 1, evaluationResponsesSheet.getLastColumn())
     .getValues()
-    .filter((row) => {
+    .filter((row, index) => {
       const responseTimestamp = new Date(row[evalTimestampColumnIndex - 1]); // Use correct column index for timestamp
-      // Check if the response is within the evaluation time window
-      const isWithinWindow = responseTimestamp >= evaluationWindowStart && responseTimestamp <= evaluationWindowEnd;
-      if (isWithinWindow) {
-        Logger.log(
-          `Valid evaluator found: ${row[evalEmailColumnIndex - 1]} (Response time: ${
-            row[evalTimestampColumnIndex - 1]
-          })`
-        );
-        return true;
+      const evaluatorEmail = row[evalEmailColumnIndex - 1]?.trim().toLowerCase(); // Use correct column index for email
+
+      if (!responseTimestamp || !evaluatorEmail) {
+        Logger.log(`Row ${index + 2}: Missing timestamp or email.`);
+        return false;
       }
-      return false;
+
+      const isWithinWindow = responseTimestamp >= evaluationWindowStart && responseTimestamp <= evaluationWindowEnd;
+
+      if (!isWithinWindow) {
+        Logger.log(`Row ${index + 2}: Response outside evaluation time window.`);
+        return false;
+      }
+
+      Logger.log(`Row ${index + 2}: Valid response found for email: ${evaluatorEmail}`);
+      return true;
     })
-    .map((row) => row[evalEmailColumnIndex - 1].trim().toLowerCase()); // Extract evaluator email using correct column index
+    .map((row) => row[evalEmailColumnIndex - 1]?.trim().toLowerCase()); // Extract evaluator email
 
   Logger.log(`Valid evaluators (within time window): ${validEvaluators.join(', ')}`);
   return validEvaluators;
@@ -405,10 +417,10 @@ function getReviewLogAssignments() {
 
   // Get header row to determine column indices dynamically
   const headers = reviewLogSheet.getRange(1, 1, 1, lastColumn).getValues()[0];
-  const submitterColIndex = headers.indexOf('Submitter') + 1; // +1 to convert to 1-based index
+  const submitterColIndex = getRequiredColumnIndexByName(reviewLogSheet, GRADE_SUBMITTER_COLUMN);
   const evaluatorCols = ['Reviewer 1', 'Reviewer 2', 'Reviewer 3'].map((header) => headers.indexOf(header) + 1);
 
-  if (submitterColIndex === 0 || evaluatorCols.some((index) => index === 0)) {
+  if (evaluatorCols.some((index) => index === 0)) {
     Logger.log('Error: Required columns (Submitter or Reviewer columns) not found in Review Log sheet.');
     return {};
   }
@@ -445,8 +457,8 @@ function getEligibleAmbassadorsEmails() {
       Logger.log('Registry sheet not found.');
       return [];
     }
-    const registryAmbassadorStatusColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
-    const registryAmbassadorEmailColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+    const registryAmbassadorStatusColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
+    const registryAmbassadorEmailColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
     const registryData = registrySheet
       .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
       .getValues(); // Columns: Email, Discord Handle, Status
@@ -462,37 +474,28 @@ function getEligibleAmbassadorsEmails() {
   }
 }
 
-//
-//
-//////////// DATE UTILITS
+//       DATE UTILITS
 
-///**
-// * Get the time zone of the script (all spreadsheets).
+// Get the time zone of the script (all spreadsheets).
 function getProjectTimeZone() {
   return Session.getScriptTimeZone(); // Using Project's time zone
 }
 
 /**
- * Get the formatted month name for a given date and time zone.
- * @param {Date} date - The date object.
- * @param {string} timeZone - The time zone for formatting.
- * @returns {string} - Formatted string for the month and year (e.g., "September 2024").
- */
-function getMonthNameForDate(date, timeZone) {
-  return Utilities.formatDate(date, timeZone, 'MMMM yyyy');
-}
-
-/**
- * A helper function to retrieve the first day of the previous month based on time zone.
- * This function returns a Date object that represents the first day of the previous month.
- * The time is set to 7:00 (feel free to adjust as needed) to match the time set in the previous columns.
- * @param {string} timeZone - The time zone of the table.
+ * A helper function to retrieve the first day of the previous month based on the project time zone.
+ * Returns a Date object that represents the first day of the previous month.
  * @returns {Date} - The date of the first day of the previous month.
  */
-function getPreviousMonthDate(timeZone) {
+function getPreviousMonthDate() {
+  Logger.log('Calculating the first day of the previous month.');
+
+  // Retrieve the project time zone
+  const timeZone = Session.getScriptTimeZone();
+  Logger.log(`Using project time zone: ${timeZone}`);
+
   const now = new Date();
 
-  // Get the current year and month in the time zone of the table
+  // Get the current year and month in the project time zone
   const formattedYear = Utilities.formatDate(now, timeZone, 'yyyy');
   const formattedMonth = Utilities.formatDate(now, timeZone, 'MM');
 
@@ -503,53 +506,59 @@ function getPreviousMonthDate(timeZone) {
     prevYear -= 1;
   }
 
-  // Create a Date object for the first day of the previous month at 7:00 UTC (to match the time of the previous columns)
-  //TODO Suggestion: fix timezone assumption
-  const targetDate = new Date(Date.UTC(prevYear, prevMonth - 1, 1, 7, 0, 0, 0));
+  // Create a Date object for the first day of the previous month at 00:00:00 (Pacific Time)
+  const targetDate = new Date(prevYear, prevMonth - 1, 1, 0, 0, 0, 0);
   Logger.log(`Calculated date of the previous month: ${targetDate} (ISO: ${targetDate.toISOString()})`);
 
   return targetDate;
 }
 
 /**
- * A helper function to retrieve the first day of the previous month based on time zone and a starting date.
- * This function returns a Date object that represents the first day of the month before the starting date.
- * The time is set to 7:00 (feel free to adjust as needed) to match the time set in the previous columns.
- * @param {string} timeZone - The time zone of the table.
- * @param {Date} startingDate - The starting date for the calculation.
- * @returns {Date} - The date of the first day of the previous month.
+ * Returns the first day of the month prior to the given date in the "submissionWindowStart" property.
+ * Uses the time zone set in the Google Apps Script Project settings.
+ * @returns {Date} - Date object representing the first day of the previous month.
  */
-function getStartOfPriorMonth(timeZone, startingDate) {
-  const now = new Date();
+/**
+ * Returns the first day of the previous month based on the submission window start date.
+ * The date returned is the local time, ignoring UTC shifts.
+ */
+function getFirstDayOfReportingMonth() {
+  try {
+    const scriptProperties = PropertiesService.getScriptProperties();
+    const submissionWindowStart = scriptProperties.getProperty('submissionWindowStart');
 
-  // Get the current year and month in the time zone of the table
-  const formattedYear = Utilities.formatDate(startingDate, timeZone, 'yyyy');
-  const formattedMonth = Utilities.formatDate(startingDate, timeZone, 'MM');
+    if (!submissionWindowStart) {
+      throw new Error('submissionWindowStart is not defined in Script Properties.');
+    }
 
-  let prevMonth = parseInt(formattedMonth) - 1;
-  let prevYear = parseInt(formattedYear);
-  if (prevMonth === 0) {
-    prevMonth = 12;
-    prevYear -= 1;
+    // Parsing the stored date string as a Date object in local time (not UTC)
+    const startDate = new Date(submissionWindowStart);
+    if (isNaN(startDate)) {
+      throw new Error('Invalid date format in submissionWindowStart.');
+    }
+
+    const timeZone = getProjectTimeZone();
+    Logger.log(`Using project time zone: ${timeZone}`);
+
+    // Calculate the first day of the previous month with local time only
+    const previousMonth = new Date(startDate.getFullYear(), startDate.getMonth() - 1, 1);
+    Logger.log(
+      `First day of the previous month (Local Time): ${Utilities.formatDate(previousMonth, timeZone, 'yyyy-MM-dd HH:mm:ss z')}`
+    );
+
+    return previousMonth;
+  } catch (error) {
+    Logger.log(`Error in getFirstDayOfReportingMonth: ${error.message}`);
+    return null;
   }
-
-  // Create a Date object for the first day of the previous month at 7:00 UTC (to match the time of the previous columns)
-  //TODO Suggestion: fix timezone assumption
-  const targetDate = new Date(Date.UTC(prevYear, prevMonth - 1, 1, 7, 0, 0, 0));
-  Logger.log(`Calculated date of the previous month: ${targetDate} (ISO: ${targetDate.toISOString()})`);
-
-  return targetDate;
 }
 
-//
-//
-//
 // ======= email-Discord Handle Converters =======
 
 function getDiscordHandleFromEmail(email) {
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const emailColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
-  const discordColumnIndex = getColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+  const emailColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
+  const discordColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const emailColumn = registrySheet
     .getRange(2, emailColumnIndex, registrySheet.getLastRow() - 1, 1)
     .getValues()
@@ -568,11 +577,7 @@ function getDiscordHandleFromEmail(email) {
 // Main function to update the form titles based on the current reporting month
 function updateFormTitlesWithCurrentReportingMonth() {
   // Retrieve the reporting month in "MMMM yyyy" format, e.g., "August 2024"
-  const reportingMonth = Utilities.formatDate(
-    getPreviousMonthDate(Session.getScriptTimeZone()),
-    Session.getScriptTimeZone(),
-    'MMMM yyyy'
-  );
+  const reportingMonth = Utilities.formatDate(getPreviousMonthDate(), Session.getScriptTimeZone(), 'MMMM yyyy');
 
   // Open each form by its ID
   const submissionForm = FormApp.openById(SUBMISSION_FORM_ID);
@@ -592,23 +597,32 @@ function updateFormTitlesWithCurrentReportingMonth() {
 
 //        INDEX UTILITIES for COLUMNS and SHEETS
 /**
+ * Wraps getColumnIndexByName -fFinds the column index for a given column name in the header row of the sheet, or throws exception.
+ * @param {Sheet} sheet - The sheet to search.
+ * @param {string} columnName - The name of the column to find.
+ * @returns {number} The column index (1-based), or throws an error if not found
+ */
+function getRequiredColumnIndexByName(sheet, columnName) {
+  const index = getColumnIndexByName(sheet, columnName);
+  if (index == -1) {
+    alertAndLog(`Expected Column "${columnName}" not found in sheet "${sheet.getName()}" header row: "${header}".`);
+    throw new Error('Required column not found');
+  }
+  return index;
+}
+
+/**
  * Finds the column index for a given column name in the header row of the sheet.
  * @param {Sheet} sheet - The sheet to search.
  * @param {string} columnName - The name of the column to find.
  * @returns {number} The column index (1-based), or -1 if not found.
  */
-// TODO Discuss: FYI changed this to only log not found to reduce log volume, and to throw (and not catch.)
-// if an expected header is missing, better to alert and stop processing.
 function getColumnIndexByName(sheet, columnName) {
-  //Logger.log(`Looking for column: ${columnName}`);
   const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  //Logger.log(`Header row: ${JSON.stringify(header)}`);
-  // TODO: Discuss - reverted back to my code that handles trimming headers names to match google forms with extra space
-  // const index = header.indexOf(columnName);
   const index = header.findIndex((h) => (h?.trim?.() ?? '') === columnName.trim());
   if (index == -1) {
-    alertAndLog(`Column "${columnName}" not found in sheet "${sheet.getName()}" header row: "${header}".`);
-    throw new Error('Required column not found in sheet header row');
+    Logger.log(`Expected Column "${columnName}" not found in sheet "${sheet.getName()}" header row: "${header}".`);
+    return -1;
   }
   return index + 1; // Convert to 1-based index
 }
@@ -723,7 +737,7 @@ function findRowByDiscordHandle(discordHandle) {
   const overallScoresSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID).getSheetByName(
     OVERALL_SCORE_SHEET_NAME
   );
-  const discordHandleColIndex = getColumnIndexByName(overallScoresSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+  const discordHandleColIndex = getRequiredColumnIndexByName(overallScoresSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const handlesColumn = overallScoresSheet
     .getRange(2, discordHandleColIndex, overallScoresSheet.getLastRow() - 1, 1)
     .getValues()
