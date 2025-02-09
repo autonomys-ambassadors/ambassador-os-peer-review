@@ -119,7 +119,11 @@ function createMonthSheetAndOverallColumn() {
     Logger.log(`Insert date in cell: Column ${insertIndex + 1}, Row 1`);
 
     // Set type of header as Date object (with same time as other columns are)
-    const safeDate = new Date(deliverableMonthDate.getFullYear(), deliverableMonthDate.getMonth(), deliverableMonthDate.getDate());
+    const safeDate = new Date(
+      deliverableMonthDate.getFullYear(),
+      deliverableMonthDate.getMonth(),
+      deliverableMonthDate.getDate()
+    );
     newHeaderCell.setValue(safeDate);
 
     // Set cells format as 'MMMM yyyy', to display only month and year
@@ -452,17 +456,27 @@ function getContributionDetailsByEmail(email) {
       .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())
       .getValues();
 
-    // Find the corresponding response within the submission window
+    // Find the latest response within the submission window
+    let latestSubmissionRow = null;
+    let latestTimestamp = null;
+
     for (let row of formData) {
       const timestamp = new Date(row[formResponseTimestampColumnIndex - 1]); // Assuming Timestamp is in the 1st column
       const respondentEmail = row[formResponseEmailColumnIndex - 1]?.trim().toLowerCase(); // Assuming Email is in the 2nd column
 
       if (timestamp >= submissionWindowStart && timestamp <= submissionWindowEnd && respondentEmail === email) {
-        const contributionText = row[contributionDetailsColumnIndex - 1]; // Contribution details in the 4th column
-        const contributionLinks = row[contributionLinksColumnIndex - 1]; // Links in the 5th column
-        Logger.log(`Contribution found for email: ${email}`);
-        return `Contribution Details: ${contributionText}\nLinks: ${contributionLinks}`;
+        if (!latestTimestamp || timestamp > latestTimestamp) {
+          latestTimestamp = timestamp;
+          latestSubmissionRow = row;
+        }
       }
+    }
+
+    if (latestSubmission) {
+      const contributionText = latestSubmissionRow[contributionDetailsColumnIndex - 1]; // Contribution details in the 4th column
+      const contributionLinks = latestSubmissionRow[contributionLinksColumnIndex - 1]; // Links in the 5th column
+      Logger.log(`Latest contribution found for email: ${email}`);
+      return `Contribution Details: ${contributionText}\nLinks: ${contributionLinks}`;
     }
 
     Logger.log(`No contribution details found for email: ${email}`);
