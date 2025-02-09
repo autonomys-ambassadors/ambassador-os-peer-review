@@ -278,7 +278,7 @@ function getEvaluationWindowTimes() {
  * Filters out emails not present in Registry.
  * Uses dynamic column indexing for the submitter email and timestamp columns.
  * @param {Sheet} submissionSheet - The sheet containing submissions.
- * @returns {Array} - A list of valid submission emails within the submission time window.
+ * @returns {Array} - A list of unique valid submission emails within the submission time window.
  */
 function getValidSubmissionEmails(submissionSheet) {
   Logger.log('Extracting valid submission emails.');
@@ -305,6 +305,8 @@ function getValidSubmissionEmails(submissionSheet) {
   const submitterEmailColumnIndex = getRequiredColumnIndexByName(submissionSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
   const submitterTimestampColumnIndex = getRequiredColumnIndexByName(submissionSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
+  Logger.log(`Submission time window: ${submissionWindowStart} - ${submissionWindowEnd}`);
+
   const validSubmitters = submissionSheet
     .getRange(2, 1, lastRow - 1, submissionSheet.getLastColumn())
     .getValues()
@@ -320,7 +322,9 @@ function getValidSubmissionEmails(submissionSheet) {
       const isWithinWindow = submissionTimestamp >= submissionWindowStart && submissionTimestamp <= submissionWindowEnd;
 
       if (!isWithinWindow) {
-        Logger.log(`Row ${index + 2}: Submission outside time window.`);
+        Logger.log(
+          `Row ${index + 2}: Submission at ${submissionTimestamp} outside time window ${submissionWindowStart} to ${submissionWindowEnd}.`
+        );
         return false;
       }
 
@@ -333,8 +337,11 @@ function getValidSubmissionEmails(submissionSheet) {
     })
     .map((row) => row[submitterEmailColumnIndex - 1]?.trim().toLowerCase());
 
-  Logger.log(`Valid submitters: ${validSubmitters.join(', ')}`);
-  return validSubmitters;
+  // Remove duplicates
+  const uniqueValidSubmitters = [...new Set(validSubmitters)];
+
+  Logger.log(`Unique valid submitters: ${uniqueValidSubmitters.join(', ')}`);
+  return uniqueValidSubmitters;
 }
 
 /**
