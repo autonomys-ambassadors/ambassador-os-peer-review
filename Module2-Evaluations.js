@@ -472,7 +472,7 @@ function getContributionDetailsByEmail(email) {
       }
     }
 
-    if (latestSubmission) {
+    if (latestSubmissionRow) {
       const contributionText = latestSubmissionRow[contributionDetailsColumnIndex - 1]; // Contribution details in the 4th column
       const contributionLinks = latestSubmissionRow[contributionLinksColumnIndex - 1]; // Links in the 5th column
       Logger.log(`Latest contribution found for email: ${email}`);
