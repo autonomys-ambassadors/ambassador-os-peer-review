@@ -347,7 +347,7 @@ function sendEvaluationRequests() {
     // Calculate evaluation window deadline date
     const evaluationWindowStart = new Date();
     const evaluationDeadline = new Date(evaluationWindowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000); // Adjust to milliseconds
-    const evaluationDeadlineDate = Utilities.formatDate(evaluationDeadline, spreadsheetTimeZone, 'MMMM dd, yyyy');
+    const evaluationDeadlineDate = Utilities.formatDate(evaluationDeadline, 'UTC', 'MMMM dd, yyyy HH:mm:ss') + ' UTC';
 
     reviewData.forEach((row, rowIndex) => {
       const submitterEmail = row[0]; // submitter's email
