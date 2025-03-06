@@ -144,11 +144,6 @@ Dear Ambassador,
 By this we notify you about upcoming Peer Review mailing, please be vigilant!
 `;
 
-//"CRT Selecting Notification" email template
-let CRT_SELECTING_NOTIFICATION_TEMPLATE = `
-Dear Ambassador, you have been selected for next Conflict Resolution Team ...
-`;
-
 // EXEMPTION FROM EVALUATION e-mail template
 let EXEMPTION_FROM_EVALUATION_TEMPLATE = `
 Dear Ambassador, you have been relieved of the obligation to evaluate your colleagues this month.
