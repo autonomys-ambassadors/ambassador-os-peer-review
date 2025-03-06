@@ -47,8 +47,8 @@ function setProductionVariables() {
 Please add text to your contributions during the month`;
   GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
 Please add links to your contributions during the month`;
-  GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating?';
-  GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5';
+  GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating? (Not your own D-Handle)'; //values must match google form questions
+  GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5 '; //trailing space is important.
   GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks (optional)';
   SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points';
   SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';

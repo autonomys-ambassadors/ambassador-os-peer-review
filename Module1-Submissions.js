@@ -41,7 +41,7 @@ function requestSubmissionsModule() {
   // Calculate the exact deadline date based on submission window
   const submissionWindowStart = new Date();
   const submissionDeadline = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000); // Convert minutes to milliseconds
-  const submissionDeadlineDate = Utilities.formatDate(submissionDeadline, spreadsheetTimeZone, 'MMMM dd, yyyy');
+  const submissionDeadlineDate = Utilities.formatDate(submissionDeadline, 'UTC', 'MMMM dd, yyyy HH:mm:ss') + ' UTC';
 
   eligibleEmails.forEach((row) => {
     const email = row[0]; //
