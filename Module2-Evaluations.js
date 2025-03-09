@@ -997,20 +997,54 @@ function batchProcessEvaluationResponses() {
     Logger.log(`Evaluation window: ${evaluationWindowStart} to ${evaluationWindowEnd}`);
 
     const formResponses = form.getResponses();
+    const allowedLateEmails = [
+      'vexr.ai3@mail.qco.io',
+      'ivan.arenovich@gmail.com',
+      'bingbang199@gmail.com',
+      'jrwashburn@gmail.com',
+      'anutakisa1986@gmail.com',
+    ];
     const filteredResponses = formResponses.filter((response) => {
       const timestamp = new Date(response.getTimestamp());
-      return timestamp >= evaluationWindowStart && timestamp <= evaluationWindowEnd;
+      const respondentEmail = response.getRespondentEmail().toLowerCase();
+      const isWithinWindow = timestamp >= evaluationWindowStart && timestamp <= evaluationWindowEnd;
+      const isAllowedLateResponse =
+        allowedLateEmails.includes(respondentEmail) && timestamp >= evaluationWindowStart && timestamp <= new Date();
+      return isWithinWindow || isAllowedLateResponse;
     });
 
     Logger.log(`Total form responses to process: ${filteredResponses.length}`);
 
-    filteredResponses.forEach((formResponse) => {
+    const properties = PropertiesService.getScriptProperties();
+    const lastProcessedIndex = parseInt(properties.getProperty('lastProcessedIndex') || '0', 10);
+    const batchSize = 50; // Adjust batch size as needed
+
+    for (let i = lastProcessedIndex; i < filteredResponses.length && i < lastProcessedIndex + batchSize; i++) {
+      const formResponse = filteredResponses[i];
       const event = { response: formResponse };
       processEvaluationResponse(event);
-    });
+    }
 
-    Logger.log('Batch processing of evaluation responses completed.');
+    const newLastProcessedIndex = lastProcessedIndex + batchSize;
+    if (newLastProcessedIndex < filteredResponses.length) {
+      properties.setProperty('lastProcessedIndex', newLastProcessedIndex);
+      ScriptApp.newTrigger('batchProcessEvaluationResponses').timeBased().after(1).create();
+      Logger.log(`Processed batch. Next batch will start from index: ${newLastProcessedIndex}`);
+    } else {
+      properties.deleteProperty('lastProcessedIndex');
+      deleteBatchProcessingTrigger();
+      Logger.log('Batch processing of evaluation responses completed.');
+    }
   } catch (error) {
     Logger.log(`Error in batchProcessEvaluationResponses: ${error}`);
+  }
+}
+
+function deleteBatchProcessingTrigger() {
+  const triggers = ScriptApp.getProjectTriggers();
+  const currentTrigger = triggers.find((trigger) => trigger.getHandlerFunction() === 'batchProcessEvaluationResponses');
+  if (currentTrigger) {
+    ScriptApp.deleteTrigger(currentTrigger);
+    Logger.log('Deleted current batch processing trigger.');
   }
 }
