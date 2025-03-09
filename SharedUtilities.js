@@ -439,8 +439,6 @@ function getReviewLogAssignments() {
       assignments[submitterEmail] = evaluators;
     }
   });
-
-  Logger.log(`Review Log assignments: ${JSON.stringify(assignments)}`);
   return assignments;
 }
 
