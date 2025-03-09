@@ -607,10 +607,20 @@ function processEvaluationResponse(e) {
       return;
     }
 
+    const allowedLateEmails = [
+      'vexr.ai3@mail.qco.io',
+      'ivan.arenovich@gmail.com',
+      'bingbang199@gmail.com',
+      'jrwashburn@gmail.com',
+      'anutakisa1986@gmail.com',
+    ];
+
     // TODO Discuss: why is this filter commented out?
     // confirmed that we are processing late evaluations; putting this back in.
     const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
-    if (responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) {
+    if ((responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) ||
+        ( allowedLateEmails.includes(evaluatorEmail.toLowerCase()) &&
+          timestamp >= evaluationWindowStart && timestamp <= new Date()))
       Logger.log(
         `Evaluation received at ${responseTime} outside the window from ${evaluationWindowStart} to ${evaluationWindowEnd}. Response will be ignored.`
       );
