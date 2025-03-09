@@ -1,4 +1,11 @@
 // MODULE 2
+const allowedLateEmails = [
+  'vexr.ai3@mail.qco.io',
+  'ivan.arenovich@gmail.com',
+  'bingbang199@gmail.com',
+  'jrwashburn@gmail.com',
+  'anutakisa1986@gmail.com',
+];
 
 // Basic function for Request Evaluations menu item processing
 function requestEvaluationsModule() {
@@ -607,20 +614,17 @@ function processEvaluationResponse(e) {
       return;
     }
 
-    const allowedLateEmails = [
-      'vexr.ai3@mail.qco.io',
-      'ivan.arenovich@gmail.com',
-      'bingbang199@gmail.com',
-      'jrwashburn@gmail.com',
-      'anutakisa1986@gmail.com',
-    ];
-
     // TODO Discuss: why is this filter commented out?
     // confirmed that we are processing late evaluations; putting this back in.
     const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
-    if ((responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) ||
-        ( allowedLateEmails.includes(evaluatorEmail.toLowerCase()) &&
-          timestamp >= evaluationWindowStart && timestamp <= new Date()))
+    if (
+      (responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) &&
+      !(
+        allowedLateEmails.includes(evaluatorEmail.toLowerCase()) &&
+        responseTime > evaluationWindowStart &&
+        responseTime <= new Date()
+      )
+    ) {
       Logger.log(
         `Evaluation received at ${responseTime} outside the window from ${evaluationWindowStart} to ${evaluationWindowEnd}. Response will be ignored.`
       );
@@ -1007,13 +1011,6 @@ function batchProcessEvaluationResponses() {
     Logger.log(`Evaluation window: ${evaluationWindowStart} to ${evaluationWindowEnd}`);
 
     const formResponses = form.getResponses();
-    const allowedLateEmails = [
-      'vexr.ai3@mail.qco.io',
-      'ivan.arenovich@gmail.com',
-      'bingbang199@gmail.com',
-      'jrwashburn@gmail.com',
-      'anutakisa1986@gmail.com',
-    ];
     const filteredResponses = formResponses.filter((response) => {
       const timestamp = new Date(response.getTimestamp());
       const respondentEmail = response.getRespondentEmail().toLowerCase();
