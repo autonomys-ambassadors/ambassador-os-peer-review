@@ -58,14 +58,6 @@ function selectCRTMembers() {
   // Log selected ambassadors and date in CRT sheet
   const selectionDate = new Date();
   crtSheet.appendRow([selectionDate, ...selectedAmbassadors]);
-
-  // Notify selected ambassadors via email
-  if (SEND_EMAIL) {
-    selectedAmbassadors.forEach((ambassador) => {
-      sendCRTNotification(ambassador, CRT_SELECTING_NOTIFICATION_TEMPLATE); // Helper function for sending emails
-      Logger.log(`Notification sent to CRT member: ${ambassador}`);
-    });
-  }
 }
 
 /**
@@ -102,17 +94,4 @@ function getRandomSelection(array, num) {
     selected.push(array.splice(randomIndex, 1)[0]); // Remove and select random element
   }
   return selected;
-}
-
-/**
- * Sends a notification email to a selected CRT member.
- * @param {string} email - Email of the CRT member.
- * @param {string} template - Email template.
- */
-function sendCRTNotification(email, template) {
-  if (!email) {
-    Logger.log('Skipping notification: no email provided.');
-    return;
-  }
-  MailApp.sendEmail(email, 'CRT Selection Notification', template);
 }
