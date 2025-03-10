@@ -5,6 +5,7 @@ const allowedLateEmails = [
   'bingbang199@gmail.com',
   'jrwashburn@gmail.com',
   'anutakisa1986@gmail.com',
+  'shpeht@gmail.com',
 ];
 
 // Basic function for Request Evaluations menu item processing
