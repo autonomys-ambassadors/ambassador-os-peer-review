@@ -1040,7 +1040,7 @@ function batchProcessEvaluationResponses() {
       Logger.log(`Processed batch. Next batch will start from index: ${newLastProcessedIndex}`);
     } else {
       properties.deleteProperty('lastProcessedIndex');
-      deleteBatchProcessingTrigger();
+      deleteBatchProcessingTriggers();
       Logger.log('Batch processing of evaluation responses completed.');
     }
   } catch (error) {
@@ -1048,11 +1048,12 @@ function batchProcessEvaluationResponses() {
   }
 }
 
-function deleteBatchProcessingTrigger() {
+function deleteBatchProcessingTriggers() {
   const triggers = ScriptApp.getProjectTriggers();
-  const currentTrigger = triggers.find((trigger) => trigger.getHandlerFunction() === 'batchProcessEvaluationResponses');
-  if (currentTrigger) {
-    ScriptApp.deleteTrigger(currentTrigger);
-    Logger.log('Deleted current batch processing trigger.');
-  }
+  triggers.forEach((trigger) => {
+    if (trigger.getHandlerFunction() === 'batchProcessEvaluationResponses') {
+      ScriptApp.deleteTrigger(trigger);
+      Logger.log('Deleted batch processing trigger.');
+    }
+  });
 }
