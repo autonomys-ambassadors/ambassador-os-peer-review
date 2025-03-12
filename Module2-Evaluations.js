@@ -1,4 +1,12 @@
 // MODULE 2
+const allowedLateEmails = [
+  'vexr.ai3@mail.qco.io',
+  'ivan.arenovich@gmail.com',
+  'bingbang199@gmail.com',
+  'jrwashburn@gmail.com',
+  'anutakisa1986@gmail.com',
+  'shpeht@gmail.com',
+];
 
 // Basic function for Request Evaluations menu item processing
 function requestEvaluationsModule() {
@@ -610,7 +618,14 @@ function processEvaluationResponse(e) {
     // TODO Discuss: why is this filter commented out?
     // confirmed that we are processing late evaluations; putting this back in.
     const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
-    if (responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) {
+    if (
+      (responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) &&
+      !(
+        allowedLateEmails.includes(evaluatorEmail.toLowerCase()) &&
+        responseTime > evaluationWindowStart &&
+        responseTime <= new Date()
+      )
+    ) {
       Logger.log(
         `Evaluation received at ${responseTime} outside the window from ${evaluationWindowStart} to ${evaluationWindowEnd}. Response will be ignored.`
       );
@@ -999,18 +1014,45 @@ function batchProcessEvaluationResponses() {
     const formResponses = form.getResponses();
     const filteredResponses = formResponses.filter((response) => {
       const timestamp = new Date(response.getTimestamp());
-      return timestamp >= evaluationWindowStart && timestamp <= evaluationWindowEnd;
+      const respondentEmail = response.getRespondentEmail().toLowerCase();
+      const isWithinWindow = timestamp >= evaluationWindowStart && timestamp <= evaluationWindowEnd;
+      const isAllowedLateResponse =
+        allowedLateEmails.includes(respondentEmail) && timestamp >= evaluationWindowStart && timestamp <= new Date();
+      return isWithinWindow || isAllowedLateResponse;
     });
 
     Logger.log(`Total form responses to process: ${filteredResponses.length}`);
 
-    filteredResponses.forEach((formResponse) => {
+    const properties = PropertiesService.getScriptProperties();
+    const lastProcessedIndex = parseInt(properties.getProperty('lastProcessedIndex') || '0', 10);
+    const batchSize = 50; // Adjust batch size as needed
+
+    for (let i = lastProcessedIndex; i < filteredResponses.length && i < lastProcessedIndex + batchSize; i++) {
+      const formResponse = filteredResponses[i];
       const event = { response: formResponse };
       processEvaluationResponse(event);
-    });
+    }
 
-    Logger.log('Batch processing of evaluation responses completed.');
+    const newLastProcessedIndex = lastProcessedIndex + batchSize;
+    if (newLastProcessedIndex < filteredResponses.length) {
+      properties.setProperty('lastProcessedIndex', newLastProcessedIndex);
+      ScriptApp.newTrigger('batchProcessEvaluationResponses').timeBased().after(1).create();
+      Logger.log(`Processed batch. Next batch will start from index: ${newLastProcessedIndex}`);
+    } else {
+      properties.deleteProperty('lastProcessedIndex');
+      deleteBatchProcessingTrigger();
+      Logger.log('Batch processing of evaluation responses completed.');
+    }
   } catch (error) {
     Logger.log(`Error in batchProcessEvaluationResponses: ${error}`);
+  }
+}
+
+function deleteBatchProcessingTrigger() {
+  const triggers = ScriptApp.getProjectTriggers();
+  const currentTrigger = triggers.find((trigger) => trigger.getHandlerFunction() === 'batchProcessEvaluationResponses');
+  if (currentTrigger) {
+    ScriptApp.deleteTrigger(currentTrigger);
+    Logger.log('Deleted current batch processing trigger.');
   }
 }
