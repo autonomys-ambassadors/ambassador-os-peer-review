@@ -1,13 +1,4 @@
 // MODULE 2
-const allowedLateEmails = [
-  'vexr.ai3@mail.qco.io',
-  'ivan.arenovich@gmail.com',
-  'bingbang199@gmail.com',
-  'jrwashburn@gmail.com',
-  'anutakisa1986@gmail.com',
-  'shpeht@gmail.com',
-];
-
 // Basic function for Request Evaluations menu item processing
 function requestEvaluationsModule() {
   const evaluationWindowStart = new Date(); // Capture start time for the evaluation window
@@ -618,14 +609,7 @@ function processEvaluationResponse(e) {
     // TODO Discuss: why is this filter commented out?
     // confirmed that we are processing late evaluations; putting this back in.
     const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
-    if (
-      (responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) &&
-      !(
-        allowedLateEmails.includes(evaluatorEmail.toLowerCase()) &&
-        responseTime > evaluationWindowStart &&
-        responseTime <= new Date()
-      )
-    ) {
+    if (responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) {
       Logger.log(
         `Evaluation received at ${responseTime} outside the window from ${evaluationWindowStart} to ${evaluationWindowEnd}. Response will be ignored.`
       );
@@ -1014,11 +998,7 @@ function batchProcessEvaluationResponses() {
     const formResponses = form.getResponses();
     const filteredResponses = formResponses.filter((response) => {
       const timestamp = new Date(response.getTimestamp());
-      const respondentEmail = response.getRespondentEmail().toLowerCase();
-      const isWithinWindow = timestamp >= evaluationWindowStart && timestamp <= evaluationWindowEnd;
-      const isAllowedLateResponse =
-        allowedLateEmails.includes(respondentEmail) && timestamp >= evaluationWindowStart && timestamp <= new Date();
-      return isWithinWindow || isAllowedLateResponse;
+      return timestamp >= evaluationWindowStart && timestamp <= evaluationWindowEnd;
     });
 
     Logger.log(`Total form responses to process: ${filteredResponses.length}`);
@@ -1040,7 +1020,7 @@ function batchProcessEvaluationResponses() {
       Logger.log(`Processed batch. Next batch will start from index: ${newLastProcessedIndex}`);
     } else {
       properties.deleteProperty('lastProcessedIndex');
-      deleteBatchProcessingTrigger();
+      deleteBatchProcessingTriggers();
       Logger.log('Batch processing of evaluation responses completed.');
     }
   } catch (error) {
@@ -1048,11 +1028,12 @@ function batchProcessEvaluationResponses() {
   }
 }
 
-function deleteBatchProcessingTrigger() {
+function deleteBatchProcessingTriggers() {
   const triggers = ScriptApp.getProjectTriggers();
-  const currentTrigger = triggers.find((trigger) => trigger.getHandlerFunction() === 'batchProcessEvaluationResponses');
-  if (currentTrigger) {
-    ScriptApp.deleteTrigger(currentTrigger);
-    Logger.log('Deleted current batch processing trigger.');
-  }
+  triggers.forEach((trigger) => {
+    if (trigger.getHandlerFunction() === 'batchProcessEvaluationResponses') {
+      ScriptApp.deleteTrigger(trigger);
+      Logger.log('Deleted batch processing trigger.');
+    }
+  });
 }
