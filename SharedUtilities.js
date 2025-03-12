@@ -578,6 +578,13 @@ function getDiscordHandleFromEmail(email) {
 function updateFormTitlesWithCurrentReportingMonth() {
   // Retrieve the reporting month in "MMMM yyyy" format, e.g., "August 2024"
   const reportingMonth = Utilities.formatDate(getPreviousMonthDate(), Session.getScriptTimeZone(), 'MMMM yyyy');
+  // TODO REMOVE after January submissions are requested.
+  // temporary processing - if deliverable date is February 2025, push back to January.
+  // dumb kludge because we operate on the assumption that you are requesting from last month.
+  // prefer to keep the assumption over making the user enter the period.
+  if (reportingMonth.getFullYear() == 2025 && reportingMonth.getMonth() == 1) {
+    reportingMonth.setMonth(reportingMonth.getMonth() - 1);
+  }
 
   // Open each form by its ID
   const submissionForm = FormApp.openById(SUBMISSION_FORM_ID);
