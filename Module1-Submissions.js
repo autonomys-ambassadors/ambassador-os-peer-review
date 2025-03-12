@@ -32,13 +32,6 @@ function requestSubmissionsModule() {
 
   // Get deliverable date of the reporting month at first time (previous month date)
   const deliverableDate = getPreviousMonthDate();
-  // TODO REMOVE after January submissions are requested.
-  // temporary processing - if deliverable date is February 2025, push back to January.
-  // dumb kludge because we operate on the assumption that you are requesting from last month.
-  // prefer to keep the assumption over making the user enter the period.
-  if (deliverableDate.getFullYear() == 2025 && deliverableDate.getMonth() == 1) {
-    deliverableDate.setMonth(deliverableDate.getMonth() - 1);
-  }
   Logger.log(`Deliverable date: ${deliverableDate}`);
 
   const month = Utilities.formatDate(deliverableDate, spreadsheetTimeZone, 'MMMM'); // Format the deliverable date to get the month name
