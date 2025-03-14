@@ -1,16 +1,38 @@
-// Module1.gs
+
+
+function requestMonthlySubmissions() {
+  const ui = SpreadsheetApp.getUi();
+  const form = HtmlService.createHtmlOutputFromFile('requestSubmissionsForm')
+    .setWidth(400)
+    .setHeight(100);
+
+  ui.showModalDialog(form, 'Request Submissions');
+}
+
+function processFormData(formData) {
+  try {
+    if (!formData.month || !formData.year) {
+      throw new Error('Month and year not provided');
+    }
+
+
+    requestSubmissionsModule(formData.month, formData.year);
+    Logger.log(formData.month);
+    Logger.log(formData.year);
+    return true;
+  } catch (error) {
+    console.error("Error processing form data", error);
+    return false;
+  }
+}
 
 // Request Submissions: sends emails, sets up the new mailing, and reminder trigger
-function requestSubmissionsModule() {
-  Logger.log('Request Submissions Module started.');
+function requestSubmissionsModule(month, year) {
+  if (!month || !year) [month, year] = getPreviousMonthYear();
 
   // Update form titles with the current reporting month
-  updateFormTitlesWithCurrentReportingMonth();
+  updateFormTitlesWithCurrentReportingMonth(month, year);
   Logger.log('Form titles updated with the current reporting month.');
-
-  // Get the universal spreadsheet time zone
-  const spreadsheetTimeZone = getProjectTimeZone();
-  Logger.log(`Spreadsheet time zone: ${spreadsheetTimeZone}`);
 
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME); // Open the "Registry" sheet
   Logger.log('Opened "Registry" sheet from "Ambassador Registry" spreadsheet.');
@@ -29,14 +51,6 @@ function requestSubmissionsModule() {
     .filter((row) => !row[registryAmbassadorStatus - 1].includes('Expelled')) // Exclude expelled ambassadors
     .map((row) => [row[registryEmailColIndex - 1], row[registryAmbassadorDiscordHandle - 1]]); // Extract only emails
   Logger.log(`Eligible ambassadors emails: ${JSON.stringify(eligibleEmails)}`);
-
-  // Get deliverable date of the reporting month at first time (previous month date)
-  const deliverableDate = getPreviousMonthDate();
-  Logger.log(`Deliverable date: ${deliverableDate}`);
-
-  const month = Utilities.formatDate(deliverableDate, spreadsheetTimeZone, 'MMMM'); // Format the deliverable date to get the month name
-  const year = Utilities.formatDate(deliverableDate, spreadsheetTimeZone, 'yyyy'); // Format the deliverable date to get the year
-  Logger.log(`Formatted month and year: ${month} ${year}`);
 
   // Calculate the exact deadline date based on submission window
   const submissionWindowStart = new Date();
@@ -93,6 +107,7 @@ function requestSubmissionsModule() {
   setupSubmissionReminderTrigger(submissionWindowStart);
 
   Logger.log('Request Submissions completed.');
+  showSucessMessage();
 }
 
 // Function to set up submission reminder trigger
@@ -236,4 +251,24 @@ function sendReminderEmails(nonRespondents) {
       Logger.log(`Error: Could not find the ambassador with email ${email}`);
     }
   });
+}
+
+function getPreviousMonthYear() {
+  // Get deliverable date of the reporting month at first time (previous month date)
+  const deliverableDate = getPreviousMonthDate();
+  Logger.log(`Deliverable date: ${deliverableDate}`);
+
+  // Get the universal spreadsheet time zone
+  const spreadsheetTimeZone = getProjectTimeZone();
+  Logger.log(`Spreadsheet time zone: ${spreadsheetTimeZone}`);
+
+  const month = Utilities.formatDate(deliverableDate, spreadsheetTimeZone, 'MMMM'); // Format the deliverable date to get the month name
+  const year = Utilities.formatDate(deliverableDate, spreadsheetTimeZone, 'yyyy'); // Format the deliverable date to get the year
+  Logger.log(`Formatted month and year: ${month} ${year}`);
+  return [ month, year ];
+}
+
+function showSucessMessage() {
+  const ui = SpreadsheetApp.getUi();
+  ui.alert('Success', 'Request Submission completed successfully!', ui.ButtonSet.OK);
 }
