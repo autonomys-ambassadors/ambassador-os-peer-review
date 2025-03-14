@@ -42,6 +42,7 @@ clasp login
 
 1. <span style="color:#778ef7">Git pull this repo into your local dir</span>
 
+
 2. <span style="color:#778ef7">Enable API in your Google Apps Interface:</span>
 
 https://script.google.com/home/usersettings
@@ -51,12 +52,8 @@ https://script.google.com/home/usersettings
    <span style="color:#778ef7">File > Project Settings.</span>
    <span style="color:#778ef7">Copy Script ID.</span>
 
-4. <span style="color:#778ef7">Link your local directory where you pulled the repository to with your Google Apps Script</span>
 
-   cd <path-to-local-procet-dir>
-   clasp settings set scriptId <SCRIPT_ID>
-
-5. <span style="color:#778ef7">Manually create .clasp.json:</span>
+4. <span style="color:#778ef7">Manually create .clasp.json:</span>
 
    nano .clasp.json
 
