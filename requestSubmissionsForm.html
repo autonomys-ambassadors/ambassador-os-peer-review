@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+
+      body {
+          background-color: #f0f0f0;  /* Cor de fundo */
+          font-family: Arial, sans-serif; /* Tipo de fonte */
+          margin: 0;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+      }
+
+      .modal-content {
+          background: white;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+          width: 100%;
+          box-sizing: border-box;
+      }
+
+      .form-row {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+      }
+
+      .form-row label {
+          margin-right: 10px;
+          white-space: nowrap;
+      }
+
+      .form-row select {
+          flex: 1;
+          margin-right: 10px;
+          height: 30px;
+          padding: 5px;
+          box-sizing: border-box;
+          border-radius: 4px;
+          border: 1px solid #ccc;
+      }
+
+      input[type="button"] {
+          background-color: #007BFF;
+          color: white;
+          border: none;
+          cursor: pointer;
+          transition: background-color 0.3s ease;
+          width: 100%;
+          height: 30px;
+          margin-top: 15px;
+      }
+
+      input[type="button"]:hover {
+          background-color: #0056b3;
+      }
+  </style>
+</head>
+<body>
+<div class="modal-content">
+  <form id="form">
+    <div class="form-row">
+      <label for="month">Month:</label>
+      <select id="month" required>
+        <option value="">Select Month</option>
+        <option value="January">January</option>
+        <option value="February">February</option>
+        <option value="March">March</option>
+        <option value="April">April</option>
+        <option value="May">May</option>
+        <option value="June">June</option>
+        <option value="July">July</option>
+        <option value="August">August</option>
+        <option value="September">September</option>
+        <option value="October">October</option>
+        <option value="November">November</option>
+        <option value="December">December</option>
+      </select>
+      <label for="year">Year:</label>
+      <select id="year" required></select>
+    </div>
+    <input type="button" value="Submit" onclick="collectData()">
+  </form>
+</div>
+
+<script>
+  function setYearToCurrent() {
+    const currentYear = new Date().getFullYear();
+    const yearSelect = document.getElementById('year');
+    yearSelect.innerHTML = '';
+
+
+    const optionPreviousYear = document.createElement('option');
+    optionPreviousYear.value = currentYear - 1;
+    optionPreviousYear.textContent = currentYear - 1;
+    yearSelect.appendChild(optionPreviousYear);
+
+
+    const optionCurrentYear = document.createElement('option');
+    optionCurrentYear.value = currentYear;
+    optionCurrentYear.textContent = currentYear;
+    optionCurrentYear.selected = true; // Marcar como selecionado
+    yearSelect.appendChild(optionCurrentYear);
+  }
+
+  function collectData() {
+    const month = document.getElementById('month').value;
+    const year = document.getElementById('year').value;
+
+
+    if (!month || !year) {
+      alert('Please select both month and year');
+      return;
+    }
+
+
+    google.script.run
+      .withSuccessHandler(function() {
+        google.script.host.close();
+      })
+      .processFormData({month: month, year: year});
+  }
+
+
+  window.onload = setYearToCurrent;
+</script>
+
+</body>
+</html>
