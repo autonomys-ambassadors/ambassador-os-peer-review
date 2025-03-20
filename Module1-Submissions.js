@@ -26,7 +26,7 @@ function requestSubmissionsModule() {
 
   // Filter out ambassadors with 'Expelled' in their status
   const eligibleEmails = registryData
-    .filter((row) => !row[registryAmbassadorStatus - 1].includes('Expelled')) // Exclude expelled ambassadors
+    .filter((row) => !row[registryAmbassadorStatus - 1].toLowerCase().includes('expelled')) // Exclude expelled ambassadors - case-insensitive now
     .map((row) => [row[registryEmailColIndex - 1], row[registryAmbassadorDiscordHandle - 1]]); // Extract only emails
   Logger.log(`Eligible ambassadors emails: ${JSON.stringify(eligibleEmails)}`);
 
@@ -153,7 +153,7 @@ function checkNonRespondents() {
     .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
     .getValues();
   const eligibleEmails = registryData
-    .filter((row) => !row[registryAmbassadorStatusColIndex - 1].includes('Expelled'))
+    .filter((row) => !row[registryAmbassadorStatusColIndex - 1].toLowerCase().includes('expelled')) // Case-insensitive check
     .map((row) => row[registryEmailColIndex - 1]);
 
   Logger.log(`Eligible emails: ${eligibleEmails}`);
