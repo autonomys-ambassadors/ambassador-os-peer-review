@@ -463,7 +463,7 @@ function getEligibleAmbassadorsEmails() {
       .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
       .getValues(); // Columns: Email, Discord Handle, Status
     const eligibleEmails = registryData
-      .filter((row) => !row[registryAmbassadorStatusColumnIndex - 1].includes('Expelled')) // Exclude those marked as 'Expelled'
+      .filter((row) => !row[registryAmbassadorStatusColumnIndex - 1].toLowerCase().includes('expelled')) // Exclude those marked as expelled - case-insensitive now
       .map((row) => row[registryAmbassadorEmailColumnIndex - 1]); // Extract emails
 
     Logger.log(`Eligible emails (excluding 'Expelled'): ${JSON.stringify(eligibleEmails)}`);
