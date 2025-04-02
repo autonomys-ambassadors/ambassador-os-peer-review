@@ -155,7 +155,7 @@ function onOpen() {
   const ui = SpreadsheetApp.getUi();
   Logger.log('Initializing menu on spreadsheet open.');
   ui.createMenu('Ambassador Program')
-    .addItem('Request Submissions', 'requestSubmissionsModule') // Request Submissions
+    .addItem('Request Submissions', 'requestMonthlySubmissions') // Request Submissions
     .addItem('Request Evaluations', 'requestEvaluationsModule') // Request Evaluations
     .addItem('Compliance Audit', 'runComplianceAudit') // Process Scores and Penalties
     .addItem('Notify Upcoming Peer Review', 'notifyUpcomingPeerReview') // Peer Review notifications
@@ -575,9 +575,10 @@ function getDiscordHandleFromEmail(email) {
 //    FORMS' TITLES
 //
 // Main function to update the form titles based on the current reporting month
-function updateFormTitlesWithCurrentReportingMonth() {
+function updateFormTitlesWithCurrentReportingMonth(month, year) {
   // Retrieve the reporting month in "MMMM yyyy" format, e.g., "August 2024"
-  const reportingMonth = Utilities.formatDate(getPreviousMonthDate(), Session.getScriptTimeZone(), 'MMMM yyyy');
+  const reportingMonth = `${month} ${year}`;
+
   // Open each form by its ID
   const submissionForm = FormApp.openById(SUBMISSION_FORM_ID);
   const evaluationForm = FormApp.openById(EVALUATION_FORM_ID);
