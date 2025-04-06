@@ -6,6 +6,9 @@ function requestEvaluationsModule() {
   // Step 1: Create a month sheet and column in the Overall score
   createMonthSheetAndOverallColumn();
 
+  // Step 1.5: Update evaluation form questions
+  updateEvaluationFormQuestions();
+
   // Step 2: Generating the review matrix (submitters and evaluators)
   generateReviewMatrix();
 
@@ -136,6 +139,17 @@ function createMonthSheetAndOverallColumn() {
   } catch (error) {
     Logger.log(`Error in createMonthSheetAndOverallColumn: ${error}`);
   }
+}
+
+function updateEvaluationFormQuestions() {
+  const form = FormApp.openById(EVALUATION_FORM_ID);
+  const items = form.getItems();
+  items.forEach(item => {
+    if (item.getTitle().includes("Please assign a grade")) {
+      item.setHelpText("Please consider the ambassador's contributions in relation to their primary team when making your assessment.");
+
+    }
+  });
 }
 
 /**
