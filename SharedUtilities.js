@@ -111,7 +111,13 @@ Ambassador Program Team</p>
 // Request Evaluation Email Template
 let REQUEST_EVALUATION_EMAIL_TEMPLATE = `
 <p>Dear {AmbassadorDiscordHandle},</p>
-<p>Please review the following deliverables for the month of {Month} by {AmbassadorSubmitter}:</p>
+<p>Please review the following deliverables for the month of <strong>{Month}</strong> by:</p>
+
+<p>
+<strong>{AmbassadorSubmitter}<br>
+Primary Team:  {PrimaryTeam} </strong>
+</p>
+
 <p>{SubmissionsList}</p>
 
 <p>Assign a grade using the form:</p>

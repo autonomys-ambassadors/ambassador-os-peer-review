@@ -6,8 +6,11 @@ function requestEvaluationsModule() {
   // Step 1: Create a month sheet and column in the Overall score
   createMonthSheetAndOverallColumn();
 
-  // Step 2: Generating the review matrix (submitters and evaluators)
+  // Step 2: Generating the review matrix (submitters   and evaluators)
   generateReviewMatrix();
+
+  // Step 2.5: Update evaluation form questions
+  updateEvaluationFormQuestions();
 
   // Step 3: Sending evaluation requests
   sendEvaluationRequests();
@@ -138,15 +141,13 @@ function createMonthSheetAndOverallColumn() {
   }
 }
 
-function updateEvaluationFormQuestions(primaryTeam) {
+function updateEvaluationFormQuestions() {
   const form = FormApp.openById(EVALUATION_FORM_ID);
   const items = form.getItems();
   items.forEach(item => {
     if (item.getTitle().includes("Please assign a grade")) {
       item.setHelpText(
-        `Please consider the ambassador's contributions in relation to their primary team when making your assessment.
-
-Ambassador's Primary Team: ${primaryTeam}`
+        `Please consider the ambassador's contributions in relation to their primary team when making your assessment.`
       );
     }
   });
@@ -382,8 +383,6 @@ function sendEvaluationRequests() {
 
       const primaryTeam = getAmbassadorPrimaryTeam(submitterEmail);
 
-      updateEvaluationFormQuestions(primaryTeam);
-
       reviewersEmails.forEach((reviewerEmail) => {
         try {
           const evaluatorDiscordHandle = getDiscordHandleFromEmail(reviewerEmail); // Call from SharedUtilities
@@ -395,7 +394,8 @@ function sendEvaluationRequests() {
             .replace('{AmbassadorSubmitter}', submitterDiscordHandle)
             .replace('{SubmissionsList}', contributionDetails)
             .replace('{EvaluationFormURL}', EVALUATION_FORM_URL)
-            .replace('{EVALUATION_DEADLINE_DATE}', evaluationDeadlineDate);
+            .replace('{EVALUATION_DEADLINE_DATE}', evaluationDeadlineDate)
+            .replace('{PrimaryTeam}', primaryTeam);
 
           if (SEND_EMAIL) {
             MailApp.sendEmail({
