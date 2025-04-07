@@ -4,7 +4,7 @@ This app script code can be added to a google sheet to run the Ambassador OS.
 
 ## Some assumptions:
 
-1. You have a google sheet with a list of ambassadors with three columns, Ambassador Email Address, Ambassador Discord Handle, and Ambassador Status.
+1. You have a google sheet with a list of ambassadors with four columns, Ambassador Email Address, Ambassador Discord Handle, and Ambassador Status, Primary Team.
 2. You have a google sheet with a list of ambassador contributions with columns: Timestamp, Email Address, Your Discord Handle, "Dear Ambassador,
    Please add text, inputs or links to your contributions during the month:"
 
@@ -169,6 +169,7 @@ When requesting Evaluations, the script will add a new sheet to the Submissions 
 
 Backup your current "Ambassadors' Scores" spreadsheet.
 In Registry add 3-rd column. Name it "Ambassador Status". Manually write onboarding date of all ambassadors.
+In Registry add 4-rd column. Name it "Primary Team". Manually write onboarding date of all ambassadors.
 Rename sheet 'Overall score ' to 'Overall score' (remove the last space symbol).
 In both Registry and Overall score sheets, add new first column "Ambassador Id" - it can be left empty, just create the column.
 Delete "Sheet 1" sheet in Ambassadors' Scores sprdsht, (if you forget and don't really need it).
