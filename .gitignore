@@ -2,3 +2,5 @@
 appengine-generated/
 .DS_Store
 *.clasp.json
+
+.idea/

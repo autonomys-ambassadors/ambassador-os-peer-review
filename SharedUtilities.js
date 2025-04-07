@@ -2,7 +2,7 @@
 // Declare & initialize global variables; these will be updated by the setProductionVariables() or setTestVariables() functions
 
 // testing constant will be used to load production vs. test values for the global variables
-const testing = false; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
+const testing = true; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
 var SEND_EMAIL; // Will control whether emails are sent - must be true for production; may be true or false for testing depending on testing needs.
 
 // Provide the actual Id of the google sheet for the registry and scoreing sheets in EnvironmentVariables[Prod|Test].js:
@@ -31,6 +31,7 @@ var AMBASSADOR_ID_COLUMN = '';
 var AMBASSADOR_EMAIL_COLUMN = '';
 var AMBASSADOR_DISCORD_HANDLE_COLUMN = '';
 var AMBASSADOR_STATUS_COLUMN = '';
+var AMBASSADOR_PRIMARY_TEAM = '';
 var GOOGLE_FORM_TIMESTAMP_COLUMN = '';
 var GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = '';
 var GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = '';

@@ -37,6 +37,7 @@ function setTestVariables() {
     AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
     AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
     AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
+    AMBASSADOR_PRIMARY_TEAM_COLUMN = 'Primary Team';
     GOOGLE_FORM_TIMESTAMP_COLUMN = 'Timestamp';
     SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Your Email Address';
     EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Your Email Address';
@@ -108,6 +109,7 @@ Please add links your contributions during the month `;
     AMBASSADOR_EMAIL_COLUMN = 'Ambassador Email Address';
     AMBASSADOR_DISCORD_HANDLE_COLUMN = 'Ambassador Discord Handle';
     AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
+    AMBASSADOR_PRIMARY_TEAM_COLUMN = 'Primary Team';
     GOOGLE_FORM_TIMESTAMP_COLUMN = 'Timestamp';
     SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email';
     EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email';
