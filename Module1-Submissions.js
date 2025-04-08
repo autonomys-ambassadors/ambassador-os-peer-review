@@ -1,12 +1,63 @@
-
-
 function requestMonthlySubmissions() {
   const ui = SpreadsheetApp.getUi();
-  const form = HtmlService.createHtmlOutputFromFile('requestSubmissionsForm')
-    .setWidth(400)
-    .setHeight(100);
+  
+  // Fetch the form responses spreadsheet
+  Logger.log('Finding the Monthly Submission from Responses spreadsheet...');
+  const formResponseSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID)
+    .getSheetByName(FORM_RESPONSES_SHEET_NAME);
+  
+  // Get the index of the timestamp column
+  const timestampColumnIndex = getRequiredColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
+  Logger.log(`Timestamp column index: ${timestampColumnIndex}`);
+  
+  // Fetch all the responses
+  const formData = formResponseSheet
+    .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())
+    .getValues();
+  
+  // Find the latest submission
+  let latestSubmission = null;
+  Logger.log('Finding the latest submission...');
+  for (let row of formData) {
+    const timestamp = new Date(row[timestampColumnIndex - 1]);
+    if (!latestSubmission || timestamp > latestSubmission) {
+      latestSubmission = timestamp;
+    }
+  }
+  
+  if (!latestSubmission) {
+    Logger.log('Error: No submissions found.');
+    ui.alert('Error', 'Unable to find previous submissions. Please set it up manually.', ui.ButtonSet.OK);
+    return;
+  }
 
-  ui.showModalDialog(form, 'Request Submissions');
+  // Calculate the next month
+  Logger.log(`Latest submission date: ${latestSubmission}`);
+  Logger.log('Calculating the next month...');
+  const nextMonth = new Date(latestSubmission);
+  nextMonth.setMonth(nextMonth.getMonth() + 1);
+  
+  const month = Utilities.formatDate(nextMonth, getProjectTimeZone(), 'MMMM');
+  const year = nextMonth.getFullYear();
+
+  Logger.log(`Next month: ${month}, Year: ${year}`);
+  Logger.log('Asking for confirmation to send submission requests...');
+  const response = ui.alert(
+    'Confirm Submission',
+    `Do you want to request submissions for ${month} ${year}?`,
+    ui.ButtonSet.YES_NO
+  );
+  
+  if (response === ui.Button.YES) {
+    Logger.log('User confirmed to send submission requests.');
+    processFormData({ month, year });
+  } else { //case user responded NO
+    Logger.log('User canceled the submission request.');
+    const form = HtmlService.createHtmlOutputFromFile('requestSubmissionsForm')
+      .setWidth(400)
+      .setHeight(100);
+    ui.showModalDialog(form, 'Request Submissions');
+  }
 }
 
 function processFormData(formData) {
@@ -14,7 +65,6 @@ function processFormData(formData) {
     if (!formData.month || !formData.year) {
       throw new Error('Month and year not provided');
     }
-
 
     requestSubmissionsModule(formData.month, formData.year);
     Logger.log(formData.month);
