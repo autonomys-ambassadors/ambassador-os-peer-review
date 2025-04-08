@@ -76,29 +76,6 @@ function processFormData(formData) {
   }
 }
 
-function requestMonthlySubmissions() {
-  const ui = SpreadsheetApp.getUi();
-  const form = HtmlService.createHtmlOutputFromFile('requestSubmissionsForm').setWidth(400).setHeight(100);
-
-  ui.showModalDialog(form, 'Request Submissions');
-}
-
-function processFormData(formData) {
-  try {
-    if (!formData.month || !formData.year) {
-      throw new Error('Month and year not provided');
-    }
-
-    requestSubmissionsModule(formData.month, formData.year);
-    Logger.log(formData.month);
-    Logger.log(formData.year);
-    return true;
-  } catch (error) {
-    console.error('Error processing form data', error);
-    return false;
-  }
-}
-
 // Request Submissions: sends emails, sets up the new mailing, and reminder trigger
 function requestSubmissionsModule(month, year) {
   if (!month || !year) [month, year] = getPreviousMonthYear();
