@@ -144,8 +144,8 @@ function createMonthSheetAndOverallColumn() {
 function updateEvaluationFormQuestions() {
   const form = FormApp.openById(EVALUATION_FORM_ID);
   const items = form.getItems();
-  items.forEach(item => {
-    if (item.getTitle().includes("Please assign a grade")) {
+  items.forEach((item) => {
+    if (item.getTitle().includes('Please assign a grade')) {
       item.setHelpText(
         `Please consider the ambassador's contributions in relation to their primary team when making your assessment.`
       );
@@ -395,7 +395,8 @@ function sendEvaluationRequests() {
             .replace('{SubmissionsList}', contributionDetails)
             .replace('{EvaluationFormURL}', EVALUATION_FORM_URL)
             .replace('{EVALUATION_DEADLINE_DATE}', evaluationDeadlineDate)
-            .replace('{PrimaryTeam}', primaryTeam);
+            .replace('{PrimaryTeam}', primaryTeam)
+            .replace('{PrimaryTeamResponsibilities}', getPrimaryTeamResponsibilities(primaryTeam));
 
           if (SEND_EMAIL) {
             MailApp.sendEmail({
@@ -516,7 +517,7 @@ function getAmbassadorPrimaryTeam(email) {
     // Open the Registry spreadsheet
     const registrySpreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
     const registrySheet = registrySpreadsheet.getSheetByName(REGISTRY_SHEET_NAME);
-    
+
     if (!registrySheet) {
       Logger.log('Error: Registry spreadsheet not found');
       return '';
@@ -525,16 +526,16 @@ function getAmbassadorPrimaryTeam(email) {
     // Get all data from the Registry spreadsheet
     const registryData = registrySheet.getDataRange().getValues();
     const headerRow = registryData[0];
-    
+
     // Find indices of the columns
     const emailColIndex = headerRow.indexOf(AMBASSADOR_EMAIL_COLUMN);
     const primaryTeamColIndex = headerRow.indexOf(AMBASSADOR_PRIMARY_TEAM_COLUMN);
-    
+
     if (emailColIndex === -1 || primaryTeamColIndex === -1) {
       Logger.log('Error: Required columns not found in the Registry');
       return '';
     }
-    
+
     // Search for the ambassador's email and return their primary team
     for (let i = 1; i < registryData.length; i++) {
       if (registryData[i][emailColIndex].toLowerCase() === email.toLowerCase()) {

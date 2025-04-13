@@ -78,7 +78,7 @@ Please add links your contributions during the month `;
     //
     //
   } else if (TESTER === 'Jonathan') {
-    SEND_EMAIL = false;
+    SEND_EMAIL = true;
 
     // Specify your testing sheets/forms/etc. here:
     // Spreadsheets:
