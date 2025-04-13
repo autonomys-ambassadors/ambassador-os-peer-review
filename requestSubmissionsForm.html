@@ -88,6 +88,7 @@
         <select id="year" required></select>
       </div>
       <input type="button" value="Submit" onclick="collectData()">
+      <input type="button" value="Cancel" onclick="google.script.host.close()">
     </form>
   </div>
   <script>
@@ -114,9 +115,11 @@
       const month = document.getElementById('month').value;
       const year = document.getElementById('year').value;
 
+      submitButton.disabled = true;
 
       if (!month || !year) {
         alert('Please select both month and year');
+        submitButton.disabled = false;
         return;
       }
 
@@ -127,10 +130,12 @@
         .withFailureHandler(function (error) {
           console.error('Error:', error);
           alert('An error occurred: ' + error.message);
+          submitButton.disabled = false;
         })
         .processFormData({ month: month, year: year });
     }
     window.onload = setYearToCurrent;
+    const submitButton = document.querySelector('input[type="button"]');
   </script>
 
 </body>
