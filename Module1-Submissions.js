@@ -54,7 +54,7 @@ function requestMonthlySubmissions() {
     processFormData({ month, year });
   } else {
     //case user responded NO
-    Logger.log('User canceled the submission request.');
+    Logger.log('User wants to specify a different month for the submission request.');
     const form = HtmlService.createHtmlOutputFromFile('requestSubmissionsForm').setWidth(400).setHeight(100);
     ui.showModalDialog(form, 'Request Submissions');
   }
@@ -66,9 +66,9 @@ function processFormData(formData) {
       throw new Error('Month and year not provided');
     }
 
-    requestSubmissionsModule(formData.month, formData.year);
     Logger.log(formData.month);
     Logger.log(formData.year);
+    requestSubmissionsModule(formData.month, formData.year);
     return true;
   } catch (error) {
     console.error('Error processing form data', error);
@@ -156,7 +156,7 @@ function requestSubmissionsModule(month, year) {
   // Set a trigger to check for non-respondents and send reminders
   setupSubmissionReminderTrigger(submissionWindowStart);
 
-  alertAndLog('Request Submission completed successfully!');
+  Logger.log('Request Submission completed successfully!');
 }
 
 // Function to set up submission reminder trigger
