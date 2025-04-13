@@ -88,7 +88,6 @@
         <select id="year" required></select>
       </div>
       <input type="button" value="Submit" onclick="collectData()">
-      <input type="button" value="Cancel" onclick="google.script.host.close()">
     </form>
   </div>
   <script>
@@ -112,10 +111,10 @@
     }
 
     function collectData() {
+      submitButton.disabled = true;
       const month = document.getElementById('month').value;
       const year = document.getElementById('year').value;
 
-      submitButton.disabled = true;
 
       if (!month || !year) {
         alert('Please select both month and year');
