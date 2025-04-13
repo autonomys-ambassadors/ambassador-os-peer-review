@@ -141,13 +141,14 @@ function createMonthSheetAndOverallColumn() {
   }
 }
 
-function updateEvaluationFormQuestions() {
+function updateEvaluationFormQuestions(primaryTeam) {
   const form = FormApp.openById(EVALUATION_FORM_ID);
   const items = form.getItems();
   items.forEach((item) => {
     if (item.getTitle().includes('Please assign a grade')) {
       item.setHelpText(
-        `Please consider the ambassador's contributions in relation to their primary team when making your assessment.`
+        `Please consider the ambassador's contributions in relation to their primary team when making your assessment.
+        Ambassador's Primary Team: ${primaryTeam}`
       );
     }
   });
