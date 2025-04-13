@@ -1,20 +1,21 @@
 function requestMonthlySubmissions() {
   const ui = SpreadsheetApp.getUi();
-  
+
   // Fetch the form responses spreadsheet
   Logger.log('Finding the Monthly Submission from Responses spreadsheet...');
-  const formResponseSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID)
-    .getSheetByName(FORM_RESPONSES_SHEET_NAME);
-  
+  const formResponseSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(
+    FORM_RESPONSES_SHEET_NAME
+  );
+
   // Get the index of the timestamp column
   const timestampColumnIndex = getRequiredColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
   Logger.log(`Timestamp column index: ${timestampColumnIndex}`);
-  
+
   // Fetch all the responses
   const formData = formResponseSheet
     .getRange(2, 1, formResponseSheet.getLastRow() - 1, formResponseSheet.getLastColumn())
     .getValues();
-  
+
   // Find the latest submission
   let latestSubmission = null;
   Logger.log('Finding the latest submission...');
@@ -24,7 +25,7 @@ function requestMonthlySubmissions() {
       latestSubmission = timestamp;
     }
   }
-  
+
   if (!latestSubmission) {
     Logger.log('Error: No submissions found.');
     ui.alert('Error', 'Unable to find previous submissions. Please set it up manually.', ui.ButtonSet.OK);
@@ -36,7 +37,7 @@ function requestMonthlySubmissions() {
   Logger.log('Calculating the next month...');
   const nextMonth = new Date(latestSubmission);
   nextMonth.setMonth(nextMonth.getMonth() + 1);
-  
+
   const month = Utilities.formatDate(nextMonth, getProjectTimeZone(), 'MMMM');
   const year = nextMonth.getFullYear();
 
@@ -47,15 +48,14 @@ function requestMonthlySubmissions() {
     `Do you want to request submissions for ${month} ${year}?`,
     ui.ButtonSet.YES_NO
   );
-  
+
   if (response === ui.Button.YES) {
     Logger.log('User confirmed to send submission requests.');
     processFormData({ month, year });
-  } else { //case user responded NO
+  } else {
+    //case user responded NO
     Logger.log('User canceled the submission request.');
-    const form = HtmlService.createHtmlOutputFromFile('requestSubmissionsForm')
-      .setWidth(400)
-      .setHeight(100);
+    const form = HtmlService.createHtmlOutputFromFile('requestSubmissionsForm').setWidth(400).setHeight(100);
     ui.showModalDialog(form, 'Request Submissions');
   }
 }
@@ -71,7 +71,30 @@ function processFormData(formData) {
     Logger.log(formData.year);
     return true;
   } catch (error) {
-    console.error("Error processing form data", error);
+    console.error('Error processing form data', error);
+    return false;
+  }
+}
+
+function requestMonthlySubmissions() {
+  const ui = SpreadsheetApp.getUi();
+  const form = HtmlService.createHtmlOutputFromFile('requestSubmissionsForm').setWidth(400).setHeight(100);
+
+  ui.showModalDialog(form, 'Request Submissions');
+}
+
+function processFormData(formData) {
+  try {
+    if (!formData.month || !formData.year) {
+      throw new Error('Month and year not provided');
+    }
+
+    requestSubmissionsModule(formData.month, formData.year);
+    Logger.log(formData.month);
+    Logger.log(formData.year);
+    return true;
+  } catch (error) {
+    console.error('Error processing form data', error);
     return false;
   }
 }
@@ -315,7 +338,7 @@ function getPreviousMonthYear() {
   const month = Utilities.formatDate(deliverableDate, spreadsheetTimeZone, 'MMMM'); // Format the deliverable date to get the month name
   const year = Utilities.formatDate(deliverableDate, spreadsheetTimeZone, 'yyyy'); // Format the deliverable date to get the year
   Logger.log(`Formatted month and year: ${month} ${year}`);
-  return [ month, year ];
+  return [month, year];
 }
 
 function showSucessMessage() {
