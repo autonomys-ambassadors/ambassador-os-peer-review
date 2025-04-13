@@ -6,8 +6,11 @@ function requestEvaluationsModule() {
   // Step 1: Create a month sheet and column in the Overall score
   createMonthSheetAndOverallColumn();
 
-  // Step 2: Generating the review matrix (submitters and evaluators)
+  // Step 2: Generating the review matrix (submitters   and evaluators)
   generateReviewMatrix();
+
+  // Step 2.5: Update evaluation form questions
+  updateEvaluationFormQuestions();
 
   // Step 3: Sending evaluation requests
   sendEvaluationRequests();
@@ -136,6 +139,18 @@ function createMonthSheetAndOverallColumn() {
   } catch (error) {
     Logger.log(`Error in createMonthSheetAndOverallColumn: ${error}`);
   }
+}
+
+function updateEvaluationFormQuestions() {
+  const form = FormApp.openById(EVALUATION_FORM_ID);
+  const items = form.getItems();
+  items.forEach((item) => {
+    if (item.getTitle().includes('Please assign a grade')) {
+      item.setHelpText(
+        `Please consider the ambassador's contributions in relation to their primary team when making your assessment.`
+      );
+    }
+  });
 }
 
 /**
@@ -366,6 +381,8 @@ function sendEvaluationRequests() {
       const contributionDetails = getContributionDetailsByEmail(submitterEmail, spreadsheetTimeZone); // Call from SharedUtilities
       Logger.log(`Contribution details: ${contributionDetails}`);
 
+      const primaryTeam = getAmbassadorPrimaryTeam(submitterEmail);
+
       reviewersEmails.forEach((reviewerEmail) => {
         try {
           const evaluatorDiscordHandle = getDiscordHandleFromEmail(reviewerEmail); // Call from SharedUtilities
@@ -377,7 +394,9 @@ function sendEvaluationRequests() {
             .replace('{AmbassadorSubmitter}', submitterDiscordHandle)
             .replace('{SubmissionsList}', contributionDetails)
             .replace('{EvaluationFormURL}', EVALUATION_FORM_URL)
-            .replace('{EVALUATION_DEADLINE_DATE}', evaluationDeadlineDate);
+            .replace('{EVALUATION_DEADLINE_DATE}', evaluationDeadlineDate)
+            .replace('{PrimaryTeam}', primaryTeam)
+            .replace('{PrimaryTeamResponsibilities}', getPrimaryTeamResponsibilities(primaryTeam));
 
           if (SEND_EMAIL) {
             MailApp.sendEmail({
@@ -483,6 +502,54 @@ function getContributionDetailsByEmail(email) {
   } catch (error) {
     Logger.log(`Error in getContributionDetailsByEmail: ${error.message}`);
     return 'An error occurred while fetching contribution details.';
+  }
+}
+
+/**
+ * Fetches the primary team of the ambassador from the registry.
+ * @param {string} email - Ambassador's email
+ * @returns {string} - Name of the primary team or empty string if not found
+ */
+function getAmbassadorPrimaryTeam(email) {
+  try {
+    Logger.log(`Looking for Primary Team for the email ${email}`);
+
+    // Open the Registry spreadsheet
+    const registrySpreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
+    const registrySheet = registrySpreadsheet.getSheetByName(REGISTRY_SHEET_NAME);
+
+    if (!registrySheet) {
+      Logger.log('Error: Registry spreadsheet not found');
+      return '';
+    }
+
+    // Get all data from the Registry spreadsheet
+    const registryData = registrySheet.getDataRange().getValues();
+    const headerRow = registryData[0];
+
+    // Find indices of the columns
+    const emailColIndex = headerRow.indexOf(AMBASSADOR_EMAIL_COLUMN);
+    const primaryTeamColIndex = headerRow.indexOf(AMBASSADOR_PRIMARY_TEAM_COLUMN);
+
+    if (emailColIndex === -1 || primaryTeamColIndex === -1) {
+      Logger.log('Error: Required columns not found in the Registry');
+      return '';
+    }
+
+    // Search for the ambassador's email and return their primary team
+    for (let i = 1; i < registryData.length; i++) {
+      if (registryData[i][emailColIndex].toLowerCase() === email.toLowerCase()) {
+        const primaryTeam = registryData[i][primaryTeamColIndex] || '';
+        Logger.log(`Primary team found for ${email}: ${primaryTeam}`);
+        return primaryTeam;
+      }
+    }
+
+    Logger.log(`No primary team found for the email: ${email}`);
+    return '';
+  } catch (error) {
+    Logger.log(`Error while fetching primary team: ${error}`);
+    return '';
   }
 }
 

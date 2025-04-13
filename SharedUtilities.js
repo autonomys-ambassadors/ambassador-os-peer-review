@@ -2,7 +2,7 @@
 // Declare & initialize global variables; these will be updated by the setProductionVariables() or setTestVariables() functions
 
 // testing constant will be used to load production vs. test values for the global variables
-const testing = false; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
+const testing = true; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
 var SEND_EMAIL; // Will control whether emails are sent - must be true for production; may be true or false for testing depending on testing needs.
 
 // Provide the actual Id of the google sheet for the registry and scoreing sheets in EnvironmentVariables[Prod|Test].js:
@@ -31,6 +31,7 @@ var AMBASSADOR_ID_COLUMN = '';
 var AMBASSADOR_EMAIL_COLUMN = '';
 var AMBASSADOR_DISCORD_HANDLE_COLUMN = '';
 var AMBASSADOR_STATUS_COLUMN = '';
+var AMBASSADOR_PRIMARY_TEAM = '';
 var GOOGLE_FORM_TIMESTAMP_COLUMN = '';
 var GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = '';
 var GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = '';
@@ -110,7 +111,15 @@ Ambassador Program Team</p>
 // Request Evaluation Email Template
 let REQUEST_EVALUATION_EMAIL_TEMPLATE = `
 <p>Dear {AmbassadorDiscordHandle},</p>
-<p>Please review the following deliverables for the month of {Month} by {AmbassadorSubmitter}:</p>
+<p>Please review the following deliverables for the month of <strong>{Month}</strong> by:</p>
+
+<p>
+<strong>{AmbassadorSubmitter}<br><br>
+Primary Team:  {PrimaryTeam}<br><br>
+Primary Team Responsibilities:</strong><br>{PrimaryTeamResponsibilities}<br><br>
+</p>
+
+<strong>Work Submitted:</strong><br>
 <p>{SubmissionsList}</p>
 
 <p>Assign a grade using the form:</p>
@@ -148,6 +157,33 @@ By this we notify you about upcoming Peer Review mailing, please be vigilant!
 let EXEMPTION_FROM_EVALUATION_TEMPLATE = `
 Dear Ambassador, you have been relieved of the obligation to evaluate your colleagues this month.
 `;
+
+// Primary team Responsibilities
+const PrimaryTeamResponsibilities = {
+  support: `Provide peer-to-peer support and create support materials (e.g., articles),<br>
+      Gather information and help investigate and solve technical issues,<br>
+      Assist or directly participate in technical development of the project,<br>
+      Answer questions in Discord, Telegram, and the Networks forum,<br>
+      Moderate Telegram and Discord channels,<br>
+      Communicate about current releases and important events`,
+  content: `Create and improve an educational plan for onboarding new Apprentices,<br>
+      Develop materials, resources, and documentation on the protocol, Program, and community,<br>
+      Create high-quality content to educate the community about the Network,<br>
+      Cultivate content creators by recognizing and promoting users with the Content Creator role`,
+  engagement: `Promote the growth of the Network by establishing connections with the community,<br>
+      Identify target audiences and develop strategies to attract them to the Network,<br>
+      Create and disseminate high-quality content across various platforms,<br>
+      Increase user engagement and encourage active community participation,<br>
+      Act as a voice for the Network, ensuring smooth communication among stakeholders`,
+  onboarding: `Create and administer Ambassador selection processes,<br>
+      Introduce and integrate Apprentices and new Ambassadors to the Program,<br>
+      Recruit new ambassador cohorts and host events/workshops,<br>
+      Mentor Apprentice Ambassadors and develop peer relationships,<br>
+      Collaborate with the Content & Education team to keep Ambassadors updated`,
+  governance: `Create and maintain the Bylaws and facilitate General Assembly operations,<br>
+      Develop transparent systems and processes to implement the Bylaws,<br>
+      Administer processes and evaluate adherence to Ambassador Rights and Obligations`,
+};
 
 //    On Open Menu
 
@@ -877,4 +913,12 @@ function validateHeaders(sheetName, headers, expectedHeaders) {
     }
   }
   return true;
+}
+
+/**
+ * Funciton to get primary team responsibilities to be used in the evaluation email
+ */
+function getPrimaryTeamResponsibilities(primaryTeam) {
+  const teamKey = primaryTeam.toLowerCase();
+  return PrimaryTeamResponsibilities[teamKey] || 'Responsibilities not found for the specified team.';
 }
