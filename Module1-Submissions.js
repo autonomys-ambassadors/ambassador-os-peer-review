@@ -156,8 +156,7 @@ function requestSubmissionsModule(month, year) {
   // Set a trigger to check for non-respondents and send reminders
   setupSubmissionReminderTrigger(submissionWindowStart);
 
-  Logger.log('Request Submissions completed.');
-  showSucessMessage();
+  alertAndLog('Request Submission completed successfully!');
 }
 
 // Function to set up submission reminder trigger
@@ -316,9 +315,4 @@ function getPreviousMonthYear() {
   const year = Utilities.formatDate(deliverableDate, spreadsheetTimeZone, 'yyyy'); // Format the deliverable date to get the year
   Logger.log(`Formatted month and year: ${month} ${year}`);
   return [month, year];
-}
-
-function showSucessMessage() {
-  const ui = SpreadsheetApp.getUi();
-  ui.alert('Success', 'Request Submission completed successfully!', ui.ButtonSet.OK);
 }
