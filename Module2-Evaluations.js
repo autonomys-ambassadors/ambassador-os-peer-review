@@ -363,6 +363,17 @@ function sendEvaluationRequests() {
     const evaluationWindowStart = new Date();
     const evaluationDeadline = new Date(evaluationWindowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000); // Adjust to milliseconds
     const evaluationDeadlineDate = Utilities.formatDate(evaluationDeadline, 'UTC', 'MMMM dd, yyyy HH:mm:ss') + ' UTC';
+    try {
+      logRequest(
+        'Evaluation',
+        Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'MMMM'),
+        deliverableMonthDate.getFullYear().toString(),
+        evaluationWindowStart,
+        evaluationDeadline
+      );
+    } catch (error) {
+      Logger.log(error);
+    }
 
     reviewData.forEach((row, rowIndex) => {
       const submitterEmail = row[0]; // submitter's email

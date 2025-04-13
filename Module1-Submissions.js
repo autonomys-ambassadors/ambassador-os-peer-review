@@ -152,6 +152,8 @@ function requestSubmissionsModule(month, year) {
 
   // Save the submission window start time in Los Angeles time zone format
   setSubmissionWindowStart(submissionWindowStart);
+  // Log the request in the "Request Log" sheet
+  logRequest('Submission', month, year, submissionWindowStart, submissionDeadline);
 
   // Set a trigger to check for non-respondents and send reminders
   setupSubmissionReminderTrigger(submissionWindowStart);
