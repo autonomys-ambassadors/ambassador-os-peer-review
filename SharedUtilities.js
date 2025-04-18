@@ -2,7 +2,7 @@
 // Declare & initialize global variables; these will be updated by the setProductionVariables() or setTestVariables() functions
 
 // testing constant will be used to load production vs. test values for the global variables
-const testing = false; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
+const testing = true; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
 var SEND_EMAIL; // Will control whether emails are sent - must be true for production; may be true or false for testing depending on testing needs.
 
 // Provide the actual Id of the google sheet for the registry and scoreing sheets in EnvironmentVariables[Prod|Test].js:
@@ -922,4 +922,26 @@ function validateHeaders(sheetName, headers, expectedHeaders) {
 function getPrimaryTeamResponsibilities(primaryTeam) {
   const teamKey = primaryTeam.toLowerCase();
   return PrimaryTeamResponsibilities[teamKey] || 'Responsibilities not found for the specified team.';
+}
+
+function logRequest(type, month, year, requestDateTime, windowEndDateTime) {
+  const spreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
+  let requestLogSheet = spreadsheet.getSheetByName('Request Log');
+
+  // Create the sheet if it doesn't exist
+  if (!requestLogSheet) {
+    requestLogSheet = spreadsheet.insertSheet('Request Log');
+    requestLogSheet.appendRow(['Type', 'Month', 'Year', 'Request Date Time', 'Window End Date Time']);
+  }
+
+  // Append the new request details
+  requestLogSheet.appendRow([
+    type,
+    month,
+    year,
+    Utilities.formatDate(requestDateTime, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss'),
+    Utilities.formatDate(windowEndDateTime, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss'),
+  ]);
+
+  Logger.log(`Logged ${type} request for ${month} ${year} in "Request Log" sheet.`);
 }
