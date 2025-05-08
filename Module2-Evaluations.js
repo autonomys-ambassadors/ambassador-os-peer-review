@@ -75,13 +75,13 @@ function createMonthSheetAndOverallColumn() {
     // Adding headers
     monthSheet.getRange(1, 1).setValue('Submitter');
     monthSheet.getRange(1, 2).setValue('Score-1');
-    monthSheet.getRange(1, 3).setValue("Evaluator's Discord-1");
+    monthSheet.getRange(1, 3).setValue('Amb-1');
     monthSheet.getRange(1, 4).setValue('Remarks-1');
     monthSheet.getRange(1, 5).setValue('Score-2');
-    monthSheet.getRange(1, 6).setValue("Evaluator's Discord-2");
+    monthSheet.getRange(1, 6).setValue('Amb-2');
     monthSheet.getRange(1, 7).setValue('Remarks-2');
     monthSheet.getRange(1, 8).setValue('Score-3');
-    monthSheet.getRange(1, 9).setValue("Evaluator's Discord-3");
+    monthSheet.getRange(1, 9).setValue('Amb-3');
     monthSheet.getRange(1, 10).setValue('Remarks-3');
     monthSheet.getRange(1, 11).setValue('Final Score');
     Logger.log(`Headers added to sheet: "${deliverableMonthName}".`);
