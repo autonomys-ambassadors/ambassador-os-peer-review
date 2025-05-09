@@ -75,13 +75,13 @@ function createMonthSheetAndOverallColumn() {
     // Adding headers
     monthSheet.getRange(1, 1).setValue('Submitter');
     monthSheet.getRange(1, 2).setValue('Score-1');
-    monthSheet.getRange(1, 3).setValue("Evaluator's Discord-1");
+    monthSheet.getRange(1, 3).setValue('Amb-1');
     monthSheet.getRange(1, 4).setValue('Remarks-1');
     monthSheet.getRange(1, 5).setValue('Score-2');
-    monthSheet.getRange(1, 6).setValue("Evaluator's Discord-2");
+    monthSheet.getRange(1, 6).setValue('Amb-2');
     monthSheet.getRange(1, 7).setValue('Remarks-2');
     monthSheet.getRange(1, 8).setValue('Score-3');
-    monthSheet.getRange(1, 9).setValue("Evaluator's Discord-3");
+    monthSheet.getRange(1, 9).setValue('Amb-3');
     monthSheet.getRange(1, 10).setValue('Remarks-3');
     monthSheet.getRange(1, 11).setValue('Final Score');
     Logger.log(`Headers added to sheet: "${deliverableMonthName}".`);
@@ -662,7 +662,6 @@ function processEvaluationResponse(e) {
       const question = itemResponse.getItem().getTitle();
       const answer = itemResponse.getResponse();
       Logger.log(`Question: ${question}, Answer: ${answer}, Type of answer: ${typeof answer}`);
-      // TODO Suggestion: change to use constants, changed this because forms has different value than what is hard coded
       if (question === EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN) {
         evaluatorEmail = String(answer).trim();
       } else if (question === GOOGLE_FORM_EVALUATION_HANDLE_COLUMN) {
@@ -685,8 +684,6 @@ function processEvaluationResponse(e) {
       return;
     }
 
-    // TODO Discuss: why is this filter commented out?
-    // confirmed that we are processing late evaluations; putting this back in.
     const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
     if (responseTime < evaluationWindowStart || responseTime > evaluationWindowEnd) {
       Logger.log(
@@ -758,11 +755,30 @@ function processEvaluationResponse(e) {
 
     // Update evaluator's grade and remarks in the correct column
     let gradeUpdated = false;
-    for (let col = 2; col <= 8; col += 3) {
-      const cellValue = monthSheet.getRange(row, col + 1).getValue();
+
+    // Get column indices dynamically
+    const amb1Col = getRequiredColumnIndexByName(monthSheet, 'Amb-1');
+    const score1Col = getRequiredColumnIndexByName(monthSheet, 'Score-1');
+    const remarks1Col = getRequiredColumnIndexByName(monthSheet, 'Remarks-1');
+    const amb2Col = getRequiredColumnIndexByName(monthSheet, 'Amb-2');
+    const score2Col = getRequiredColumnIndexByName(monthSheet, 'Score-2');
+    const remarks2Col = getRequiredColumnIndexByName(monthSheet, 'Remarks-2');
+    const amb3Col = getRequiredColumnIndexByName(monthSheet, 'Amb-3');
+    const score3Col = getRequiredColumnIndexByName(monthSheet, 'Score-3');
+    const remarks3Col = getRequiredColumnIndexByName(monthSheet, 'Remarks-3');
+
+    // Map evaluator columns to their respective score and remarks columns
+    const evaluatorColumns = [
+      { ambCol: amb1Col, scoreCol: score1Col, remarksCol: remarks1Col },
+      { ambCol: amb2Col, scoreCol: score2Col, remarksCol: remarks2Col },
+      { ambCol: amb3Col, scoreCol: score3Col, remarksCol: remarks3Col },
+    ];
+
+    for (const { ambCol, scoreCol, remarksCol } of evaluatorColumns) {
+      const cellValue = monthSheet.getRange(row, ambCol).getValue();
       if (cellValue === evaluatorDiscordHandle) {
-        monthSheet.getRange(row, col).setValue(grade);
-        monthSheet.getRange(row, col + 2).setValue(remarks);
+        monthSheet.getRange(row, scoreCol).setValue(grade);
+        monthSheet.getRange(row, remarksCol).setValue(remarks);
         Logger.log(
           `Updated grade and remarks for submitter ${submitterDiscordHandle} by evaluator ${evaluatorDiscordHandle}. Grade: ${grade}, Remarks: ${remarks}`
         );

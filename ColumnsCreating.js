@@ -3,6 +3,7 @@ function syncRegistryColumnsToOverallScore() {
     'Ambassador Id',
     'Ambassador Email Address',
     'Ambassador Discord Handle',
+    'Primary Team',
     'Ambassador Status',
   ];
 
