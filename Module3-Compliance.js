@@ -568,13 +568,12 @@ function sendExpulsionNotifications(discordHandle) {
     }
 
     const subject = 'Expulsion from the Program';
-    const body = EXPULSION_EMAIL_TEMPLATE.replace('{AmbassadorEmail}', email);
     const sponsorBody = `Ambassador ${email} (${discordHandle}) has been expelled from the program.`;
 
     // Send notification to the expelled ambassador using generic email function
     // Not sending automatically until March evaluations are completed per governance.
     // Will still notify Sponsor for evaluation.
-    // sendEmailNotification(email, subject, body);
+    // sendEmailNotification(email, subject, EXPULSION_EMAIL_TEMPLATE);
     Logger.log(`Expulsion email [TEMPORARILY NOT] sent to ${email}.`);
 
     // Send notification to the sponsor using generic email function
