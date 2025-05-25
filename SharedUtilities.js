@@ -144,7 +144,7 @@ You have been assessed one penalty point for failing to meet Submission or Evalu
 // Expulsion Email Template
 let EXPULSION_EMAIL_TEMPLATE = `
 Dear Ambassador,
-We regret to inform you that you have been expelled from the program due to multiple missed deadlines.
+We regret to inform you that you have been expelled from the program for Failure To Participate according to Article 2, Section 10 of the Bylaws.
 `;
 
 // Notify Upcoming Peer Review Email Template
@@ -354,7 +354,9 @@ function getValidSubmissionEmails(submissionSheet) {
 
       if (!isWithinWindow) {
         Logger.log(
-          `Row ${index + 2}: Submission at ${submissionTimestamp} outside time window ${submissionWindowStart} to ${submissionWindowEnd}.`
+          `Row ${
+            index + 2
+          }: Submission at ${submissionTimestamp} outside time window ${submissionWindowStart} to ${submissionWindowEnd}.`
         );
         return false;
       }
@@ -579,7 +581,11 @@ function getFirstDayOfReportingMonth() {
     // Calculate the first day of the previous month with local time only
     const previousMonth = new Date(startDate.getFullYear(), startDate.getMonth() - 1, 1);
     Logger.log(
-      `First day of the previous month (Local Time): ${Utilities.formatDate(previousMonth, timeZone, 'yyyy-MM-dd HH:mm:ss z')}`
+      `First day of the previous month (Local Time): ${Utilities.formatDate(
+        previousMonth,
+        timeZone,
+        'yyyy-MM-dd HH:mm:ss z'
+      )}`
     );
 
     return previousMonth;
