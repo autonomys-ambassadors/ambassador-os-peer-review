@@ -144,7 +144,7 @@ You have been assessed one penalty point for failing to meet Submission or Evalu
 // Expulsion Email Template
 let EXPULSION_EMAIL_TEMPLATE = `
 Dear Ambassador,
-We regret to inform you that you have been expelled from the program for Failure To Participate according to Article 2, Section 10 of the Bylaws.
+We regret to inform you that you have been expelled from the program for Failure to Participate according to Article 2, Section 10 of the Bylaws.
 `;
 
 // Notify Upcoming Peer Review Email Template
