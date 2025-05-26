@@ -53,6 +53,8 @@ var SPONSOR_EMAIL = ''; // Sponsor's email
 
 // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
 var MAX_PENALTY_POINTS_TO_EXPEL = '';
+// Inadequate Contribution threshold: if score is below this value, it counts as inadequate
+var INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD; // Set in EnvironmentVariablesProd.js or EnvironmentVariablesTest.js
 
 // Color variables .The color hex string must be in lowercase!
 // set the actual values in EnvironmentVariables[Prod|Test].js
@@ -162,7 +164,7 @@ Dear Ambassador, you have been relieved of the obligation to evaluate your colle
 let CRT_INADEQUATE_CONTRIBUTION_EMAIL_TEMPLATE = `
 To: CRT Members and accused Ambassador and Sponsor,<br><br>
 Ambassador {discordHandle} is being referred to the CRT due to Inadequate Contribution as defined in the bylaws in Article 2.<br>
-{discordHandle} has scored below 3.0 a total of {inadequateContributionCount} times in the last 6 evaluation months.<br>
+{discordHandle} has scored below {inadequateContributionScoreThreshold} a total of {inadequateContributionCount} times in the last 6 evaluation months.<br>
 {crtNote}
 `;
 

@@ -66,6 +66,7 @@ Please add links your contributions during the month `;
     // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
     MAX_PENALTY_POINTS_TO_EXPEL = 3;
     MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
+    INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 3.0;
 
     /** Reinitialize color variables to ensure consistency in color-based logic.
      * The color hex string must be in lowercase!
@@ -140,6 +141,7 @@ Please add links your contributions during the month`;
     // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
     MAX_PENALTY_POINTS_TO_EXPEL = 3;
     MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
+    INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 3.0;
 
     /** Reinitialize color variables to ensure consistency in color-based logic.
      * The color hex string must be in lowercase!
@@ -210,7 +212,7 @@ Please add links your contributions during the month `;
     // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
     MAX_PENALTY_POINTS_TO_EXPEL = 3;
     MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
-
+    INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 3.0;
     /** Reinitialize color variables to ensure consistency in color-based logic.
      * The color hex string must be in lowercase!
      */

@@ -389,10 +389,10 @@ function calculatePenaltyPoints() {
         totalPenaltyPoints += 2;
       }
 
-      // Inadequate Contribution: check if Final Score < 3.0
+      // Inadequate Contribution: check if Final Score < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD
       // Get the value from the cell (should be the score for that month)
       const scoreValue = cell.getValue();
-      if (typeof scoreValue === 'number' && scoreValue < 3.0) {
+      if (typeof scoreValue === 'number' && scoreValue < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD) {
         inadequateContributionCount++;
       }
     }
@@ -617,7 +617,7 @@ function sendExpulsionNotifications(discordHandle) {
 /**
  * Refers an ambassador to the CRT for inadequate contribution.
  * @param {string} discordHandle - The Discord handle of the ambassador being referred.
- * @param {number} inadequateContributionCount - The number of times the ambassador scored < 3.0 in the last 6 months.
+ * @param {number} inadequateContributionCount - The number of times the ambassador scored below the inadequate contribution threshold in the last 6 months.
  */
 function referInadequateContributionToCRT(discordHandle, inadequateContributionCount) {
   try {
@@ -638,7 +638,8 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
     }
     const emailBody = CRT_INADEQUATE_CONTRIBUTION_EMAIL_TEMPLATE.replaceAll('{discordHandle}', ambassadorDiscord)
       .replaceAll('{inadequateContributionCount}', inadequateContributionCount)
-      .replaceAll('{crtNote}', crtNote);
+      .replaceAll('{crtNote}', crtNote)
+      .replaceAll('{inadequateContributionScoreThreshold}', INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD);
     const subject = `Referral to CRT: Inadequate Contribution for Ambassador ${ambassadorDiscord}`;
 
     // BCC all CRT members and the ambassador
