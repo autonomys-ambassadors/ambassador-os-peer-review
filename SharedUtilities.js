@@ -252,13 +252,16 @@ function refreshGlobalVariables() {
 function sendEmailNotification(recipientEmail, subject, body, bcc) {
   try {
     if (SEND_EMAIL) {
+      const mailOptions = {
+        to: recipientEmail,
+        subject: subject,
+        htmlBody: body,
+      };
       if (bcc) {
-        MailApp.sendEmail({ to: recipientEmail, subject, htmlBody: body, bcc });
-        Logger.log(`Email sent to: ${recipientEmail || '[none]'}, BCC: ${bcc}, Subject: ${subject}`);
-      } else {
-        MailApp.sendEmail(recipientEmail, subject, body);
-        Logger.log(`Email sent to: ${recipientEmail}, Subject: ${subject}`);
+        mailOptions.bcc = bcc;
       }
+      MailApp.sendEmail(mailOptions);
+      Logger.log(`Email sent to: ${recipientEmail || '[none]'}, BCC: ${bcc || '[none]'}, Subject: ${subject}`);
     } else {
       if (!testing) {
         Logger.log(
