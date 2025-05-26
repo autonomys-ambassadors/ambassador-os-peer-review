@@ -132,7 +132,7 @@ Primary Team Responsibilities:</strong><br>{PrimaryTeamResponsibilities}<br><br>
 
 // Reminder Email Template
 let REMINDER_EMAIL_TEMPLATE = `
-Hi there! Just a friendly reminder that we’re still waiting for your response to the Request for Submission/Evaluation. Please respond soon to avoid any penalties. Thank you!.
+Hi there! Just a friendly reminder that we are still waiting for your response to the Request for Submission/Evaluation. Please respond soon to avoid any penalties. Thank you!.
 `;
 
 // Penalty Warning Email Template
@@ -156,6 +156,14 @@ By this we notify you about upcoming Peer Review mailing, please be vigilant!
 // EXEMPTION FROM EVALUATION e-mail template
 let EXEMPTION_FROM_EVALUATION_TEMPLATE = `
 Dear Ambassador, you have been relieved of the obligation to evaluate your colleagues this month.
+`;
+
+// CRT Referral for Inadequate Contribution Email Template
+let CRT_INADEQUATE_CONTRIBUTION_EMAIL_TEMPLATE = `
+To: CRT Members and accused Ambassador and Sponsor,<br><br>
+Ambassador {discordHandle} is being referred to the CRT due to Inadequate Contribution as defined in the bylaws in Article 2.<br>
+{discordHandle} has scored below 3.0 a total of {inadequateContributionCount} times in the last 6 evaluation months.<br>
+{crtNote}
 `;
 
 // Primary team Responsibilities
@@ -232,22 +240,34 @@ function refreshGlobalVariables() {
 }
 
 // ===== Generic function to send email =====
-function sendEmailNotification(recipientEmail, subject, body) {
+/**
+ * Sends an email notification. If bcc is provided, sends as BCC.
+ * @param {string} recipientEmail - The main recipient's email address (can be empty if only BCC is used).
+ * @param {string} subject - The subject of the email.
+ * @param {string} body - The body of the email (plain text or HTML).
+ * @param {string} [bcc] - Optional comma-separated list of BCC recipients.
+ */
+function sendEmailNotification(recipientEmail, subject, body, bcc) {
   try {
     if (SEND_EMAIL) {
-      MailApp.sendEmail(recipientEmail, subject, body);
-      Logger.log(`Email sent to: ${recipientEmail}, Subject: ${subject}`);
+      if (bcc) {
+        MailApp.sendEmail({ to: recipientEmail, subject, htmlBody: body, bcc });
+        Logger.log(`Email sent to: ${recipientEmail || '[none]'}, BCC: ${bcc}, Subject: ${subject}`);
+      } else {
+        MailApp.sendEmail(recipientEmail, subject, body);
+        Logger.log(`Email sent to: ${recipientEmail}, Subject: ${subject}`);
+      }
     } else {
       if (!testing) {
         Logger.log(
-          `WARNING: Production mode with email disabled. Email logged but NOT SENT to: ${recipientEmail}, Subject: ${subject}`
+          `WARNING: Production mode with email disabled. Email logged but NOT SENT to: ${recipientEmail}, BCC: ${bcc}, Subject: ${subject}`
         );
       } else {
-        Logger.log(`Test mode with email disabled: Email to be sent to: ${recipientEmail}, Subject: ${subject}`);
+        Logger.log(`Test mode: Email to be sent to: ${recipientEmail}, BCC: ${bcc}, Subject: ${subject}`);
       }
     }
   } catch (error) {
-    Logger.log(`Failed to send email to ${recipientEmail}: ${error.message}`);
+    Logger.log(`Failed to send email to ${recipientEmail}, BCC: ${bcc}: ${error.message}`);
   }
 }
 
@@ -595,25 +615,6 @@ function getFirstDayOfReportingMonth() {
   }
 }
 
-// ======= email-Discord Handle Converters =======
-
-function getDiscordHandleFromEmail(email) {
-  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const emailColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
-  const discordColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
-  const emailColumn = registrySheet
-    .getRange(2, emailColumnIndex, registrySheet.getLastRow() - 1, 1)
-    .getValues()
-    .flat();
-  const discordColumn = registrySheet
-    .getRange(2, discordColumnIndex, registrySheet.getLastRow() - 1, 1)
-    .getValues()
-    .flat();
-
-  const index = emailColumn.indexOf(email);
-  return index !== -1 ? discordColumn[index] : null;
-}
-
 //    FORMS' TITLES
 //
 // Main function to update the form titles based on the current reporting month
@@ -950,4 +951,64 @@ function logRequest(type, month, year, requestDateTime, windowEndDateTime) {
   ]);
 
   Logger.log(`Logged ${type} request for ${month} ${year} in "Request Log" sheet.`);
+}
+
+/**
+ * Looks up both email and Discord handle for a given identifier (email or Discord handle).
+ * @param {string} identifier - Email or Discord handle.
+ * @returns {{email: string, discordHandle: string}|null}
+ */
+function lookupEmailAndDiscord(identifier) {
+  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
+  const emailCol = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN) - 1;
+  const discordCol = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN) - 1;
+  const registryData = registrySheet.getDataRange().getValues();
+  identifier = (identifier || '').toString().trim().toLowerCase();
+  for (const row of registryData) {
+    const email = (row[emailCol] || '').toString().trim().toLowerCase();
+    const discordHandle = (row[discordCol] || '').toString().trim().toLowerCase();
+    if (email === identifier || discordHandle === identifier) {
+      return { email, discordHandle };
+    }
+  }
+  return null;
+}
+
+/**
+ * Gets the current CRT members' emails and Discord handles from the last row of the CRT sheet.
+ * @returns {Array<{email: string, discordHandle: string}>}
+ */
+function getCurrentCRTMemberEmails() {
+  const crtSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
+    CONFLICT_RESOLUTION_TEAM_SHEET_NAME
+  );
+  if (!crtSheet) return [];
+
+  const crtData = crtSheet.getDataRange().getValues();
+  if (crtData.length < 2) return [];
+
+  // Get header row and find columns containing ambassador identifiers
+  const headers = crtData[0];
+  const identifierColumns = headers
+    .map((header, index) => {
+      const headerStr = (header || '').toString().toLowerCase();
+      // Look for columns that likely contain ambassador identifiers
+      return headerStr.includes('discord') || headerStr.includes('email') || headerStr.includes('ambassador')
+        ? index
+        : -1;
+    })
+    .filter((index) => index > 0); // Filter out -1 and first column (date)
+
+  if (identifierColumns.length === 0) {
+    Logger.log('No columns found containing ambassador identifiers');
+    return [];
+  }
+
+  const lastRow = crtData[crtData.length - 1];
+  const crtIdentifiers = identifierColumns
+    .map((colIndex) => (lastRow[colIndex] || '').toString().trim().toLowerCase())
+    .filter(Boolean);
+
+  // For each, look up both email and discord handle
+  return crtIdentifiers.map((id) => lookupEmailAndDiscord(id) || { email: id, discordHandle: id });
 }

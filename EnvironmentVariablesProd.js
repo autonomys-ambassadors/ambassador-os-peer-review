@@ -57,12 +57,14 @@ Please add links to your contributions during the month`;
   GRADE_SUBMITTER_COLUMN = 'Submitter';
   GRADE_FINAL_SCORE_COLUMN = 'Final Score';
   CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
+  SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
 
   // Sponsor Email (for notifications when ambassadors are expelled)
   SPONSOR_EMAIL = 'community@autonomys.xyz'; // Sponsor's email
 
   // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
   MAX_PENALTY_POINTS_TO_EXPEL = 3;
+  MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
 
   /** Reinitialize color variables to ensure consistency in color-based logic.
    * The color hex string must be in lowercase!

@@ -55,6 +55,7 @@ Please add links your contributions during the month `;
     GRADE_SUBMITTER_COLUMN = 'Submitter';
     GRADE_FINAL_SCORE_COLUMN = 'Final Score';
     CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
+    SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 15;
@@ -64,6 +65,7 @@ Please add links your contributions during the month `;
 
     // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
     MAX_PENALTY_POINTS_TO_EXPEL = 3;
+    MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
 
     /** Reinitialize color variables to ensure consistency in color-based logic.
      * The color hex string must be in lowercase!
@@ -127,6 +129,7 @@ Please add links your contributions during the month`;
     GRADE_SUBMITTER_COLUMN = 'Submitter';
     GRADE_FINAL_SCORE_COLUMN = 'Final Score';
     CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
+    SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 20;
@@ -136,6 +139,7 @@ Please add links your contributions during the month`;
 
     // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
     MAX_PENALTY_POINTS_TO_EXPEL = 3;
+    MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
 
     /** Reinitialize color variables to ensure consistency in color-based logic.
      * The color hex string must be in lowercase!
@@ -195,6 +199,7 @@ Please add links your contributions during the month `;
     GRADE_SUBMITTER_COLUMN = 'Submitter';
     GRADE_FINAL_SCORE_COLUMN = 'Final Score';
     CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
+    SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 15;
@@ -204,6 +209,7 @@ Please add links your contributions during the month `;
 
     // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
     MAX_PENALTY_POINTS_TO_EXPEL = 3;
+    MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
 
     /** Reinitialize color variables to ensure consistency in color-based logic.
      * The color hex string must be in lowercase!

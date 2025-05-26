@@ -166,6 +166,16 @@ function checkAndCreateColumns() {
     overallScoresSheet.insertColumnAfter(penaltyPointsColIndex);
     overallScoresSheet.getRange(1, nextColIndex).setValue(SCORE_MAX_6M_PP_COLUMN);
     Logger.log('Created "Max 6-Month PP" column.');
+    maxPenaltyPointsColIndex = nextColIndex;
+  }
+
+  // Check if "Inadequate Contribution Count" column exists
+  let inadequateContributionColIndex = getColumnIndexByName(overallScoresSheet, SCORE_INADEQUATE_CONTRIBUTION_COLUMN);
+  if (inadequateContributionColIndex === -1) {
+    nextColIndex = maxPenaltyPointsColIndex + 1; // Next column after "Max 6-Month PP"
+    overallScoresSheet.insertColumnAfter(maxPenaltyPointsColIndex);
+    overallScoresSheet.getRange(1, nextColIndex).setValue(SCORE_INADEQUATE_CONTRIBUTION_COLUMN);
+    Logger.log('Created "Inadequate Contribution Count" column.');
   }
 }
 
@@ -327,6 +337,11 @@ function calculatePenaltyPoints() {
   const recentMonths = monthColumns.slice(-Math.min(6, monthColumns.length));
   Logger.log(`Using ${recentMonths.length} most recent months for penalty calculation`);
 
+  const inadequateContributionColIndex = getRequiredColumnIndexByName(
+    overallScoresSheet,
+    SCORE_INADEQUATE_CONTRIBUTION_COLUMN
+  );
+
   // Process each ambassador
   ambassadorData.forEach(({ email, discordHandle }) => {
     const rowInScores = overallScoresSheet.createTextFinder(discordHandle).findNext()?.getRow();
@@ -337,6 +352,7 @@ function calculatePenaltyPoints() {
 
     // Reset penalty points and recalculate based only on the last 6 months
     let totalPenaltyPoints = 0;
+    let inadequateContributionCount = 0;
 
     // Process recent months (up to 6)
     for (const colIndex of recentMonths) {
@@ -372,11 +388,27 @@ function calculatePenaltyPoints() {
       } else if (backgroundColor === COLOR_MISSED_SUBM_AND_EVAL.toLowerCase()) {
         totalPenaltyPoints += 2;
       }
+
+      // Inadequate Contribution: check if Final Score < 3.0
+      // Get the value from the cell (should be the score for that month)
+      const scoreValue = cell.getValue();
+      if (typeof scoreValue === 'number' && scoreValue < 3.0) {
+        inadequateContributionCount++;
+      }
     }
 
     // Update penalty points
     overallScoresSheet.getRange(rowInScores, penaltyPointsColIndex).setValue(totalPenaltyPoints);
     Logger.log(`Updated penalty points for ${discordHandle} to ${totalPenaltyPoints}`);
+
+    // Update Inadequate Contribution Count
+    overallScoresSheet.getRange(rowInScores, inadequateContributionColIndex).setValue(inadequateContributionCount);
+    Logger.log(`Updated Inadequate Contribution Count for ${discordHandle} to ${inadequateContributionCount}`);
+
+    // Refer to CRT if threshold met
+    if (inadequateContributionCount >= MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER) {
+      referInadequateContributionToCRT(discordHandle, inadequateContributionCount);
+    }
   });
 
   Logger.log('Penalty points calculation for submissions and evaluations completed.');
@@ -579,5 +611,48 @@ function sendExpulsionNotifications(discordHandle) {
     Logger.log(`Notification sent to sponsor for expelled ambassador: ${email} (${discordHandle}).`);
   } else {
     Logger.log(`Error: Ambassador with discord handle: ${discordHandle} not found in the registry.`);
+  }
+}
+
+/**
+ * Refers an ambassador to the CRT for inadequate contribution.
+ * @param {string} discordHandle - The Discord handle of the ambassador being referred.
+ * @param {number} inadequateContributionCount - The number of times the ambassador scored < 3.0 in the last 6 months.
+ */
+function referInadequateContributionToCRT(discordHandle, inadequateContributionCount) {
+  try {
+    // Get CRT members (email and discord) using utility
+    const crtMembers = getCurrentCRTMemberEmails();
+    const crtEmails = crtMembers.map((m) => m.email).filter(Boolean);
+    const crtHandles = crtMembers.map((m) => m.discordHandle).filter(Boolean);
+
+    // Get ambassador's email and discord handle using utility
+    const accused = lookupEmailAndDiscord(discordHandle);
+    const ambassadorEmail = accused ? accused.email : '';
+    const ambassadorDiscord = accused ? accused.discordHandle : discordHandle;
+
+    // Compose the email
+    let crtNote = '';
+    if (crtHandles.includes(ambassadorDiscord.toLowerCase()) || crtEmails.includes(ambassadorEmail)) {
+      crtNote = `<br><b>Note:</b> Ambassador ${ambassadorDiscord} also must not participate on the CRT until this complaint is resolved.`;
+    }
+    const emailBody = CRT_INADEQUATE_CONTRIBUTION_EMAIL_TEMPLATE.replaceAll('{discordHandle}', ambassadorDiscord)
+      .replaceAll('{inadequateContributionCount}', inadequateContributionCount)
+      .replaceAll('{crtNote}', crtNote);
+    const subject = `Referral to CRT: Inadequate Contribution for Ambassador ${ambassadorDiscord}`;
+
+    // BCC all CRT members and the ambassador
+    const bccList = Array.from(new Set([...crtEmails, ambassadorEmail]))
+      .filter(Boolean)
+      .join(',');
+    if (!bccList) {
+      Logger.log('No valid emails found for CRT or ambassador.');
+      return;
+    }
+    // Send to sponsor, BCC CRT and accused
+    sendEmailNotification(SPONSOR_EMAIL, subject, emailBody, bccList);
+    Logger.log(`Sent CRT referral for ${ambassadorDiscord} to sponsor (${SPONSOR_EMAIL}), BCC: ${bccList}`);
+  } catch (e) {
+    Logger.log('Error in referInadequateContributionToCRT: ' + e);
   }
 }

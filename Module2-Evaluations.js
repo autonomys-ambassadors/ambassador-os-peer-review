@@ -386,7 +386,7 @@ function sendEvaluationRequests() {
       );
 
       // Getting submitter's Discord handle
-      const submitterDiscordHandle = getDiscordHandleFromEmail(submitterEmail); // Call from SharedUtilities
+      const submitterDiscordHandle = lookupEmailAndDiscord(submitterEmail)?.discordHandle; // Call from SharedUtilities
       Logger.log(`Discord Submitter: ${submitterDiscordHandle}`);
 
       // Getting the details of the contribution
@@ -397,7 +397,7 @@ function sendEvaluationRequests() {
 
       reviewersEmails.forEach((reviewerEmail) => {
         try {
-          const evaluatorDiscordHandle = getDiscordHandleFromEmail(reviewerEmail); // Call from SharedUtilities
+          const evaluatorDiscordHandle = lookupEmailAndDiscord(reviewerEmail)?.discordHandle; // Call from SharedUtilities
           Logger.log(`Discord Evaluator: ${evaluatorDiscordHandle}`);
 
           // Forming a message for evaluation
@@ -589,7 +589,7 @@ function populateMonthSheetWithEvaluators() {
     const assignments = getReviewLogAssignments();
 
     Object.keys(assignments).forEach((submitterEmail, index) => {
-      const submitterDiscordHandle = getDiscordHandleFromEmail(submitterEmail);
+      const submitterDiscordHandle = lookupEmailAndDiscord(submitterEmail)?.discordHandle;
 
       if (!submitterDiscordHandle) {
         Logger.log(`Discord handle not found for submitter email: ${submitterEmail}`);
@@ -604,7 +604,7 @@ function populateMonthSheetWithEvaluators() {
       // Get evaluators' Discord handles and fill them in the Month Sheet
       const evaluatorsEmails = assignments[submitterEmail];
       const evaluatorsDiscordHandles = evaluatorsEmails.map((email) => {
-        const handle = getDiscordHandleFromEmail(email);
+        const handle = lookupEmailAndDiscord(email)?.discordHandle;
         return handle || 'Unknown Evaluator';
       });
 
@@ -698,7 +698,7 @@ function processEvaluationResponse(e) {
 
     for (const [submitterEmail, evaluators] of Object.entries(assignments)) {
       if (evaluators.includes(evaluatorEmail)) {
-        const submitterDiscord = getDiscordHandleFromEmail(submitterEmail);
+        const submitterDiscord = lookupEmailAndDiscord(submitterEmail)?.discordHandle;
         if (submitterDiscord) expectedSubmitters.push(submitterDiscord.trim());
       }
     }
@@ -717,7 +717,7 @@ function processEvaluationResponse(e) {
     Logger.log(`Corrected Discord Handle: ${correctedDiscordHandle}`);
     submitterDiscordHandle = correctedDiscordHandle;
 
-    const evaluatorDiscordHandle = getDiscordHandleFromEmail(evaluatorEmail);
+    const evaluatorDiscordHandle = lookupEmailAndDiscord(evaluatorEmail)?.discordHandle;
     if (!evaluatorDiscordHandle) {
       Logger.log(`Discord handle not found for evaluator email: ${evaluatorEmail}`);
       return;
