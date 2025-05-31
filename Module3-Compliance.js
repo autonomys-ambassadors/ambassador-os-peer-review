@@ -8,25 +8,28 @@ function runComplianceAudit() {
   // Check and create Penalty Points and Max 6-Month PP columns, if they do not exist
   checkAndCreateColumns();
   SpreadsheetApp.flush();
+
   // Let's sync the data to make sure overall score has all ambassadors and knows who has been expelled before now
   syncRegistryColumnsToOverallScore();
   SpreadsheetApp.flush();
-  // ⚠️DESIGNED TO RUN ONLY ONCE. Calculates penalty points for past months, colors cells, adds PP to PP column.
-  detectNonRespondersPastMonths();
-  SpreadsheetApp.flush();
+
   // Copying all Final Score values to month column in Overall score.
   // Note: Even if Evaluations came late, they anyway are helpful, though evaluators are penalized.
   copyFinalScoresToOverallScore();
   SpreadsheetApp.flush();
+
   // Calculate penalty points for missing Submissions and Evaluations for the current reporting month
   calculatePenaltyPoints();
   SpreadsheetApp.flush();
+
   // Calculate the maximum number of penalty points for any contiguous 6-month period
   calculateMaxPenaltyPointsForSixMonths();
   SpreadsheetApp.flush();
+
   // Check for ambassadors eligible for expulsion
   expelAmbassadors();
   SpreadsheetApp.flush();
+
   // Calling the function to sync Ambassador Status columns from Registry back to Overall score, to reflect changes
   syncRegistryColumnsToOverallScore();
   SpreadsheetApp.flush();
@@ -177,69 +180,6 @@ function checkAndCreateColumns() {
     overallScoresSheet.getRange(1, nextColIndex).setValue(SCORE_INADEQUATE_CONTRIBUTION_COLUMN);
     Logger.log('Created "Inadequate Contribution Count" column.');
   }
-}
-
-// ⚠️ One time run only! Detect non-responders for past months (highlighting with COLOR_MISSED_SUBMISSION)
-function detectNonRespondersPastMonths() {
-  const scriptProperties = PropertiesService.getScriptProperties();
-  let hasRun = scriptProperties.getProperty('detectNonRespondersPastMonthsRan');
-
-  if (hasRun === 'true') {
-    Logger.log('Warning: This function has already been executed and is locked from repeated runs.');
-    alertAndLog(
-      "Warning! Processing Past Months function is designed to run only once. To allow a re-run, set 'detectNonRespondersPastMonthsRan' to 'false' in the script properties."
-    );
-    return; // Terminate execution
-  }
-
-  Logger.log('Executing detectNonRespondersPastMonths for the first time.');
-
-  const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
-  const overallScoresSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  const penaltyPointsColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
-  const spreadsheetTimeZone = getProjectTimeZone();
-  const currentMonthDate = getFirstDayOfReportingMonth(); // getting reporting month based on Submission window
-  const currentMonthName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
-  Logger.log(`Current reporting month: ${currentMonthName}`);
-
-  const lastRow = overallScoresSheet.getLastRow();
-  const lastColumn = overallScoresSheet.getLastColumn();
-  const sheetData = overallScoresSheet.getRange(1, 1, lastRow, lastColumn).getValues(); // No `-1`
-
-  for (let row = 2; row <= lastRow; row++) {
-    let currentPenaltyPoints = sheetData[row - 1][penaltyPointsColIndex - 1] || 0; // -1 for array index
-
-    for (let col = 1; col <= lastColumn; col++) {
-      const cellValue = sheetData[0][col - 1]; // -1 for array index
-
-      if (cellValue instanceof Date) {
-        const cellMonthName = Utilities.formatDate(cellValue, spreadsheetTimeZone, 'MMMM yyyy');
-        if (cellMonthName === currentMonthName) continue;
-
-        const pastMonthValue = sheetData[row - 1][col - 1]; // -1 for array index
-
-        if (typeof pastMonthValue === 'string') {
-          const markers = pastMonthValue.split(';').map((s) => s.trim());
-          markers.forEach((marker) => {
-            if (marker === "didn't submit" || marker === 'late submission') {
-              currentPenaltyPoints += 1;
-              const cell = overallScoresSheet.getRange(row, col); // 1-based indices
-              cell.setBackground(COLOR_MISSED_SUBMISSION);
-            }
-          });
-        }
-      }
-    }
-
-    sheetData[row - 1][penaltyPointsColIndex - 1] = currentPenaltyPoints; // -1 for array index
-  }
-
-  overallScoresSheet
-    .getRange(2, penaltyPointsColIndex, lastRow - 1, 1) // Use 1-based indices
-    .setValues(sheetData.slice(1).map((row) => [row[penaltyPointsColIndex - 1]]));
-
-  scriptProperties.setProperty('detectNonRespondersPastMonthsRan', 'true');
-  Logger.log('detectNonRespondersPastMonths completed. Function locked from repeated runs.');
 }
 
 /**
