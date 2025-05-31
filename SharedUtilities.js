@@ -729,7 +729,7 @@ function updateFormTitlesWithCurrentReportingMonth(month, year) {
 function getRequiredColumnIndexByName(sheet, columnName) {
   const index = getColumnIndexByName(sheet, columnName);
   if (index == -1) {
-    alertAndLog(`Expected Column "${columnName}" not found in sheet "${sheet.getName()}" header row: "${header}".`);
+    alertAndLog(`Expected Column "${columnName}" not found in sheet "${sheet.getName()}".`);
     throw new Error('Required column not found');
   }
   return index;
