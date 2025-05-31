@@ -50,6 +50,7 @@ var GRADE_FINAL_SCORE_COLUMN = '';
 // Sponsor Email (for notifications when ambassadors are expelled)
 // set the actual values in EnvironmentVariables[Prod|Test].js
 var SPONSOR_EMAIL = ''; // Sponsor's email
+var TESTER_EMAIL = ''; // Tester's email for redirecting test emails
 
 // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
 var MAX_PENALTY_POINTS_TO_EXPEL = '';
@@ -244,6 +245,7 @@ function refreshGlobalVariables() {
 // ===== Generic function to send email =====
 /**
  * Sends an email notification. If bcc is provided, sends as BCC.
+ * In testing mode with TESTER_EMAIL set, redirects all emails to tester with original recipient info.
  * @param {string} recipientEmail - The main recipient's email address (can be empty if only BCC is used).
  * @param {string} subject - The subject of the email.
  * @param {string} body - The body of the email (plain text or HTML).
@@ -252,16 +254,46 @@ function refreshGlobalVariables() {
 function sendEmailNotification(recipientEmail, subject, body, bcc) {
   try {
     if (SEND_EMAIL) {
-      const mailOptions = {
-        to: recipientEmail,
-        subject: subject,
-        htmlBody: body,
-      };
-      if (bcc) {
-        mailOptions.bcc = bcc;
+      // Check if we're in testing mode and have a tester email configured
+      if (testing && TESTER_EMAIL && TESTER_EMAIL.trim() !== '') {
+        // Override for testing: redirect to tester's email with prefix
+        const originalRecipient = recipientEmail || '[none]';
+        const originalBcc = bcc || '[none]';
+
+        const testSubject = `[TEST] ${subject}`;
+        const testBody =
+          `<p><strong>Testing email would have gone to: ${originalRecipient}</strong></p>
+` +
+          (bcc
+            ? `<p><strong>BCC would have gone to: ${originalBcc}</strong></p>
+`
+            : '') +
+          `<hr>
+${body}`;
+
+        const mailOptions = {
+          to: TESTER_EMAIL,
+          subject: testSubject,
+          htmlBody: testBody,
+        };
+
+        MailApp.sendEmail(mailOptions);
+        Logger.log(
+          `Test email redirected to tester: ${TESTER_EMAIL}, Original recipient: ${originalRecipient}, BCC: ${originalBcc}, Subject: ${testSubject}`
+        );
+      } else {
+        // Normal email sending (production or testing without override)
+        const mailOptions = {
+          to: recipientEmail,
+          subject: subject,
+          htmlBody: body,
+        };
+        if (bcc) {
+          mailOptions.bcc = bcc;
+        }
+        MailApp.sendEmail(mailOptions);
+        Logger.log(`Email sent to: ${recipientEmail || '[none]'}, BCC: ${bcc || '[none]'}, Subject: ${subject}`);
       }
-      MailApp.sendEmail(mailOptions);
-      Logger.log(`Email sent to: ${recipientEmail || '[none]'}, BCC: ${bcc || '[none]'}, Subject: ${subject}`);
     } else {
       if (!testing) {
         Logger.log(

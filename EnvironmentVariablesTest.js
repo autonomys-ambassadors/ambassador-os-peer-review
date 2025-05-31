@@ -4,6 +4,7 @@ function setTestVariables() {
 
   if (TESTER === 'Wilyam') {
     SEND_EMAIL = true;
+    TESTER_EMAIL = 'economicsilver@starmail.net'; // Wilyam's email for testing redirects
 
     // Specify your testing sheets/forms/etc. here:
     // Spreadsheets:
@@ -82,6 +83,7 @@ Please add links your contributions during the month `;
     //
   } else if (TESTER === 'Jonathan') {
     SEND_EMAIL = true;
+    TESTER_EMAIL = 'ambassadoros+tester@jkw.fm'; // Jonathan's email for testing redirects
 
     // Specify your testing sheets/forms/etc. here:
     // Spreadsheets:
@@ -99,7 +101,7 @@ Please add links your contributions during the month `;
     EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 4'; // Evaluation Form responses sheet
 
     // Sponsor Email (for notifications when ambassadors are expelled)
-    SPONSOR_EMAIL = 'auto-sponsor@jkw.fm'; // Sponsor's email
+    SPONSOR_EMAIL = 'ambassadoros+sponsor@jkw.fm'; // Sponsor's email
 
     // Sheet names
     REGISTRY_SHEET_NAME = 'Registry';
@@ -153,6 +155,7 @@ Please add links your contributions during the month`;
     //COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
   } else if (TESTER === 'Abdala') {
     SEND_EMAIL = true;
+    TESTER_EMAIL = 'test@email.net'; // Abdala's email for testing redirects
 
     AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1eWIAwZFA9EuHXZHDZ5yfydhJhldCFSpLl0-XaPGdQ8Q'; //"Ambassador Registry"
     AMBASSADORS_SCORES_SPREADSHEET_ID = '19uTQyb2bSSRaywx-rA1C2OOml3yPWGejAUkUtWUMlxo'; // "Ambassadors' Scores"
@@ -170,7 +173,7 @@ Please add links your contributions during the month`;
 
     // Sponsor Email (for notifications when ambassadors are expelled)
     //
-    SPONSOR_EMAIL = 'economicsilver@starmail.net'; // Sponsor's email
+    SPONSOR_EMAIL = 'test@email.net'; // Sponsor's email
 
     // Sheet names
     REGISTRY_SHEET_NAME = 'Registry';
