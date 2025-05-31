@@ -307,16 +307,7 @@ function sendExemptionEmails(allEvaluators, unassignedEvaluators) {
       const subject = 'Exemption from Evaluation';
       const body = EXEMPTION_FROM_EVALUATION_TEMPLATE;
 
-      if (SEND_EMAIL) {
-        MailApp.sendEmail({
-          to: evaluator,
-          subject: subject,
-          htmlBody: body,
-        });
-        Logger.log(`Exemption email sent to: ${evaluator}`);
-      } else {
-        Logger.log(`Warning! Sending email disabled: Exemption email must be sent to ${evaluator}`);
-      }
+      sendEmailNotification(evaluator, subject, body);
     } catch (error) {
       Logger.log(`Failed to send email to: ${evaluator}. Error: ${error}`);
     }
@@ -410,24 +401,7 @@ function sendEvaluationRequests() {
             .replace('{PrimaryTeam}', primaryTeam)
             .replace('{PrimaryTeamResponsibilities}', getPrimaryTeamResponsibilities(primaryTeam));
 
-          if (SEND_EMAIL) {
-            MailApp.sendEmail({
-              to: reviewerEmail,
-              subject: '⚖️Request for Evaluation',
-              htmlBody: message, // Use htmlBody to ensure clickable link
-            });
-            Logger.log(
-              `Evaluation request sent to ${reviewerEmail} (Discord: ${evaluatorDiscordHandle}) for submitter: ${submitterDiscordHandle}`
-            );
-          } else {
-            if (!testing) {
-              Logger.log(
-                `WARNING: Production mode with email disabled. Evaluation request email logged but NOT SENT for ${reviewerEmail}`
-              );
-            } else {
-              Logger.log(`Test mode: The evaluation request must be sent to ${reviewerEmail}`);
-            }
-          }
+          sendEmailNotification(reviewerEmail, '⚖️Request for Evaluation', message);
         } catch (error) {
           Logger.log(`Error sending evaluation request to ${reviewerEmail}: ${error}`);
         }
@@ -981,12 +955,7 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
         const email = registrySheet.getRange(row, registryEmailColIndex).getValue(); // Get email dynamically
         const message = REMINDER_EMAIL_TEMPLATE.replace('{AmbassadorDiscordHandle}', discordHandle);
 
-        if (SEND_EMAIL) {
-          MailApp.sendEmail(email, '🕚Reminder to Submit Evaluation', message);
-          Logger.log(`Reminder email sent to: ${email} (Discord: ${discordHandle})`);
-        } else {
-          Logger.log(`Warning! Sending email disabled: Reminder email logged for ${email}`);
-        }
+        sendEmailNotification(email, '🕚Reminder to Submit Evaluation', message);
       } else {
         Logger.log(`Error: Could not find the ambassador with email ${evaluatorEmail}`);
       }
