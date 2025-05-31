@@ -253,58 +253,102 @@ function refreshGlobalVariables() {
  */
 function sendEmailNotification(recipientEmail, subject, body, bcc) {
   try {
-    if (SEND_EMAIL) {
-      // Check if we're in testing mode and have a tester email configured
-      if (testing && TESTER_EMAIL && TESTER_EMAIL.trim() !== '') {
-        // Override for testing: redirect to tester's email with prefix
-        const originalRecipient = recipientEmail || '[none]';
-        const originalBcc = bcc || '[none]';
+    if (!SEND_EMAIL) {
+      logEmailNotSent(recipientEmail, subject, bcc);
+      return;
+    }
 
-        const testSubject = `[TEST] ${subject}`;
-        const testBody =
-          `<p><strong>Testing email would have gone to: ${originalRecipient}</strong></p>
-` +
-          (bcc
-            ? `<p><strong>BCC would have gone to: ${originalBcc}</strong></p>
-`
-            : '') +
-          `<hr>
-${body}`;
-
-        const mailOptions = {
-          to: TESTER_EMAIL,
-          subject: testSubject,
-          htmlBody: testBody,
-        };
-
-        MailApp.sendEmail(mailOptions);
-        Logger.log(
-          `Test email redirected to tester: ${TESTER_EMAIL}, Original recipient: ${originalRecipient}, BCC: ${originalBcc}, Subject: ${testSubject}`
-        );
-      } else {
-        // Normal email sending (production or testing without override)
-        const mailOptions = {
-          to: recipientEmail,
-          subject: subject,
-          htmlBody: body,
-        };
-        if (bcc) {
-          mailOptions.bcc = bcc;
-        }
-        MailApp.sendEmail(mailOptions);
-        Logger.log(`Email sent to: ${recipientEmail || '[none]'}, BCC: ${bcc || '[none]'}, Subject: ${subject}`);
-      }
+    if (testing) {
+      sendTestEmail(recipientEmail, subject, body, bcc);
     } else {
-      if (!testing) {
-        Logger.log(
-          `WARNING: Production mode with email disabled. Email logged but NOT SENT to: ${recipientEmail}, BCC: ${bcc}, Subject: ${subject}`
-        );
-      } else {
-        Logger.log(`Test mode: Email to be sent to: ${recipientEmail}, BCC: ${bcc}, Subject: ${subject}`);
-      }
+      sendProductionEmail(recipientEmail, subject, body, bcc);
     }
   } catch (error) {
     Logger.log(`Failed to send email to ${recipientEmail}, BCC: ${bcc}: ${error.message}`);
+  }
+}
+
+/**
+ * Sends email in testing mode - redirected to tester with original recipient info.
+ * @param {string} recipientEmail - Original recipient email
+ * @param {string} subject - Email subject
+ * @param {string} body - Email body
+ * @param {string} bcc - BCC recipients
+ */
+function sendTestEmail(recipientEmail, subject, body, bcc) {
+  const originalRecipient = recipientEmail || '[none]';
+  const originalBcc = bcc || '[none]';
+  const testSubject = `[TEST] ${subject}`;
+  const testBody = buildTestEmailBody(originalRecipient, originalBcc, body);
+
+  const mailOptions = {
+    to: TESTER_EMAIL,
+    subject: testSubject,
+    htmlBody: testBody,
+  };
+
+  MailApp.sendEmail(mailOptions);
+  Logger.log(
+    `Test email redirected to tester: ${TESTER_EMAIL}, Original recipient: ${originalRecipient}, BCC: ${originalBcc}, Subject: ${testSubject}`
+  );
+}
+
+/**
+ * Builds the test email body with original recipient information.
+ * @param {string} originalRecipient - Original recipient email
+ * @param {string} originalBcc - Original BCC recipients
+ * @param {string} body - Original email body
+ * @returns {string} - Formatted test email body
+ */
+function buildTestEmailBody(originalRecipient, originalBcc, body) {
+  let testBody = `<p><strong>Testing email would have gone to: ${originalRecipient}</strong></p>
+`;
+
+  if (originalBcc !== '[none]') {
+    testBody += `<p><strong>BCC would have gone to: ${originalBcc}</strong></p>
+`;
+  }
+
+  testBody += `<hr>
+${body}`;
+  return testBody;
+}
+
+/**
+ * Sends email in production mode.
+ * @param {string} recipientEmail - Recipient email
+ * @param {string} subject - Email subject
+ * @param {string} body - Email body
+ * @param {string} bcc - BCC recipients
+ */
+function sendProductionEmail(recipientEmail, subject, body, bcc) {
+  const mailOptions = {
+    to: recipientEmail,
+    subject: subject,
+    htmlBody: body,
+  };
+
+  if (bcc) {
+    mailOptions.bcc = bcc;
+  }
+
+  MailApp.sendEmail(mailOptions);
+  Logger.log(`Email sent to: ${recipientEmail || '[none]'}, BCC: ${bcc || '[none]'}, Subject: ${subject}`);
+}
+
+/**
+ * Logs when email is not sent due to SEND_EMAIL being false.
+ * @param {string} recipientEmail - Recipient email
+ * @param {string} subject - Email subject
+ * @param {string} bcc - BCC recipients
+ */
+function logEmailNotSent(recipientEmail, subject, bcc) {
+  if (!testing) {
+    Logger.log(
+      `WARNING: Production mode with email disabled. Email logged but NOT SENT to: ${recipientEmail}, BCC: ${bcc}, Subject: ${subject}`
+    );
+  } else {
+    Logger.log(`Test mode: Email to be sent to: ${recipientEmail}, BCC: ${bcc}, Subject: ${subject}`);
   }
 }
 
