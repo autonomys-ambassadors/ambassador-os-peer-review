@@ -53,8 +53,8 @@ var SPONSOR_EMAIL = ''; // Sponsor's email
 
 // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
 var MAX_PENALTY_POINTS_TO_EXPEL = '';
-// Inadequate Contribution threshold: if score is below this value, it counts as inadequate
-var INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD; // Set in EnvironmentVariablesProd.js or EnvironmentVariablesTest.js
+var MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = '';
+var INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = '';
 
 // Color variables .The color hex string must be in lowercase!
 // set the actual values in EnvironmentVariables[Prod|Test].js
