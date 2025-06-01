@@ -42,7 +42,6 @@ clasp login
 
 1. <span style="color:#778ef7">Git pull this repo into your local dir</span>
 
-
 2. <span style="color:#778ef7">Enable API in your Google Apps Interface:</span>
 
 https://script.google.com/home/usersettings
@@ -51,7 +50,6 @@ https://script.google.com/home/usersettings
 
    <span style="color:#778ef7">File > Project Settings.</span>
    <span style="color:#778ef7">Copy Script ID.</span>
-
 
 4. <span style="color:#778ef7">Manually create .clasp.json:</span>
 
@@ -176,19 +174,21 @@ Check vars: testing = false. SEMD_EMAIL = true.
 Through all the code the setMinutes and getMinutes methods are used. Edit Triggers and Delays section, using minutes. For ex. 7 days is 10080 minutes, possibly you can use em in format like: 60*24*7.
 
 ## Production Runs - access to appropriate resources
+
 The login that is used to run AmbOs from the Ambassador Registry will need edit access to the following resources:
-	•	Ambassador Registry
-https://docs.google.com/spreadsheets/d/1YtE-b7088aV3zi0eyFaGMyA7Nvo3bf9dnl0xzH3BTdA/edit
-	•	Ambassadors Scores
-https://docs.google.com/spreadsheets/d/1cjhrqgc84HdS59eQJPsiNIPKbusHtp2j7dN55u-mKdc/edit
-	•	Ambassador Submission Responses
-https://docs.google.com/spreadsheets/d/1EQRSjcvODXQpHzK2g4XNd6imCTsx2m7vTwe-HeNNjjM/edit
-	•	Ambassador Evaluation Responses
-https://docs.google.com/spreadsheets/d/12S_qu-Uiq0BupN_Z6lVHJ76YaVM5NG0JQY_IC-gFWmg/edit
-	•	Submission Form (ID)
-https://docs.google.com/forms/d/1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE/edit
-	•	Evaluation Form (ID)
-https://docs.google.com/forms/d/1WKQ1acvwVVXJOtYRZgiX-4YXOUgnwwlquL3c5l494ew/edit
+
+- Ambassador Registry
+  https://docs.google.com/spreadsheets/d/1YtE-b7088aV3zi0eyFaGMyA7Nvo3bf9dnl0xzH3BTdA/edit
+- Ambassadors Scores
+  https://docs.google.com/spreadsheets/d/1cjhrqgc84HdS59eQJPsiNIPKbusHtp2j7dN55u-mKdc/edit
+- Ambassador Submission Responses
+  https://docs.google.com/spreadsheets/d/1EQRSjcvODXQpHzK2g4XNd6imCTsx2m7vTwe-HeNNjjM/edit
+- Ambassador Evaluation Responses
+  https://docs.google.com/spreadsheets/d/12S_qu-Uiq0BupN_Z6lVHJ76YaVM5NG0JQY_IC-gFWmg/edit
+- Submission Form (ID)
+  https://docs.google.com/forms/d/1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE/edit
+- Evaluation Form (ID)
+  https://docs.google.com/forms/d/1WKQ1acvwVVXJOtYRZgiX-4YXOUgnwwlquL3c5l494ew/edit
 
 ## Notes:
 
