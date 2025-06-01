@@ -4,3 +4,15 @@ appengine-generated/
 *.clasp.json
 
 .idea/
+
+# Ignore all dotfiles by default
+.*
+
+# But include specific config files
+!.gitignore
+!.editorconfig
+!.prettierrc
+!.eslintrc*
+!.nvmrc
+!.vscode/
+!.github/

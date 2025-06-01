@@ -56,13 +56,23 @@ Please add links to your contributions during the month`;
   SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
   GRADE_SUBMITTER_COLUMN = 'Submitter';
   GRADE_FINAL_SCORE_COLUMN = 'Final Score';
-  CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
+  CRT_SELECTION_DATE_COLUMN = 'Selection Date';
+  SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
+
+  // Request Log columns
+  REQUEST_LOG_REQUEST_TYPE_COLUMN = 'Type';
+  REQUEST_LOG_MONTH_COLUMN = 'Month';
+  REQUEST_LOG_YEAR_COLUMN = 'Year';
+  REQUEST_LOG_START_TIME_COLUMN = 'Request Date Time';
+  REQUEST_LOG_END_TIME_COLUMN = 'Window End Date Time';
 
   // Sponsor Email (for notifications when ambassadors are expelled)
   SPONSOR_EMAIL = 'community@autonomys.xyz'; // Sponsor's email
 
   // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
   MAX_PENALTY_POINTS_TO_EXPEL = 3;
+  MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
+  INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 3.0;
 
   /** Reinitialize color variables to ensure consistency in color-based logic.
    * The color hex string must be in lowercase!

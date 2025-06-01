@@ -31,7 +31,7 @@ var AMBASSADOR_ID_COLUMN = '';
 var AMBASSADOR_EMAIL_COLUMN = '';
 var AMBASSADOR_DISCORD_HANDLE_COLUMN = '';
 var AMBASSADOR_STATUS_COLUMN = '';
-var AMBASSADOR_PRIMARY_TEAM = '';
+var AMBASSADOR_PRIMARY_TEAM_COLUMN = '';
 var GOOGLE_FORM_TIMESTAMP_COLUMN = '';
 var GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = '';
 var GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = '';
@@ -46,13 +46,25 @@ var SCORE_AVERAGE_SCORE_COLUMN = '';
 var SCORE_MAX_6M_PP_COLUMN = '';
 var GRADE_SUBMITTER_COLUMN = '';
 var GRADE_FINAL_SCORE_COLUMN = '';
+var CRT_SELECTION_DATE_COLUMN = '';
+var SCORE_INADEQUATE_CONTRIBUTION_COLUMN = '';
+
+// Request Log columns
+var REQUEST_LOG_REQUEST_TYPE_COLUMN = '';
+var REQUEST_LOG_MONTH_COLUMN = '';
+var REQUEST_LOG_YEAR_COLUMN = '';
+var REQUEST_LOG_START_TIME_COLUMN = '';
+var REQUEST_LOG_END_TIME_COLUMN = '';
 
 // Sponsor Email (for notifications when ambassadors are expelled)
 // set the actual values in EnvironmentVariables[Prod|Test].js
 var SPONSOR_EMAIL = ''; // Sponsor's email
+var TESTER_EMAIL = ''; // Tester's email for redirecting test emails
 
 // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
 var MAX_PENALTY_POINTS_TO_EXPEL = '';
+var MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = '';
+var INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = '';
 
 // Color variables .The color hex string must be in lowercase!
 // set the actual values in EnvironmentVariables[Prod|Test].js
@@ -132,7 +144,7 @@ Primary Team Responsibilities:</strong><br>{PrimaryTeamResponsibilities}<br><br>
 
 // Reminder Email Template
 let REMINDER_EMAIL_TEMPLATE = `
-Hi there! Just a friendly reminder that we’re still waiting for your response to the Request for Submission/Evaluation. Please respond soon to avoid any penalties. Thank you!.
+Hi there! Just a friendly reminder that we are still waiting for your response to the Request for Submission/Evaluation. Please respond soon to avoid any penalties. Thank you!.
 `;
 
 // Penalty Warning Email Template
@@ -156,6 +168,14 @@ By this we notify you about upcoming Peer Review mailing, please be vigilant!
 // EXEMPTION FROM EVALUATION e-mail template
 let EXEMPTION_FROM_EVALUATION_TEMPLATE = `
 Dear Ambassador, you have been relieved of the obligation to evaluate your colleagues this month.
+`;
+
+// CRT Referral for Inadequate Contribution Email Template
+let CRT_INADEQUATE_CONTRIBUTION_EMAIL_TEMPLATE = `
+To: CRT Members and accused Ambassador and Sponsor,<br><br>
+Ambassador {discordHandle} is being referred to the CRT due to Inadequate Contribution as defined in the bylaws in Article 2.<br>
+{discordHandle} has scored below {inadequateContributionScoreThreshold} a total of {inadequateContributionCount} times in the last 6 evaluation months.<br>
+{crtNote}
 `;
 
 // Primary team Responsibilities
@@ -232,22 +252,112 @@ function refreshGlobalVariables() {
 }
 
 // ===== Generic function to send email =====
-function sendEmailNotification(recipientEmail, subject, body) {
+/**
+ * Sends an email notification. If bcc is provided, sends as BCC.
+ * In testing mode with TESTER_EMAIL set, redirects all emails to tester with original recipient info.
+ * @param {string} recipientEmail - The main recipient's email address (can be empty if only BCC is used).
+ * @param {string} subject - The subject of the email.
+ * @param {string} body - The body of the email (plain text or HTML).
+ * @param {string} [bcc] - Optional comma-separated list of BCC recipients.
+ */
+function sendEmailNotification(recipientEmail, subject, body, bcc) {
   try {
-    if (SEND_EMAIL) {
-      MailApp.sendEmail(recipientEmail, subject, body);
-      Logger.log(`Email sent to: ${recipientEmail}, Subject: ${subject}`);
+    if (!SEND_EMAIL) {
+      logEmailNotSent(recipientEmail, subject, bcc);
+      return;
+    }
+
+    if (testing) {
+      sendTestEmail(recipientEmail, subject, body, bcc);
     } else {
-      if (!testing) {
-        Logger.log(
-          `WARNING: Production mode with email disabled. Email logged but NOT SENT to: ${recipientEmail}, Subject: ${subject}`
-        );
-      } else {
-        Logger.log(`Test mode with email disabled: Email to be sent to: ${recipientEmail}, Subject: ${subject}`);
-      }
+      sendProductionEmail(recipientEmail, subject, body, bcc);
     }
   } catch (error) {
-    Logger.log(`Failed to send email to ${recipientEmail}: ${error.message}`);
+    Logger.log(`Failed to send email to ${recipientEmail}, BCC: ${bcc}: ${error.message}`);
+  }
+}
+
+/**
+ * Sends email in testing mode - redirected to tester with original recipient info.
+ * @param {string} recipientEmail - Original recipient email
+ * @param {string} subject - Email subject
+ * @param {string} body - Email body
+ * @param {string} bcc - BCC recipients
+ */
+function sendTestEmail(recipientEmail, subject, body, bcc) {
+  const originalRecipient = recipientEmail || '[none]';
+  const originalBcc = bcc || '[none]';
+  const testSubject = `[TEST] ${subject}`;
+  const testBody = buildTestEmailBody(originalRecipient, originalBcc, body);
+
+  const mailOptions = {
+    to: TESTER_EMAIL,
+    subject: testSubject,
+    htmlBody: testBody,
+  };
+
+  MailApp.sendEmail(mailOptions);
+  Logger.log(
+    `Test email redirected to tester: ${TESTER_EMAIL}, Original recipient: ${originalRecipient}, BCC: ${originalBcc}, Subject: ${testSubject}`
+  );
+}
+
+/**
+ * Builds the test email body with original recipient information.
+ * @param {string} originalRecipient - Original recipient email
+ * @param {string} originalBcc - Original BCC recipients
+ * @param {string} body - Original email body
+ * @returns {string} - Formatted test email body
+ */
+function buildTestEmailBody(originalRecipient, originalBcc, body) {
+  let testBody = `<p><strong>Testing email would have gone to: ${originalRecipient}</strong></p>
+`;
+
+  if (originalBcc !== '[none]') {
+    testBody += `<p><strong>BCC would have gone to: ${originalBcc}</strong></p>
+`;
+  }
+
+  testBody += `<hr>
+${body}`;
+  return testBody;
+}
+
+/**
+ * Sends email in production mode.
+ * @param {string} recipientEmail - Recipient email
+ * @param {string} subject - Email subject
+ * @param {string} body - Email body
+ * @param {string} bcc - BCC recipients
+ */
+function sendProductionEmail(recipientEmail, subject, body, bcc) {
+  const mailOptions = {
+    to: recipientEmail,
+    subject: subject,
+    htmlBody: body,
+  };
+
+  if (bcc) {
+    mailOptions.bcc = bcc;
+  }
+
+  MailApp.sendEmail(mailOptions);
+  Logger.log(`Email sent to: ${recipientEmail || '[none]'}, BCC: ${bcc || '[none]'}, Subject: ${subject}`);
+}
+
+/**
+ * Logs when email is not sent due to SEND_EMAIL being false.
+ * @param {string} recipientEmail - Recipient email
+ * @param {string} subject - Email subject
+ * @param {string} bcc - BCC recipients
+ */
+function logEmailNotSent(recipientEmail, subject, bcc) {
+  if (!testing) {
+    Logger.log(
+      `WARNING: Production mode with email disabled. Email logged but NOT SENT to: ${recipientEmail}, BCC: ${bcc}, Subject: ${subject}`
+    );
+  } else {
+    Logger.log(`Test mode: Email to be sent to: ${recipientEmail}, BCC: ${bcc}, Subject: ${subject}`);
   }
 }
 
@@ -595,25 +705,6 @@ function getFirstDayOfReportingMonth() {
   }
 }
 
-// ======= email-Discord Handle Converters =======
-
-function getDiscordHandleFromEmail(email) {
-  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const emailColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
-  const discordColumnIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
-  const emailColumn = registrySheet
-    .getRange(2, emailColumnIndex, registrySheet.getLastRow() - 1, 1)
-    .getValues()
-    .flat();
-  const discordColumn = registrySheet
-    .getRange(2, discordColumnIndex, registrySheet.getLastRow() - 1, 1)
-    .getValues()
-    .flat();
-
-  const index = emailColumn.indexOf(email);
-  return index !== -1 ? discordColumn[index] : null;
-}
-
 //    FORMS' TITLES
 //
 // Main function to update the form titles based on the current reporting month
@@ -647,7 +738,7 @@ function updateFormTitlesWithCurrentReportingMonth(month, year) {
 function getRequiredColumnIndexByName(sheet, columnName) {
   const index = getColumnIndexByName(sheet, columnName);
   if (index == -1) {
-    alertAndLog(`Expected Column "${columnName}" not found in sheet "${sheet.getName()}" header row: "${header}".`);
+    alertAndLog(`Expected Column "${columnName}" not found in sheet "${sheet.getName()}".`);
     throw new Error('Required column not found');
   }
   return index;
@@ -655,37 +746,41 @@ function getRequiredColumnIndexByName(sheet, columnName) {
 
 /**
  * Finds the column index for a given column name in the header row of the sheet.
+ * Handles both string and Date object comparisons.
+ * String comparisons are case-insensitive and trim whitespace before comparison.
  * @param {Sheet} sheet - The sheet to search.
- * @param {string} columnName - The name of the column to find.
+ * @param {string|Date} columnName - The name of the column to find (string) or Date object for month columns.
  * @returns {number} The column index (1-based), or -1 if not found.
  */
 function getColumnIndexByName(sheet, columnName) {
   const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const index = header.findIndex((h) => (h?.trim?.() ?? '') === columnName.trim());
+
+  const index = header.findIndex((headerValue) => {
+    // Handle Date object comparison for month columns
+    if (columnName instanceof Date && headerValue instanceof Date) {
+      // Compare dates by checking if they represent the same month/year
+      return (
+        columnName.getFullYear() === headerValue.getFullYear() &&
+        columnName.getMonth() === headerValue.getMonth() &&
+        columnName.getDate() === headerValue.getDate()
+      );
+    }
+
+    // Handle string comparison for regular columns - case insensitive with trimming
+    if (typeof columnName === 'string' && headerValue != null) {
+      const headerStr = (headerValue?.trim?.() ?? headerValue.toString().trim()).toLowerCase();
+      const searchStr = columnName.trim().toLowerCase();
+      return headerStr === searchStr;
+    }
+
+    return false;
+  });
+
   if (index == -1) {
     Logger.log(`Expected Column "${columnName}" not found in sheet "${sheet.getName()}" header row: "${header}".`);
     return -1;
   }
   return index + 1; // Convert to 1-based index
-}
-
-/**
- * This function helps to determine if a column already exists for a given month to avoid duplicate columns in the "Overall score" sheet.
- * @param {Array} existingColumns - An array of existing column names.
- * @param {Date} targetDate - Target date (first day of the month).
- * @param {string} timeZone - Time zone of the table.
- * @returns {boolean} - Returns true if the column exists, otherwise false.
- */
-function doesColumnExist(existingColumns, targetDate, timeZone) {
-  const targetMonthName = Utilities.formatDate(targetDate, timeZone, 'MMMM yyyy');
-  Logger.log(`Checking the existence of the column: "${targetMonthName}"`);
-  return existingColumns.some((column) => {
-    if (column instanceof Date) {
-      const columnMonthName = Utilities.formatDate(column, timeZone, 'MMMM yyyy');
-      return columnMonthName === targetMonthName;
-    }
-    return false;
-  });
 }
 
 /**
@@ -950,4 +1045,167 @@ function logRequest(type, month, year, requestDateTime, windowEndDateTime) {
   ]);
 
   Logger.log(`Logged ${type} request for ${month} ${year} in "Request Log" sheet.`);
+}
+
+/**
+ * Gets the most recent request of a given type (e.g., 'Submission', 'Evaluation') from the Request Log,
+ * based on the latest Window End Date Time (i.e., the most recently completed request).
+ * @param {string} type - The type of request to search for (e.g., 'Submission', 'Evaluation').
+ * @returns {{month: string, year: string, requestDateTime: Date, windowEndDateTime: Date}|null} - The most recent request details or null if not found
+ */
+function getLatestRequestByType(type) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
+    const requestLogSheet = spreadsheet.getSheetByName('Request Log');
+    if (!requestLogSheet) return null;
+
+    const lastRow = requestLogSheet.getLastRow();
+    if (lastRow < 2) return null;
+
+    const typeColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_REQUEST_TYPE_COLUMN);
+    const monthColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_MONTH_COLUMN);
+    const yearColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_YEAR_COLUMN);
+    const startTimeColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_START_TIME_COLUMN);
+    const endTimeColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_END_TIME_COLUMN);
+
+    const data = requestLogSheet.getRange(2, 1, lastRow - 1, requestLogSheet.getLastColumn()).getValues();
+
+    let latestRequest = null;
+    let latestEndTime = null;
+
+    for (const row of data) {
+      const rowType = row[typeColIndex - 1];
+      if (rowType !== type) continue;
+
+      const endTimeStr = row[endTimeColIndex - 1];
+      const endTime = new Date(endTimeStr);
+      if (!latestEndTime || endTime > latestEndTime) {
+        latestEndTime = endTime;
+        latestRequest = {
+          month: row[monthColIndex - 1],
+          year: row[yearColIndex - 1].toString(),
+          requestDateTime: new Date(row[startTimeColIndex - 1]),
+          windowEndDateTime: endTime,
+        };
+      }
+    }
+
+    if (latestRequest) {
+      Logger.log(
+        `Found latest ${type} request: ${latestRequest.month} ${latestRequest.year} (window ended on ${latestRequest.windowEndDateTime})`
+      );
+    } else {
+      Logger.log(`No ${type} requests found in Request Log.`);
+    }
+
+    return latestRequest;
+  } catch (error) {
+    Logger.log(`Error in getLatestRequestByType: ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * Gets the reporting month information from the latest request of a given type.
+ * @param {string} type - The type of request to search for (e.g., 'Submission', 'Evaluation').
+ * @returns {{month: string, year: string, monthName: string, firstDayDate: Date}|null} - The month and year to be evaluated
+ */
+function getReportingMonthFromRequestLog(type) {
+  const latestRequest = getLatestRequestByType(type);
+
+  if (!latestRequest) {
+    return null;
+  }
+
+  // Create date object for the first day of the reporting month
+  const monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  const monthIndex = monthNames.indexOf(latestRequest.month);
+  if (monthIndex === -1) {
+    Logger.log(`Error: Invalid month name: ${latestRequest.month}`);
+    return;
+  }
+  const deliverableMonthDate = new Date(parseInt(latestRequest.year), monthIndex, 1);
+  Logger.log(
+    `Reporting month date: ${Utilities.formatDate(deliverableMonthDate, getProjectTimeZone(), 'yyyy-MM-dd HH:mm:ss z')}`
+  );
+
+  return {
+    month: latestRequest.month,
+    year: latestRequest.year,
+    monthName: `${latestRequest.month} ${latestRequest.year}`,
+    firstDayDate: deliverableMonthDate,
+  };
+}
+
+/**
+ * Looks up both email and Discord handle for a given identifier (email or Discord handle).
+ * @param {string} identifier - Email or Discord handle.
+ * @returns {{email: string, discordHandle: string}|null}
+ */
+function lookupEmailAndDiscord(identifier) {
+  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
+  const emailCol = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN) - 1;
+  const discordCol = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN) - 1;
+  const registryData = registrySheet.getDataRange().getValues();
+  identifier = (identifier || '').toString().trim().toLowerCase();
+  for (const row of registryData) {
+    const email = (row[emailCol] || '').toString().trim().toLowerCase();
+    const discordHandle = (row[discordCol] || '').toString().trim().toLowerCase();
+    if (email === identifier || discordHandle === identifier) {
+      return { email, discordHandle };
+    }
+  }
+  return null;
+}
+
+/**
+ * Gets the current CRT members' emails and Discord handles from the last row of the CRT sheet.
+ * @returns {Array<{email: string, discordHandle: string}>}
+ */
+function getCurrentCRTMemberEmails() {
+  const crtSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
+    CONFLICT_RESOLUTION_TEAM_SHEET_NAME
+  );
+  if (!crtSheet) return [];
+
+  const crtData = crtSheet.getDataRange().getValues();
+  if (crtData.length < 2) return [];
+
+  // Get header row and find columns containing ambassador identifiers
+  const headers = crtData[0];
+  const identifierColumns = headers
+    .map((header, index) => {
+      const headerStr = (header || '').toString().toLowerCase();
+      // Look for columns that likely contain ambassador identifiers
+      return headerStr.includes('discord') || headerStr.includes('email') || headerStr.includes('ambassador')
+        ? index
+        : -1;
+    })
+    .filter((index) => index > 0); // Filter out -1 and first column (date)
+
+  if (identifierColumns.length === 0) {
+    Logger.log('No columns found containing ambassador identifiers');
+    return [];
+  }
+
+  const lastRow = crtData[crtData.length - 1];
+  const crtIdentifiers = identifierColumns
+    .map((colIndex) => (lastRow[colIndex] || '').toString().trim().toLowerCase())
+    .filter(Boolean);
+
+  // For each, look up both email and discord handle
+  return crtIdentifiers.map((id) => lookupEmailAndDiscord(id) || { email: id, discordHandle: id });
 }

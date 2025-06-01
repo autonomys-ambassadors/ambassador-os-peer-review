@@ -28,12 +28,7 @@ function notifyUpcomingPeerReview() {
     const upcomingPeerReviewTemplate = NOTIFY_UPCOMING_PEER_REVIEW;
     // Send notification to each eligible ambassador
     eligibleEmails.forEach((email) => {
-      MailApp.sendEmail({
-        to: email,
-        subject: 'Upcoming Peer Review Notification',
-        body: upcomingPeerReviewTemplate, // Use plain text template
-      });
-      Logger.log(`Notification sent to: ${email}`);
+      sendEmailNotification(email, 'Upcoming Peer Review Notification', upcomingPeerReviewTemplate);
     });
 
     Logger.log('Upcoming peer review notifications completed.');

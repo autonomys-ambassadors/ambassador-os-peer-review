@@ -134,20 +134,7 @@ function requestSubmissionsModule(month, year) {
     Logger.log(`Email message created for ${email} with Discord handle: ${discordHandle}`);
 
     // Email sending logic
-    if (SEND_EMAIL) {
-      try {
-        MailApp.sendEmail({
-          to: email,
-          subject: '☑️Request for Submission',
-          htmlBody: message, // Use htmlBody to send HTML email
-        });
-        Logger.log(`Email sent to ${email}`);
-      } catch (error) {
-        Logger.log(`Failed to send email to ${email}. Error: ${error}`);
-      }
-    } else {
-      Logger.log(`Testing mode: Submission request email logged for ${email}`);
-    }
+    sendEmailNotification(email, '☑️Request for Submission', message);
   });
 
   // Save the submission window start time in Los Angeles time zone format
@@ -292,16 +279,7 @@ function sendReminderEmails(nonRespondents) {
       const message = REMINDER_EMAIL_TEMPLATE.replace('{AmbassadorDiscordHandle}', discordHandle);
 
       // Send the email
-      if (SEND_EMAIL) {
-        try {
-          MailApp.sendEmail(email, '🕚 Reminder to Submit', message); // Send the reminder email
-          Logger.log(`Reminder email sent to: ${email} (Discord: ${discordHandle})`);
-        } catch (error) {
-          Logger.log(`Failed to send reminder email to ${email}. Error: ${error}`);
-        }
-      } else {
-        Logger.log(`Testing mode: Reminder email logged for ${email}`);
-      }
+      sendEmailNotification(email, '🕚 Reminder to Submit', message);
     } else {
       Logger.log(`Error: Could not find the ambassador with email ${email}`);
     }

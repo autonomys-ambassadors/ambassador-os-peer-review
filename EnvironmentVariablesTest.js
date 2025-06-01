@@ -4,6 +4,7 @@ function setTestVariables() {
 
   if (TESTER === 'Wilyam') {
     SEND_EMAIL = true;
+    TESTER_EMAIL = 'economicsilver@starmail.net'; // Wilyam's email for testing redirects
 
     // Specify your testing sheets/forms/etc. here:
     // Spreadsheets:
@@ -54,7 +55,15 @@ Please add links your contributions during the month `;
     SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
     GRADE_SUBMITTER_COLUMN = 'Submitter';
     GRADE_FINAL_SCORE_COLUMN = 'Final Score';
-    CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
+    CRT_SELECTION_DATE_COLUMN = 'Selection Date';
+    SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
+
+    // Request Log columns
+    REQUEST_LOG_REQUEST_TYPE_COLUMN = 'Type';
+    REQUEST_LOG_MONTH_COLUMN = 'Month';
+    REQUEST_LOG_YEAR_COLUMN = 'Year';
+    REQUEST_LOG_START_TIME_COLUMN = 'Request Date Time';
+    REQUEST_LOG_END_TIME_COLUMN = 'Window End Date Time';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 15;
@@ -64,6 +73,8 @@ Please add links your contributions during the month `;
 
     // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
     MAX_PENALTY_POINTS_TO_EXPEL = 3;
+    MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
+    INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 3.0;
 
     /** Reinitialize color variables to ensure consistency in color-based logic.
      * The color hex string must be in lowercase!
@@ -79,10 +90,11 @@ Please add links your contributions during the month `;
     //
   } else if (TESTER === 'Jonathan') {
     SEND_EMAIL = true;
+    TESTER_EMAIL = 'ambassadoros+tester@jkw.fm'; // Jonathan's email for testing redirects
 
     // Specify your testing sheets/forms/etc. here:
     // Spreadsheets:
-    AMBASSADOR_REGISTRY_SPREADSHEET_ID = '14aHm1EiK48RoclGYydI7OzcFcExYUr9tdQ6PlhjCbAg'; //"Ambassador Registry"
+    AMBASSADOR_REGISTRY_SPREADSHEET_ID = '14aHm1EiK48RoclGYydI7OzcFcExYUr9tdQ6PlhjCbAg'; // "Ambassador Registry"
     AMBASSADORS_SCORES_SPREADSHEET_ID = '1lVUaCGCCbfD3l9e8MEfQVBKaljm7A5aKX7RJAsUrWfA'; // "Ambassadors' Scores"
     AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1lVUaCGCCbfD3l9e8MEfQVBKaljm7A5aKX7RJAsUrWfA'; // "Ambassador Submission Responses"
     EVALUATION_RESPONSES_SPREADSHEET_ID = '1lVUaCGCCbfD3l9e8MEfQVBKaljm7A5aKX7RJAsUrWfA'; // "Ambassador Evaluations' Responses"
@@ -96,7 +108,7 @@ Please add links your contributions during the month `;
     EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 4'; // Evaluation Form responses sheet
 
     // Sponsor Email (for notifications when ambassadors are expelled)
-    SPONSOR_EMAIL = 'auto-sponsor@jkw.fm'; // Sponsor's email
+    SPONSOR_EMAIL = 'ambassadoros+sponsor@jkw.fm'; // Sponsor's email
 
     // Sheet names
     REGISTRY_SHEET_NAME = 'Registry';
@@ -121,12 +133,20 @@ Please add links your contributions during the month`;
     GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating?';
     GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5';
     GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks (optional)';
-    SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points';
+    SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points Last 6 Months';
     SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';
     SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
     GRADE_SUBMITTER_COLUMN = 'Submitter';
     GRADE_FINAL_SCORE_COLUMN = 'Final Score';
-    CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
+    CRT_SELECTION_DATE_COLUMN = 'Selection Date';
+    SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
+
+    // Request Log columns
+    REQUEST_LOG_REQUEST_TYPE_COLUMN = 'Type';
+    REQUEST_LOG_MONTH_COLUMN = 'Month';
+    REQUEST_LOG_YEAR_COLUMN = 'Year';
+    REQUEST_LOG_START_TIME_COLUMN = 'Request Date Time';
+    REQUEST_LOG_END_TIME_COLUMN = 'Window End Date Time';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 20;
@@ -136,6 +156,8 @@ Please add links your contributions during the month`;
 
     // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
     MAX_PENALTY_POINTS_TO_EXPEL = 3;
+    MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
+    INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 3.0;
 
     /** Reinitialize color variables to ensure consistency in color-based logic.
      * The color hex string must be in lowercase!
@@ -147,6 +169,7 @@ Please add links your contributions during the month`;
     //COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
   } else if (TESTER === 'Abdala') {
     SEND_EMAIL = true;
+    TESTER_EMAIL = 'test@email.net'; // Abdala's email for testing redirects
 
     AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1eWIAwZFA9EuHXZHDZ5yfydhJhldCFSpLl0-XaPGdQ8Q'; //"Ambassador Registry"
     AMBASSADORS_SCORES_SPREADSHEET_ID = '19uTQyb2bSSRaywx-rA1C2OOml3yPWGejAUkUtWUMlxo'; // "Ambassadors' Scores"
@@ -164,7 +187,7 @@ Please add links your contributions during the month`;
 
     // Sponsor Email (for notifications when ambassadors are expelled)
     //
-    SPONSOR_EMAIL = 'economicsilver@starmail.net'; // Sponsor's email
+    SPONSOR_EMAIL = 'test@email.net'; // Sponsor's email
 
     // Sheet names
     REGISTRY_SHEET_NAME = 'Registry';
@@ -194,7 +217,15 @@ Please add links your contributions during the month `;
     SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
     GRADE_SUBMITTER_COLUMN = 'Submitter';
     GRADE_FINAL_SCORE_COLUMN = 'Final Score';
-    CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
+    CRT_SELECTION_DATE_COLUMN = 'Selection Date';
+    SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
+
+    // Request Log columns
+    REQUEST_LOG_REQUEST_TYPE_COLUMN = 'Type';
+    REQUEST_LOG_MONTH_COLUMN = 'Month';
+    REQUEST_LOG_YEAR_COLUMN = 'Year';
+    REQUEST_LOG_START_TIME_COLUMN = 'Request Date Time';
+    REQUEST_LOG_END_TIME_COLUMN = 'Window End Date Time';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 15;
@@ -204,7 +235,8 @@ Please add links your contributions during the month `;
 
     // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
     MAX_PENALTY_POINTS_TO_EXPEL = 3;
-
+    MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
+    INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 3.0;
     /** Reinitialize color variables to ensure consistency in color-based logic.
      * The color hex string must be in lowercase!
      */

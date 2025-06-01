@@ -47,7 +47,6 @@ g. getSubmissionWindowStart()
 
   - `getPreviousMonthDate`: Retrieves the first day of the previous month considering the spreadsheet's timezone.
   - `isMonthColumn`: Checks if a cell value represents a month column.
-  - `doesColumnExist`: Verifies if columns for a specific date exist.
   - `findInsertIndexForMonth`: Determines the index for inserting a new column after the latest existing month column.
   - `findInsertIndexForMonthSheet`: Finds the correct index to insert a new month sheet before all existing month sheets.
 

@@ -8,25 +8,28 @@ function runComplianceAudit() {
   // Check and create Penalty Points and Max 6-Month PP columns, if they do not exist
   checkAndCreateColumns();
   SpreadsheetApp.flush();
+
   // Let's sync the data to make sure overall score has all ambassadors and knows who has been expelled before now
   syncRegistryColumnsToOverallScore();
   SpreadsheetApp.flush();
-  // ⚠️DESIGNED TO RUN ONLY ONCE. Calculates penalty points for past months, colors cells, adds PP to PP column.
-  detectNonRespondersPastMonths();
-  SpreadsheetApp.flush();
+
   // Copying all Final Score values to month column in Overall score.
   // Note: Even if Evaluations came late, they anyway are helpful, though evaluators are penalized.
   copyFinalScoresToOverallScore();
   SpreadsheetApp.flush();
+
   // Calculate penalty points for missing Submissions and Evaluations for the current reporting month
   calculatePenaltyPoints();
   SpreadsheetApp.flush();
+
   // Calculate the maximum number of penalty points for any contiguous 6-month period
   calculateMaxPenaltyPointsForSixMonths();
   SpreadsheetApp.flush();
+
   // Check for ambassadors eligible for expulsion
   expelAmbassadors();
   SpreadsheetApp.flush();
+
   // Calling the function to sync Ambassador Status columns from Registry back to Overall score, to reflect changes
   syncRegistryColumnsToOverallScore();
   SpreadsheetApp.flush();
@@ -80,8 +83,14 @@ function copyFinalScoresToOverallScore() {
       throw new Error('Overall Score sheet not found.');
     }
 
+    // Use the latest Evaluation request to determine the reporting month
+    const reportingMonth = getReportingMonthFromRequestLog('Evaluation');
+    if (!reportingMonth) {
+      alertAndLog('Error: Could not determine reporting month from Request Log.');
+      throw new Error('Reporting month not found.');
+    }
+    const currentMonthDate = reportingMonth.firstDayDate;
     const spreadsheetTimeZone = getProjectTimeZone(); // Get project time zone
-    const currentMonthDate = getFirstDayOfReportingMonth(); // getting reporting month based on Submission window
     Logger.log(`Current month date for copying scores: ${currentMonthDate.toISOString()}`);
 
     const monthSheetName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
@@ -93,7 +102,6 @@ function copyFinalScoresToOverallScore() {
     }
 
     // Searching column index in "Overall score" by date
-    // TODO Suggstion: improve getColumnIndexByName to handle the month case?
     const existingColumns = overallScoreSheet.getRange(1, 1, 1, overallScoreSheet.getLastColumn()).getValues()[0];
     const monthColumnIndex =
       existingColumns.findIndex((header) => header instanceof Date && header.getTime() === currentMonthDate.getTime()) +
@@ -166,70 +174,17 @@ function checkAndCreateColumns() {
     overallScoresSheet.insertColumnAfter(penaltyPointsColIndex);
     overallScoresSheet.getRange(1, nextColIndex).setValue(SCORE_MAX_6M_PP_COLUMN);
     Logger.log('Created "Max 6-Month PP" column.');
-  }
-}
-
-// ⚠️ One time run only! Detect non-responders for past months (highlighting with COLOR_MISSED_SUBMISSION)
-function detectNonRespondersPastMonths() {
-  const scriptProperties = PropertiesService.getScriptProperties();
-  let hasRun = scriptProperties.getProperty('detectNonRespondersPastMonthsRan');
-
-  if (hasRun === 'true') {
-    Logger.log('Warning: This function has already been executed and is locked from repeated runs.');
-    alertAndLog(
-      "Warning! Processing Past Months function is designed to run only once. To allow a re-run, set 'detectNonRespondersPastMonthsRan' to 'false' in the script properties."
-    );
-    return; // Terminate execution
+    maxPenaltyPointsColIndex = nextColIndex;
   }
 
-  Logger.log('Executing detectNonRespondersPastMonths for the first time.');
-
-  const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
-  const overallScoresSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  const penaltyPointsColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
-  const spreadsheetTimeZone = getProjectTimeZone();
-  const currentMonthDate = getFirstDayOfReportingMonth(); // getting reporting month based on Submission window
-  const currentMonthName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
-  Logger.log(`Current reporting month: ${currentMonthName}`);
-
-  const lastRow = overallScoresSheet.getLastRow();
-  const lastColumn = overallScoresSheet.getLastColumn();
-  const sheetData = overallScoresSheet.getRange(1, 1, lastRow, lastColumn).getValues(); // No `-1`
-
-  for (let row = 2; row <= lastRow; row++) {
-    let currentPenaltyPoints = sheetData[row - 1][penaltyPointsColIndex - 1] || 0; // -1 for array index
-
-    for (let col = 1; col <= lastColumn; col++) {
-      const cellValue = sheetData[0][col - 1]; // -1 for array index
-
-      if (cellValue instanceof Date) {
-        const cellMonthName = Utilities.formatDate(cellValue, spreadsheetTimeZone, 'MMMM yyyy');
-        if (cellMonthName === currentMonthName) continue;
-
-        const pastMonthValue = sheetData[row - 1][col - 1]; // -1 for array index
-
-        if (typeof pastMonthValue === 'string') {
-          const markers = pastMonthValue.split(';').map((s) => s.trim());
-          markers.forEach((marker) => {
-            if (marker === "didn't submit" || marker === 'late submission') {
-              currentPenaltyPoints += 1;
-              const cell = overallScoresSheet.getRange(row, col); // 1-based indices
-              cell.setBackground(COLOR_MISSED_SUBMISSION);
-            }
-          });
-        }
-      }
-    }
-
-    sheetData[row - 1][penaltyPointsColIndex - 1] = currentPenaltyPoints; // -1 for array index
+  // Check if "Inadequate Contribution Count" column exists
+  let inadequateContributionColIndex = getColumnIndexByName(overallScoresSheet, SCORE_INADEQUATE_CONTRIBUTION_COLUMN);
+  if (inadequateContributionColIndex === -1) {
+    nextColIndex = maxPenaltyPointsColIndex + 1; // Next column after "Max 6-Month PP"
+    overallScoresSheet.insertColumnAfter(maxPenaltyPointsColIndex);
+    overallScoresSheet.getRange(1, nextColIndex).setValue(SCORE_INADEQUATE_CONTRIBUTION_COLUMN);
+    Logger.log('Created "Inadequate Contribution Count" column.');
   }
-
-  overallScoresSheet
-    .getRange(2, penaltyPointsColIndex, lastRow - 1, 1) // Use 1-based indices
-    .setValues(sheetData.slice(1).map((row) => [row[penaltyPointsColIndex - 1]]));
-
-  scriptProperties.setProperty('detectNonRespondersPastMonthsRan', 'true');
-  Logger.log('detectNonRespondersPastMonths completed. Function locked from repeated runs.');
 }
 
 /**
@@ -262,10 +217,17 @@ function calculatePenaltyPoints() {
     throw new Error('Overall Score, Review Log, or Evaluation Response sheets are missing');
   }
 
+  // Use the latest Evaluation request to determine the reporting month
+  const reportingMonth = getReportingMonthFromRequestLog('Evaluation');
+  if (!reportingMonth) {
+    alertAndLog('Error: Could not determine reporting month from Request Log.');
+    throw new Error('Reporting month not found.');
+  }
+  const currentReportingMonth = reportingMonth.firstDayDate;
+
   // Get headers and indices
   const headersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
   const penaltyPointsColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
-  const currentReportingMonth = getFirstDayOfReportingMonth(); // getting reporting month based on Submission window
   const currentMonthColIndex =
     headersRange.findIndex((header) => header instanceof Date && header.getTime() === currentReportingMonth.getTime()) +
     1;
@@ -327,6 +289,11 @@ function calculatePenaltyPoints() {
   const recentMonths = monthColumns.slice(-Math.min(6, monthColumns.length));
   Logger.log(`Using ${recentMonths.length} most recent months for penalty calculation`);
 
+  const inadequateContributionColIndex = getRequiredColumnIndexByName(
+    overallScoresSheet,
+    SCORE_INADEQUATE_CONTRIBUTION_COLUMN
+  );
+
   // Process each ambassador
   ambassadorData.forEach(({ email, discordHandle }) => {
     const rowInScores = overallScoresSheet.createTextFinder(discordHandle).findNext()?.getRow();
@@ -337,6 +304,7 @@ function calculatePenaltyPoints() {
 
     // Reset penalty points and recalculate based only on the last 6 months
     let totalPenaltyPoints = 0;
+    let inadequateContributionCount = 0;
 
     // Process recent months (up to 6)
     for (const colIndex of recentMonths) {
@@ -372,11 +340,27 @@ function calculatePenaltyPoints() {
       } else if (backgroundColor === COLOR_MISSED_SUBM_AND_EVAL.toLowerCase()) {
         totalPenaltyPoints += 2;
       }
+
+      // Inadequate Contribution: check if Final Score < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD
+      // Get the value from the cell (should be the score for that month)
+      const scoreValue = cell.getValue();
+      if (typeof scoreValue === 'number' && scoreValue < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD) {
+        inadequateContributionCount++;
+      }
     }
 
     // Update penalty points
     overallScoresSheet.getRange(rowInScores, penaltyPointsColIndex).setValue(totalPenaltyPoints);
     Logger.log(`Updated penalty points for ${discordHandle} to ${totalPenaltyPoints}`);
+
+    // Update Inadequate Contribution Count
+    overallScoresSheet.getRange(rowInScores, inadequateContributionColIndex).setValue(inadequateContributionCount);
+    Logger.log(`Updated Inadequate Contribution Count for ${discordHandle} to ${inadequateContributionCount}`);
+
+    // Refer to CRT if threshold met
+    if (inadequateContributionCount >= MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER) {
+      referInadequateContributionToCRT(discordHandle, inadequateContributionCount);
+    }
   });
 
   Logger.log('Penalty points calculation for submissions and evaluations completed.');
@@ -579,5 +563,49 @@ function sendExpulsionNotifications(discordHandle) {
     Logger.log(`Notification sent to sponsor for expelled ambassador: ${email} (${discordHandle}).`);
   } else {
     Logger.log(`Error: Ambassador with discord handle: ${discordHandle} not found in the registry.`);
+  }
+}
+
+/**
+ * Refers an ambassador to the CRT for inadequate contribution.
+ * @param {string} discordHandle - The Discord handle of the ambassador being referred.
+ * @param {number} inadequateContributionCount - The number of times the ambassador scored below the inadequate contribution threshold in the last 6 months.
+ */
+function referInadequateContributionToCRT(discordHandle, inadequateContributionCount) {
+  try {
+    // Get CRT members (email and discord) using utility
+    const crtMembers = getCurrentCRTMemberEmails();
+    const crtEmails = crtMembers.map((m) => m.email).filter(Boolean);
+    const crtHandles = crtMembers.map((m) => m.discordHandle).filter(Boolean);
+
+    // Get ambassador's email and discord handle using utility
+    const accused = lookupEmailAndDiscord(discordHandle);
+    const ambassadorEmail = accused ? accused.email : '';
+    const ambassadorDiscord = accused ? accused.discordHandle : discordHandle;
+
+    // Compose the email
+    let crtNote = '';
+    if (crtHandles.includes(ambassadorDiscord.toLowerCase()) || crtEmails.includes(ambassadorEmail)) {
+      crtNote = `<br><b>Note:</b> Ambassador ${ambassadorDiscord} also must not participate on the CRT until this complaint is resolved.`;
+    }
+    const emailBody = CRT_INADEQUATE_CONTRIBUTION_EMAIL_TEMPLATE.replaceAll('{discordHandle}', ambassadorDiscord)
+      .replaceAll('{inadequateContributionCount}', inadequateContributionCount)
+      .replaceAll('{crtNote}', crtNote)
+      .replaceAll('{inadequateContributionScoreThreshold}', INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD);
+    const subject = `Referral to CRT: Inadequate Contribution for Ambassador ${ambassadorDiscord}`;
+
+    // BCC all CRT members and the ambassador
+    const bccList = Array.from(new Set([...crtEmails, ambassadorEmail]))
+      .filter(Boolean)
+      .join(',');
+    if (!bccList) {
+      Logger.log('No valid emails found for CRT or ambassador.');
+      return;
+    }
+    // Send to sponsor, BCC CRT and accused
+    sendEmailNotification(SPONSOR_EMAIL, subject, emailBody, bccList);
+    Logger.log(`Sent CRT referral for ${ambassadorDiscord} to sponsor (${SPONSOR_EMAIL}), BCC: ${bccList}`);
+  } catch (e) {
+    Logger.log('Error in referInadequateContributionToCRT: ' + e);
   }
 }
