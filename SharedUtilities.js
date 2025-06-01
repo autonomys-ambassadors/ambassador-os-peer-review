@@ -1048,81 +1048,51 @@ function logRequest(type, month, year, requestDateTime, windowEndDateTime) {
 }
 
 /**
- * Gets the most recent request of a given type (e.g., 'Submission', 'Evaluation') from the Request Log.
- * Uses the Month and Year columns from the request log, not the Request date time.
+ * Gets the most recent request of a given type (e.g., 'Submission', 'Evaluation') from the Request Log,
+ * based on the latest Window End Date Time (i.e., the most recently completed request).
  * @param {string} type - The type of request to search for (e.g., 'Submission', 'Evaluation').
- * @returns {{month: string, year: string, requestDateTime: Date}|null} - The most recent request details or null if not found
+ * @returns {{month: string, year: string, requestDateTime: Date, windowEndDateTime: Date}|null} - The most recent request details or null if not found
  */
 function getLatestRequestByType(type) {
   try {
     const spreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
     const requestLogSheet = spreadsheet.getSheetByName('Request Log');
-
-    if (!requestLogSheet) {
-      Logger.log('Request Log sheet not found.');
-      return null;
-    }
+    if (!requestLogSheet) return null;
 
     const lastRow = requestLogSheet.getLastRow();
-    if (lastRow < 2) {
-      Logger.log('No data found in Request Log sheet.');
-      return null;
-    }
+    if (lastRow < 2) return null;
 
-    // Get column indices dynamically
     const typeColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_REQUEST_TYPE_COLUMN);
     const monthColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_MONTH_COLUMN);
     const yearColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_YEAR_COLUMN);
     const startTimeColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_START_TIME_COLUMN);
+    const endTimeColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_END_TIME_COLUMN);
 
-    // Get all data from Request Log
     const data = requestLogSheet.getRange(2, 1, lastRow - 1, requestLogSheet.getLastColumn()).getValues();
 
-    // Find the most recent request of the given type by comparing Month and Year, not request date
     let latestRequest = null;
-    let latestYearMonth = null;
+    let latestEndTime = null;
 
     for (const row of data) {
       const rowType = row[typeColIndex - 1];
-      const month = row[monthColIndex - 1];
-      const year = row[yearColIndex - 1];
-      const requestDateTime = new Date(row[startTimeColIndex - 1]);
+      if (rowType !== type) continue;
 
-      if (rowType === type) {
-        // Create a comparable date from the Month and Year columns
-        const monthNames = [
-          'January',
-          'February',
-          'March',
-          'April',
-          'May',
-          'June',
-          'July',
-          'August',
-          'September',
-          'October',
-          'November',
-          'December',
-        ];
-        const monthIndex = monthNames.indexOf(month);
-        if (monthIndex !== -1) {
-          const yearMonthDate = new Date(parseInt(year), monthIndex, 1);
-
-          if (!latestYearMonth || yearMonthDate > latestYearMonth) {
-            latestYearMonth = yearMonthDate;
-            latestRequest = {
-              month: month,
-              year: year.toString(),
-              requestDateTime: requestDateTime,
-            };
-          }
-        }
+      const endTimeStr = row[endTimeColIndex - 1];
+      const endTime = new Date(endTimeStr);
+      if (!latestEndTime || endTime > latestEndTime) {
+        latestEndTime = endTime;
+        latestRequest = {
+          month: row[monthColIndex - 1],
+          year: row[yearColIndex - 1].toString(),
+          requestDateTime: new Date(row[startTimeColIndex - 1]),
+          windowEndDateTime: endTime,
+        };
       }
     }
 
     if (latestRequest) {
       Logger.log(
-        `Found latest ${type} request: ${latestRequest.month} ${latestRequest.year} (requested on ${latestRequest.requestDateTime})`
+        `Found latest ${type} request: ${latestRequest.month} ${latestRequest.year} (window ended on ${latestRequest.windowEndDateTime})`
       );
     } else {
       Logger.log(`No ${type} requests found in Request Log.`);

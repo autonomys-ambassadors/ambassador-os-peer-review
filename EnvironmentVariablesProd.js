@@ -60,11 +60,11 @@ Please add links to your contributions during the month`;
   SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
 
   // Request Log columns
-  REQUEST_LOG_REQUEST_TYPE_COLUMN = 'Request Type';
+  REQUEST_LOG_REQUEST_TYPE_COLUMN = 'Type';
   REQUEST_LOG_MONTH_COLUMN = 'Month';
   REQUEST_LOG_YEAR_COLUMN = 'Year';
-  REQUEST_LOG_START_TIME_COLUMN = 'Start Time';
-  REQUEST_LOG_END_TIME_COLUMN = 'End Time';
+  REQUEST_LOG_START_TIME_COLUMN = 'Request Date Time';
+  REQUEST_LOG_END_TIME_COLUMN = 'Window End Date Time';
 
   // Sponsor Email (for notifications when ambassadors are expelled)
   SPONSOR_EMAIL = 'community@autonomys.xyz'; // Sponsor's email
