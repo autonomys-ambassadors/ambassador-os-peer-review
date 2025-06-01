@@ -1,12 +1,7 @@
 // MODULE 2
 // Basic function for Request Evaluations menu item processing
 function requestEvaluationsModule() {
-  // Step 0: Validate that submission request exists and show which month will be evaluated
-  if (!validateSubmissionRequestExists()) {
-    alertAndLog('Error: No submission request found in Request Log. Please submit a request first.');
-    return; // Exit if no submission request found
-  }
-
+  // Step 0:determine which month will be evaluated
   const reportingMonth = getReportingMonthFromRequestLog('Submission');
   if (!reportingMonth) {
     alertAndLog('Error: Could not determine reporting month from Request Log.');
