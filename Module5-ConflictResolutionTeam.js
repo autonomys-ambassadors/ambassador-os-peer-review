@@ -66,7 +66,7 @@ function selectCRTMembers() {
  * @returns {Array} - List of recent CRT members.
  */
 function getRecentCRTMembers(crtSheet) {
-  const selectionDateIndex = getRequiredColumnIndexByName(crtSheet, CRT_SELECTION_DATE_COLUMNT);
+  const selectionDateIndex = getRequiredColumnIndexByName(crtSheet, CRT_SELECTION_DATE_COLUMN);
   const today = new Date();
   const twoMonthsAgo = new Date(today.setMonth(today.getMonth() - 2));
   const data = crtSheet.getDataRange().getValues();

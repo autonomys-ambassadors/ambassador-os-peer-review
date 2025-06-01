@@ -1,26 +1,47 @@
 // MODULE 2
 // Basic function for Request Evaluations menu item processing
 function requestEvaluationsModule() {
+  // Step 0: Validate that submission request exists and show which month will be evaluated
+  if (!validateSubmissionRequestExists()) {
+    alertAndLog('Error: No submission request found in Request Log. Please submit a request first.');
+    return; // Exit if no submission request found
+  }
+
+  const reportingMonth = getReportingMonthFromRequestLog();
+  if (!reportingMonth) {
+    alertAndLog('Error: Could not determine reporting month from Request Log.');
+    return;
+  }
+
+  // Show user which month will be evaluated
+  const confirmationMessage = `This will request evaluations for ${reportingMonth.monthName} based on the latest submission request. Continue?`;
+  const userConfirmed = promptAndLog('Confirm Evaluation Month', confirmationMessage, ButtonSet.YES_NO);
+
+  if (userConfirmed !== ButtonResponse.YES) {
+    Logger.log('User cancelled evaluation request.');
+    return;
+  }
+
   const evaluationWindowStart = new Date(); // Capture start time for the evaluation window
 
   // Step 1: Create a month sheet and column in the Overall score
-  createMonthSheetAndOverallColumn();
+  createMonthSheetAndOverallColumn(reportingMonth);
 
-  // Step 2: Generating the review matrix (submitters   and evaluators)
+  // Step 2: Generating the review matrix (submitters and evaluators)
   generateReviewMatrix();
 
   // Step 2.5: Update evaluation form questions
   updateEvaluationFormQuestions();
 
   // Step 3: Sending evaluation requests
-  sendEvaluationRequests();
+  sendEvaluationRequests(reportingMonth);
 
   // Set Evaluation Window Start Time
   setEvaluationWindowStart(evaluationWindowStart); // Save the evaluation window start time
   Logger.log(`Evaluation window start time set to: ${evaluationWindowStart}`);
 
   // Step 4: Filling out the Discord handle evaluators in the month sheet
-  populateMonthSheetWithEvaluators();
+  populateMonthSheetWithEvaluators(reportingMonth);
 
   // Step 5: Deleting existing triggers before setting new ones
   deleteExistingTriggers(); // Delete all triggers before adding new ones
@@ -32,8 +53,9 @@ function requestEvaluationsModule() {
 
 /**
  * Creates a month sheet and corresponding column in the 'Overall score' sheet.
+ * @param {Object} reportingMonth - The reporting month object containing month and year
  */
-function createMonthSheetAndOverallColumn() {
+function createMonthSheetAndOverallColumn(reportingMonth) {
   try {
     Logger.log('Execution started');
 
@@ -46,30 +68,18 @@ function createMonthSheetAndOverallColumn() {
       return;
     }
 
-    // Get project time zone
-    const spreadsheetTimeZone = getProjectTimeZone();
-    Logger.log(`Time zone of the table: ${spreadsheetTimeZone}`);
-
-    // Get first day of previous month based on Submission Window start date
-    const deliverableMonthDate = getFirstDayOfReportingMonth();
-    Logger.log(
-      `Previous month date: ${Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'yyyy-MM-dd HH:mm:ss z')}`
-    );
-
-    // Form month name, e.g., 'September 2024'
-    const deliverableMonthName = Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
-    Logger.log(`Month name: "${deliverableMonthName}"`);
+    Logger.log(`Reporting month date: ${reportingMonth.monthName}`);
 
     // Create or clear existing sheet if there is one
-    let monthSheet = scoresSpreadsheet.getSheetByName(deliverableMonthName);
+    let monthSheet = scoresSpreadsheet.getSheetByName(reportingMonth.monthName);
     if (monthSheet) {
       monthSheet.clear(); // Clear existing sheet if there is
-      Logger.log(`Cleared existing sheet: "${deliverableMonthName}".`);
+      Logger.log(`Cleared existing sheet: "${reportingMonth.monthName}".`);
     } else {
       // Finding index for inserting new month sheet before existing month sheets
       const sheetIndex = findInsertIndexForMonthSheet(scoresSpreadsheet);
-      monthSheet = scoresSpreadsheet.insertSheet(deliverableMonthName, sheetIndex);
-      Logger.log(`New sheet created: "${deliverableMonthName}".`);
+      monthSheet = scoresSpreadsheet.insertSheet(reportingMonth.monthName, sheetIndex);
+      Logger.log(`New sheet created: "${reportingMonth.monthName}".`);
     }
 
     // Adding headers
@@ -84,7 +94,7 @@ function createMonthSheetAndOverallColumn() {
     monthSheet.getRange(1, 9).setValue('Amb-3');
     monthSheet.getRange(1, 10).setValue('Remarks-3');
     monthSheet.getRange(1, 11).setValue('Final Score');
-    Logger.log(`Headers added to sheet: "${deliverableMonthName}".`);
+    Logger.log(`Headers added to sheet: "${reportingMonth.monthName}".`);
 
     // Apply background colors to the specified columns
     monthSheet.getRange(2, 2, monthSheet.getMaxRows() - 1, 3).setBackground('#ebeee3');
@@ -105,9 +115,9 @@ function createMonthSheetAndOverallColumn() {
     Logger.log(`Existing columns in "Overall score": ${existingColumns.join(', ')}`);
 
     // Check if month column already exists in Overall Score sheet
-    const columnExists = doesColumnExist(existingColumns, deliverableMonthDate, spreadsheetTimeZone);
-    if (columnExists) {
-      Logger.log(`Column for "${deliverableMonthName}" already exists in "Overall score". Skipping creation.`);
+    const scoreColumn = getColumnIndexByName(overallScoreSheet, reportingMonth.firstDayDate);
+    if (scoreColumn > 0) {
+      Logger.log(`Column for "${reportingMonth.monthName}" already exists in "Overall score". Skipping creation.`);
       return;
     }
 
@@ -120,13 +130,7 @@ function createMonthSheetAndOverallColumn() {
     const newHeaderCell = overallScoreSheet.getRange(1, insertIndex + 1);
     Logger.log(`Insert date in cell: Column ${insertIndex + 1}, Row 1`);
 
-    // Set type of header as Date object (with same time as other columns are)
-    const safeDate = new Date(
-      deliverableMonthDate.getFullYear(),
-      deliverableMonthDate.getMonth(),
-      deliverableMonthDate.getDate()
-    );
-    newHeaderCell.setValue(safeDate);
+    newHeaderCell.setValue(reportingMonth.firstDayDate);
 
     // Set cells format as 'MMMM yyyy', to display only month and year
     newHeaderCell.setNumberFormat('MMMM yyyy');
@@ -135,7 +139,7 @@ function createMonthSheetAndOverallColumn() {
     const columnRange = overallScoreSheet.getRange(2, insertIndex + 1, overallScoreSheet.getLastRow() - 1);
     columnRange.setBackground(null); // Resetting background
 
-    Logger.log(`Column for "${deliverableMonthName}" successfully added to "Overall score".`);
+    Logger.log(`Column for "${reportingMonth.monthName}" successfully added to "Overall score".`);
   } catch (error) {
     Logger.log(`Error in createMonthSheetAndOverallColumn: ${error}`);
   }
@@ -318,8 +322,9 @@ function sendExemptionEmails(allEvaluators, unassignedEvaluators) {
 
 /**
  * Sends evaluation requests based on the generated review matrix.
+ * @param {Object} reportingMonth - The reporting month object containing month and year
  */
-function sendEvaluationRequests() {
+function sendEvaluationRequests(reportingMonth) {
   try {
     // Opening Review Log sheet
     const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
@@ -345,23 +350,19 @@ function sendEvaluationRequests() {
     const reviewData = reviewLogSheet.getRange(2, 1, lastRow - 1, 4).getValues(); // Evaluations matrix
     Logger.log(`Retrieved ${reviewData.length} rows of data for the review.`);
 
-    // Get the name of the previous month for sending requests
-    const deliverableMonthDate = getFirstDayOfReportingMonth(); // getting reporting month based on Submission Window start date
-    const deliverableMonthName = Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
-    Logger.log(`Name of previous month: ${deliverableMonthName}`);
+    // Use the reporting month passed as parameter
+    if (!reportingMonth) {
+      Logger.log('Error: Could not determine reporting month from Request Log.');
+      throw new Error('Could not determine reporting month from Request Log.');
+    }
+    Logger.log(`Reporting month: ${reportingMonth.monthName}`);
 
     // Calculate evaluation window deadline date
     const evaluationWindowStart = new Date();
     const evaluationDeadline = new Date(evaluationWindowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000); // Adjust to milliseconds
     const evaluationDeadlineDate = Utilities.formatDate(evaluationDeadline, 'UTC', 'MMMM dd, yyyy HH:mm:ss') + ' UTC';
     try {
-      logRequest(
-        'Evaluation',
-        Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'MMMM'),
-        deliverableMonthDate.getFullYear().toString(),
-        evaluationWindowStart,
-        evaluationDeadline
-      );
+      logRequest('Evaluation', reportingMonth.month, reportingMonth.year, evaluationWindowStart, evaluationDeadline);
     } catch (error) {
       Logger.log(error);
     }
@@ -393,7 +394,7 @@ function sendEvaluationRequests() {
 
           // Forming a message for evaluation
           const message = REQUEST_EVALUATION_EMAIL_TEMPLATE.replace('{AmbassadorDiscordHandle}', evaluatorDiscordHandle)
-            .replace('{Month}', deliverableMonthName) // Use string name of the month
+            .replace('{Month}', reportingMonth.monthName) // Use string name of the month
             .replace('{AmbassadorSubmitter}', submitterDiscordHandle)
             .replace('{SubmissionsList}', contributionDetails)
             .replace('{EvaluationFormURL}', EVALUATION_FORM_URL)
@@ -541,21 +542,24 @@ function getAmbassadorPrimaryTeam(email) {
 
 /**
  * Populates the month sheet with Discord handles of evaluators.
+ * @param {Object} reportingMonth - The reporting month object containing month and year
  */
-function populateMonthSheetWithEvaluators() {
+function populateMonthSheetWithEvaluators(reportingMonth) {
   try {
     Logger.log('Populating month sheet with evaluators.');
 
-    // Use unified project time zone
-    const projectTimeZone = getProjectTimeZone();
+    // Use the reporting month passed as parameter
+    if (!reportingMonth) {
+      Logger.log('Error: Could not determine reporting month from Request Log.');
+      return;
+    }
 
     // Open the Ambassadors' Scores spreadsheet and get the month sheet
     const scoresSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
-    const monthSheetName = Utilities.formatDate(getFirstDayOfReportingMonth(), projectTimeZone, 'MMMM yyyy');
-    const monthSheet = scoresSheet.getSheetByName(monthSheetName);
+    const monthSheet = scoresSheet.getSheetByName(reportingMonth.monthName);
 
     if (!monthSheet) {
-      Logger.log(`Month sheet ${monthSheetName} not found.`);
+      Logger.log(`Month sheet ${reportingMonth.monthName} not found.`);
       return;
     }
 
@@ -589,7 +593,7 @@ function populateMonthSheetWithEvaluators() {
       });
     });
 
-    Logger.log(`Evaluators populated in month sheet ${monthSheetName}.`);
+    Logger.log(`Evaluators populated in month sheet ${reportingMonth.monthName}.`);
   } catch (error) {
     Logger.log(`Error in populateMonthSheetWithEvaluators: ${error}`);
   }
@@ -698,13 +702,16 @@ function processEvaluationResponse(e) {
     }
     Logger.log(`Evaluator Discord Handle: ${evaluatorDiscordHandle}`);
 
-    // Get the reporting month name based on Submission Window start
-    const deliverableMonthDate = getFirstDayOfReportingMonth();
-    const monthSheetName = Utilities.formatDate(deliverableMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
-    const monthSheet = scoresSpreadsheet.getSheetByName(monthSheetName);
+    // Get the reporting month name from Request Log
+    const reportingMonth = getReportingMonthFromRequestLog();
+    if (!reportingMonth) {
+      Logger.log('Error: Could not determine reporting month from Request Log.');
+      return;
+    }
+    const monthSheet = scoresSpreadsheet.getSheetByName(reportingMonth.monthName);
 
     if (!monthSheet) {
-      Logger.log(`Month sheet ${monthSheetName} not found.`);
+      Logger.log(`Month sheet ${reportingMonth.monthName} not found.`);
       return;
     }
 

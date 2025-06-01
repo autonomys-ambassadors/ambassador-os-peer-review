@@ -56,8 +56,15 @@ Please add links to your contributions during the month`;
   SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
   GRADE_SUBMITTER_COLUMN = 'Submitter';
   GRADE_FINAL_SCORE_COLUMN = 'Final Score';
-  CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
+  CRT_SELECTION_DATE_COLUMN = 'Selection Date';
   SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
+
+  // Request Log columns
+  REQUEST_LOG_REQUEST_TYPE_COLUMN = 'Request Type';
+  REQUEST_LOG_MONTH_COLUMN = 'Month';
+  REQUEST_LOG_YEAR_COLUMN = 'Year';
+  REQUEST_LOG_START_TIME_COLUMN = 'Start Time';
+  REQUEST_LOG_END_TIME_COLUMN = 'End Time';
 
   // Sponsor Email (for notifications when ambassadors are expelled)
   SPONSOR_EMAIL = 'community@autonomys.xyz'; // Sponsor's email

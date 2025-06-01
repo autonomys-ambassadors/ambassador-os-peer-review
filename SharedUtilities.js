@@ -31,7 +31,7 @@ var AMBASSADOR_ID_COLUMN = '';
 var AMBASSADOR_EMAIL_COLUMN = '';
 var AMBASSADOR_DISCORD_HANDLE_COLUMN = '';
 var AMBASSADOR_STATUS_COLUMN = '';
-var AMBASSADOR_PRIMARY_TEAM = '';
+var AMBASSADOR_PRIMARY_TEAM_COLUMN = '';
 var GOOGLE_FORM_TIMESTAMP_COLUMN = '';
 var GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = '';
 var GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = '';
@@ -46,6 +46,15 @@ var SCORE_AVERAGE_SCORE_COLUMN = '';
 var SCORE_MAX_6M_PP_COLUMN = '';
 var GRADE_SUBMITTER_COLUMN = '';
 var GRADE_FINAL_SCORE_COLUMN = '';
+var CRT_SELECTION_DATE_COLUMN = '';
+var SCORE_INADEQUATE_CONTRIBUTION_COLUMN = '';
+
+// Request Log columns
+var REQUEST_LOG_REQUEST_TYPE_COLUMN = '';
+var REQUEST_LOG_MONTH_COLUMN = '';
+var REQUEST_LOG_YEAR_COLUMN = '';
+var REQUEST_LOG_START_TIME_COLUMN = '';
+var REQUEST_LOG_END_TIME_COLUMN = '';
 
 // Sponsor Email (for notifications when ambassadors are expelled)
 // set the actual values in EnvironmentVariables[Prod|Test].js
@@ -737,37 +746,41 @@ function getRequiredColumnIndexByName(sheet, columnName) {
 
 /**
  * Finds the column index for a given column name in the header row of the sheet.
+ * Handles both string and Date object comparisons.
+ * String comparisons are case-insensitive and trim whitespace before comparison.
  * @param {Sheet} sheet - The sheet to search.
- * @param {string} columnName - The name of the column to find.
+ * @param {string|Date} columnName - The name of the column to find (string) or Date object for month columns.
  * @returns {number} The column index (1-based), or -1 if not found.
  */
 function getColumnIndexByName(sheet, columnName) {
   const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const index = header.findIndex((h) => (h?.trim?.() ?? '') === columnName.trim());
+
+  const index = header.findIndex((headerValue) => {
+    // Handle Date object comparison for month columns
+    if (columnName instanceof Date && headerValue instanceof Date) {
+      // Compare dates by checking if they represent the same month/year
+      return (
+        columnName.getFullYear() === headerValue.getFullYear() &&
+        columnName.getMonth() === headerValue.getMonth() &&
+        columnName.getDate() === headerValue.getDate()
+      );
+    }
+
+    // Handle string comparison for regular columns - case insensitive with trimming
+    if (typeof columnName === 'string' && headerValue != null) {
+      const headerStr = (headerValue?.trim?.() ?? headerValue.toString().trim()).toLowerCase();
+      const searchStr = columnName.trim().toLowerCase();
+      return headerStr === searchStr;
+    }
+
+    return false;
+  });
+
   if (index == -1) {
     Logger.log(`Expected Column "${columnName}" not found in sheet "${sheet.getName()}" header row: "${header}".`);
     return -1;
   }
   return index + 1; // Convert to 1-based index
-}
-
-/**
- * This function helps to determine if a column already exists for a given month to avoid duplicate columns in the "Overall score" sheet.
- * @param {Array} existingColumns - An array of existing column names.
- * @param {Date} targetDate - Target date (first day of the month).
- * @param {string} timeZone - Time zone of the table.
- * @returns {boolean} - Returns true if the column exists, otherwise false.
- */
-function doesColumnExist(existingColumns, targetDate, timeZone) {
-  const targetMonthName = Utilities.formatDate(targetDate, timeZone, 'MMMM yyyy');
-  Logger.log(`Checking the existence of the column: "${targetMonthName}"`);
-  return existingColumns.some((column) => {
-    if (column instanceof Date) {
-      const columnMonthName = Utilities.formatDate(column, timeZone, 'MMMM yyyy');
-      return columnMonthName === targetMonthName;
-    }
-    return false;
-  });
 }
 
 /**
@@ -1032,6 +1045,152 @@ function logRequest(type, month, year, requestDateTime, windowEndDateTime) {
   ]);
 
   Logger.log(`Logged ${type} request for ${month} ${year} in "Request Log" sheet.`);
+}
+
+/**
+ * Gets the most recent submission request from the Request Log to determine which month to evaluate.
+ * Uses the Month and Year columns from the request log, not the Request date time.
+ * @returns {{month: string, year: string, requestDateTime: Date}|null} - The most recent submission request details or null if not found
+ */
+function getLatestSubmissionRequest() {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
+    const requestLogSheet = spreadsheet.getSheetByName('Request Log');
+
+    if (!requestLogSheet) {
+      Logger.log('Request Log sheet not found.');
+      return null;
+    }
+
+    const lastRow = requestLogSheet.getLastRow();
+    if (lastRow < 2) {
+      Logger.log('No data found in Request Log sheet.');
+      return null;
+    }
+
+    // Get column indices dynamically
+    const typeColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_REQUEST_TYPE_COLUMN);
+    const monthColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_MONTH_COLUMN);
+    const yearColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_YEAR_COLUMN);
+    const startTimeColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_START_TIME_COLUMN);
+
+    // Get all data from Request Log
+    const data = requestLogSheet.getRange(2, 1, lastRow - 1, requestLogSheet.getLastColumn()).getValues();
+
+    // Find the most recent Submission request by comparing Month and Year, not request date
+    let latestSubmissionRequest = null;
+    let latestYearMonth = null;
+
+    for (const row of data) {
+      const type = row[typeColIndex - 1];
+      const month = row[monthColIndex - 1];
+      const year = row[yearColIndex - 1];
+      const requestDateTime = new Date(row[startTimeColIndex - 1]);
+
+      if (type === 'Submission') {
+        // Create a comparable date from the Month and Year columns
+        const monthNames = [
+          'January',
+          'February',
+          'March',
+          'April',
+          'May',
+          'June',
+          'July',
+          'August',
+          'September',
+          'October',
+          'November',
+          'December',
+        ];
+        const monthIndex = monthNames.indexOf(month);
+        if (monthIndex !== -1) {
+          const yearMonthDate = new Date(parseInt(year), monthIndex, 1);
+
+          if (!latestYearMonth || yearMonthDate > latestYearMonth) {
+            latestYearMonth = yearMonthDate;
+            latestSubmissionRequest = {
+              month: month,
+              year: year.toString(),
+              requestDateTime: requestDateTime,
+            };
+          }
+        }
+      }
+    }
+
+    if (latestSubmissionRequest) {
+      Logger.log(
+        `Found latest submission request: ${latestSubmissionRequest.month} ${latestSubmissionRequest.year} (requested on ${latestSubmissionRequest.requestDateTime})`
+      );
+    } else {
+      Logger.log('No submission requests found in Request Log.');
+    }
+
+    return latestSubmissionRequest;
+  } catch (error) {
+    Logger.log(`Error in getLatestSubmissionRequest: ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * Validates that a submission request exists before running evaluations.
+ * @returns {boolean} - True if validation passes, false otherwise
+ */
+function validateSubmissionRequestExists() {
+  const latestSubmissionRequest = getLatestSubmissionRequest();
+
+  if (!latestSubmissionRequest) {
+    alertAndLog('Error: No submission requests found in Request Log. Please run "Request Submissions" first.');
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Gets the reporting month information from the latest submission request.
+ * @returns {{month: string, year: string}|null} - The month and year to be evaluated
+ */
+function getReportingMonthFromRequestLog() {
+  const latestSubmissionRequest = getLatestSubmissionRequest();
+
+  if (!latestSubmissionRequest) {
+    return null;
+  }
+
+  // Create date object for the first day of the reporting month
+  const monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  const monthIndex = monthNames.indexOf(latestSubmissionRequest.month);
+  if (monthIndex === -1) {
+    Logger.log(`Error: Invalid month name: ${latestSubmissionRequest.month}`);
+    return;
+  }
+  const deliverableMonthDate = new Date(parseInt(latestSubmissionRequest.year), monthIndex, 1);
+  Logger.log(
+    `Reporting month date: ${Utilities.formatDate(deliverableMonthDate, getProjectTimeZone(), 'yyyy-MM-dd HH:mm:ss z')}`
+  );
+
+  return {
+    month: latestSubmissionRequest.month,
+    year: latestSubmissionRequest.year,
+    monthName: `${latestSubmissionRequest.month} ${latestSubmissionRequest.year}`,
+    firstDayDate: deliverableMonthDate,
+  };
 }
 
 /**

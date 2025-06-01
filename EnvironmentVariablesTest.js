@@ -55,8 +55,15 @@ Please add links your contributions during the month `;
     SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
     GRADE_SUBMITTER_COLUMN = 'Submitter';
     GRADE_FINAL_SCORE_COLUMN = 'Final Score';
-    CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
+    CRT_SELECTION_DATE_COLUMN = 'Selection Date';
     SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
+
+    // Request Log columns
+    REQUEST_LOG_REQUEST_TYPE_COLUMN = 'Request Type';
+    REQUEST_LOG_MONTH_COLUMN = 'Month';
+    REQUEST_LOG_YEAR_COLUMN = 'Year';
+    REQUEST_LOG_START_TIME_COLUMN = 'Start Time';
+    REQUEST_LOG_END_TIME_COLUMN = 'End Time';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 15;
@@ -87,7 +94,7 @@ Please add links your contributions during the month `;
 
     // Specify your testing sheets/forms/etc. here:
     // Spreadsheets:
-    AMBASSADOR_REGISTRY_SPREADSHEET_ID = '14aHm1EiK48RoclGYydI7OzcFcExYUr9tdQ6PlhjCbAg'; //"Ambassador Registry"
+    AMBASSADOR_REGISTRY_SPREADSHEET_ID = '14aHm1EiK48RoclGYydI7OzcFcExYUr9tdQ6PlhjCbAg'; // "Ambassador Registry"
     AMBASSADORS_SCORES_SPREADSHEET_ID = '1lVUaCGCCbfD3l9e8MEfQVBKaljm7A5aKX7RJAsUrWfA'; // "Ambassadors' Scores"
     AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1lVUaCGCCbfD3l9e8MEfQVBKaljm7A5aKX7RJAsUrWfA'; // "Ambassador Submission Responses"
     EVALUATION_RESPONSES_SPREADSHEET_ID = '1lVUaCGCCbfD3l9e8MEfQVBKaljm7A5aKX7RJAsUrWfA'; // "Ambassador Evaluations' Responses"
@@ -126,13 +133,20 @@ Please add links your contributions during the month`;
     GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating?';
     GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5';
     GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks (optional)';
-    SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points';
+    SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points Last 6 Months';
     SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';
     SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
     GRADE_SUBMITTER_COLUMN = 'Submitter';
     GRADE_FINAL_SCORE_COLUMN = 'Final Score';
-    CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
+    CRT_SELECTION_DATE_COLUMN = 'Selection Date';
     SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
+
+    // Request Log columns
+    REQUEST_LOG_REQUEST_TYPE_COLUMN = 'Request Type';
+    REQUEST_LOG_MONTH_COLUMN = 'Month';
+    REQUEST_LOG_YEAR_COLUMN = 'Year';
+    REQUEST_LOG_START_TIME_COLUMN = 'Start Time';
+    REQUEST_LOG_END_TIME_COLUMN = 'End Time';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 20;
@@ -203,8 +217,15 @@ Please add links your contributions during the month `;
     SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
     GRADE_SUBMITTER_COLUMN = 'Submitter';
     GRADE_FINAL_SCORE_COLUMN = 'Final Score';
-    CRT_SELECTION_DATE_COLUMNT = 'Selection Date';
+    CRT_SELECTION_DATE_COLUMN = 'Selection Date';
     SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
+
+    // Request Log columns
+    REQUEST_LOG_REQUEST_TYPE_COLUMN = 'Request Type';
+    REQUEST_LOG_MONTH_COLUMN = 'Month';
+    REQUEST_LOG_YEAR_COLUMN = 'Year';
+    REQUEST_LOG_START_TIME_COLUMN = 'Start Time';
+    REQUEST_LOG_END_TIME_COLUMN = 'End Time';
 
     // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
     SUBMISSION_WINDOW_MINUTES = 15;
