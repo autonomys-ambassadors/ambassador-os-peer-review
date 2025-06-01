@@ -83,8 +83,14 @@ function copyFinalScoresToOverallScore() {
       throw new Error('Overall Score sheet not found.');
     }
 
+    // Use the latest Evaluation request to determine the reporting month
+    const reportingMonth = getReportingMonthFromRequestLog('Evaluation');
+    if (!reportingMonth) {
+      alertAndLog('Error: Could not determine reporting month from Request Log.');
+      throw new Error('Reporting month not found.');
+    }
+    const currentMonthDate = reportingMonth.firstDayDate;
     const spreadsheetTimeZone = getProjectTimeZone(); // Get project time zone
-    const currentMonthDate = getFirstDayOfReportingMonth(); // getting reporting month based on Submission window
     Logger.log(`Current month date for copying scores: ${currentMonthDate.toISOString()}`);
 
     const monthSheetName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
@@ -96,7 +102,6 @@ function copyFinalScoresToOverallScore() {
     }
 
     // Searching column index in "Overall score" by date
-    // TODO Suggstion: improve getColumnIndexByName to handle the month case?
     const existingColumns = overallScoreSheet.getRange(1, 1, 1, overallScoreSheet.getLastColumn()).getValues()[0];
     const monthColumnIndex =
       existingColumns.findIndex((header) => header instanceof Date && header.getTime() === currentMonthDate.getTime()) +
@@ -212,10 +217,17 @@ function calculatePenaltyPoints() {
     throw new Error('Overall Score, Review Log, or Evaluation Response sheets are missing');
   }
 
+  // Use the latest Evaluation request to determine the reporting month
+  const reportingMonth = getReportingMonthFromRequestLog('Evaluation');
+  if (!reportingMonth) {
+    alertAndLog('Error: Could not determine reporting month from Request Log.');
+    throw new Error('Reporting month not found.');
+  }
+  const currentReportingMonth = reportingMonth.firstDayDate;
+
   // Get headers and indices
   const headersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
   const penaltyPointsColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
-  const currentReportingMonth = getFirstDayOfReportingMonth(); // getting reporting month based on Submission window
   const currentMonthColIndex =
     headersRange.findIndex((header) => header instanceof Date && header.getTime() === currentReportingMonth.getTime()) +
     1;

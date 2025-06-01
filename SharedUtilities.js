@@ -1048,11 +1048,12 @@ function logRequest(type, month, year, requestDateTime, windowEndDateTime) {
 }
 
 /**
- * Gets the most recent submission request from the Request Log to determine which month to evaluate.
+ * Gets the most recent request of a given type (e.g., 'Submission', 'Evaluation') from the Request Log.
  * Uses the Month and Year columns from the request log, not the Request date time.
- * @returns {{month: string, year: string, requestDateTime: Date}|null} - The most recent submission request details or null if not found
+ * @param {string} type - The type of request to search for (e.g., 'Submission', 'Evaluation').
+ * @returns {{month: string, year: string, requestDateTime: Date}|null} - The most recent request details or null if not found
  */
-function getLatestSubmissionRequest() {
+function getLatestRequestByType(type) {
   try {
     const spreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
     const requestLogSheet = spreadsheet.getSheetByName('Request Log');
@@ -1077,17 +1078,17 @@ function getLatestSubmissionRequest() {
     // Get all data from Request Log
     const data = requestLogSheet.getRange(2, 1, lastRow - 1, requestLogSheet.getLastColumn()).getValues();
 
-    // Find the most recent Submission request by comparing Month and Year, not request date
-    let latestSubmissionRequest = null;
+    // Find the most recent request of the given type by comparing Month and Year, not request date
+    let latestRequest = null;
     let latestYearMonth = null;
 
     for (const row of data) {
-      const type = row[typeColIndex - 1];
+      const rowType = row[typeColIndex - 1];
       const month = row[monthColIndex - 1];
       const year = row[yearColIndex - 1];
       const requestDateTime = new Date(row[startTimeColIndex - 1]);
 
-      if (type === 'Submission') {
+      if (rowType === type) {
         // Create a comparable date from the Month and Year columns
         const monthNames = [
           'January',
@@ -1109,7 +1110,7 @@ function getLatestSubmissionRequest() {
 
           if (!latestYearMonth || yearMonthDate > latestYearMonth) {
             latestYearMonth = yearMonthDate;
-            latestSubmissionRequest = {
+            latestRequest = {
               month: month,
               year: year.toString(),
               requestDateTime: requestDateTime,
@@ -1119,44 +1120,30 @@ function getLatestSubmissionRequest() {
       }
     }
 
-    if (latestSubmissionRequest) {
+    if (latestRequest) {
       Logger.log(
-        `Found latest submission request: ${latestSubmissionRequest.month} ${latestSubmissionRequest.year} (requested on ${latestSubmissionRequest.requestDateTime})`
+        `Found latest ${type} request: ${latestRequest.month} ${latestRequest.year} (requested on ${latestRequest.requestDateTime})`
       );
     } else {
-      Logger.log('No submission requests found in Request Log.');
+      Logger.log(`No ${type} requests found in Request Log.`);
     }
 
-    return latestSubmissionRequest;
+    return latestRequest;
   } catch (error) {
-    Logger.log(`Error in getLatestSubmissionRequest: ${error.message}`);
+    Logger.log(`Error in getLatestRequestByType: ${error.message}`);
     return null;
   }
 }
 
 /**
- * Validates that a submission request exists before running evaluations.
- * @returns {boolean} - True if validation passes, false otherwise
+ * Gets the reporting month information from the latest request of a given type.
+ * @param {string} type - The type of request to search for (e.g., 'Submission', 'Evaluation').
+ * @returns {{month: string, year: string, monthName: string, firstDayDate: Date}|null} - The month and year to be evaluated
  */
-function validateSubmissionRequestExists() {
-  const latestSubmissionRequest = getLatestSubmissionRequest();
+function getReportingMonthFromRequestLog(type) {
+  const latestRequest = getLatestRequestByType(type);
 
-  if (!latestSubmissionRequest) {
-    alertAndLog('Error: No submission requests found in Request Log. Please run "Request Submissions" first.');
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Gets the reporting month information from the latest submission request.
- * @returns {{month: string, year: string}|null} - The month and year to be evaluated
- */
-function getReportingMonthFromRequestLog() {
-  const latestSubmissionRequest = getLatestSubmissionRequest();
-
-  if (!latestSubmissionRequest) {
+  if (!latestRequest) {
     return null;
   }
 
@@ -1175,20 +1162,20 @@ function getReportingMonthFromRequestLog() {
     'November',
     'December',
   ];
-  const monthIndex = monthNames.indexOf(latestSubmissionRequest.month);
+  const monthIndex = monthNames.indexOf(latestRequest.month);
   if (monthIndex === -1) {
-    Logger.log(`Error: Invalid month name: ${latestSubmissionRequest.month}`);
+    Logger.log(`Error: Invalid month name: ${latestRequest.month}`);
     return;
   }
-  const deliverableMonthDate = new Date(parseInt(latestSubmissionRequest.year), monthIndex, 1);
+  const deliverableMonthDate = new Date(parseInt(latestRequest.year), monthIndex, 1);
   Logger.log(
     `Reporting month date: ${Utilities.formatDate(deliverableMonthDate, getProjectTimeZone(), 'yyyy-MM-dd HH:mm:ss z')}`
   );
 
   return {
-    month: latestSubmissionRequest.month,
-    year: latestSubmissionRequest.year,
-    monthName: `${latestSubmissionRequest.month} ${latestSubmissionRequest.year}`,
+    month: latestRequest.month,
+    year: latestRequest.year,
+    monthName: `${latestRequest.month} ${latestRequest.year}`,
     firstDayDate: deliverableMonthDate,
   };
 }

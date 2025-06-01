@@ -7,7 +7,7 @@ function requestEvaluationsModule() {
     return; // Exit if no submission request found
   }
 
-  const reportingMonth = getReportingMonthFromRequestLog();
+  const reportingMonth = getReportingMonthFromRequestLog('Submission');
   if (!reportingMonth) {
     alertAndLog('Error: Could not determine reporting month from Request Log.');
     return;
