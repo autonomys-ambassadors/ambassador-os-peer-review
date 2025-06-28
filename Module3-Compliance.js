@@ -603,8 +603,8 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
       return;
     }
     // Send to sponsor, BCC CRT and accused
-    sendEmailNotification(SPONSOR_EMAIL, subject, emailBody, bccList);
-    Logger.log(`Sent CRT referral for ${ambassadorDiscord} to sponsor (${SPONSOR_EMAIL}), BCC: ${bccList}`);
+    //sendEmailNotification(SPONSOR_EMAIL, subject, emailBody, bccList);
+    Logger.log(`DID NOT Send CRT referral for ${ambassadorDiscord} to sponsor (${SPONSOR_EMAIL}), BCC: ${bccList}`);
   } catch (e) {
     Logger.log('Error in referInadequateContributionToCRT: ' + e);
   }
