@@ -476,7 +476,7 @@ function getContributionDetailsByEmail(email) {
       const contributionText = latestSubmissionRow[contributionDetailsColumnIndex - 1]; // Contribution details in the 4th column
       const contributionLinks = latestSubmissionRow[contributionLinksColumnIndex - 1]; // Links in the 5th column
       Logger.log(`Latest contribution found for email: ${email}`);
-      return `Contribution Details: ${contributionText}\nLinks: ${contributionLinks}`;
+      return `Contribution Details: ${contributionText}<br><br>Links: ${contributionLinks}`;
     }
 
     Logger.log(`No contribution details found for email: ${email}`);
@@ -698,7 +698,7 @@ function processEvaluationResponse(e) {
     Logger.log(`Evaluator Discord Handle: ${evaluatorDiscordHandle}`);
 
     // Get the reporting month name from Request Log
-    const reportingMonth = getReportingMonthFromRequestLog();
+    const reportingMonth = getReportingMonthFromRequestLog('Evaluation');
     if (!reportingMonth) {
       Logger.log('Error: Could not determine reporting month from Request Log.');
       return;
