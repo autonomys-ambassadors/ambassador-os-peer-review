@@ -178,6 +178,16 @@ Ambassador {discordHandle} is being referred to the CRT due to Inadequate Contri
 {crtNote}
 `;
 
+// Inadequate Contribution Notification Email Template (sent directly to ambassador)
+let INADEQUATE_CONTRIBUTION_NOTIFICATION_EMAIL_TEMPLATE = `
+Hello Ambassador,<br><br>
+I write to inform you that the AmbassadorOS process has lodged a formal case to the Conflict Resolution Team based on {monthName} DELIVERABLES triggering Inadequate Contribution. You have scored below 3 in more than 2 of the last 6 months.<br><br>
+Peer ambassadors noticing deceptive or low-quality contributions often feel disappointed by the lack of fairness and accountability expected in the Ambassador Program.<br><br>
+I look forward to your response within 3 business days ({deadlineDate}).<br><br>
+Thank you for your attention to this matter.<br><br>
+The Autonomys Community Team
+`;
+
 // Primary team Responsibilities
 const PrimaryTeamResponsibilities = {
   support: `Provide peer-to-peer support and create support materials (e.g., articles),<br>
@@ -253,27 +263,28 @@ function refreshGlobalVariables() {
 
 // ===== Generic function to send email =====
 /**
- * Sends an email notification. If bcc is provided, sends as BCC.
+ * Sends an email notification. Supports TO, CC, and BCC recipients.
  * In testing mode with TESTER_EMAIL set, redirects all emails to tester with original recipient info.
- * @param {string} recipientEmail - The main recipient's email address (can be empty if only BCC is used).
+ * @param {string} recipientEmail - The main recipient's email address (can be empty if only CC/BCC is used).
  * @param {string} subject - The subject of the email.
  * @param {string} body - The body of the email (plain text or HTML).
  * @param {string} [bcc] - Optional comma-separated list of BCC recipients.
+ * @param {string} [cc] - Optional comma-separated list of CC recipients.
  */
-function sendEmailNotification(recipientEmail, subject, body, bcc) {
+function sendEmailNotification(recipientEmail, subject, body, bcc, cc) {
   try {
     if (!SEND_EMAIL) {
-      logEmailNotSent(recipientEmail, subject, bcc);
+      logEmailNotSent(recipientEmail, subject, bcc, cc);
       return;
     }
 
     if (testing) {
-      sendTestEmail(recipientEmail, subject, body, bcc);
+      sendTestEmail(recipientEmail, subject, body, bcc, cc);
     } else {
-      sendProductionEmail(recipientEmail, subject, body, bcc);
+      sendProductionEmail(recipientEmail, subject, body, bcc, cc);
     }
   } catch (error) {
-    Logger.log(`Failed to send email to ${recipientEmail}, BCC: ${bcc}: ${error.message}`);
+    Logger.log(`Failed to send email to ${recipientEmail}, CC: ${cc}, BCC: ${bcc}: ${error.message}`);
   }
 }
 
@@ -283,12 +294,14 @@ function sendEmailNotification(recipientEmail, subject, body, bcc) {
  * @param {string} subject - Email subject
  * @param {string} body - Email body
  * @param {string} bcc - BCC recipients
+ * @param {string} cc - CC recipients
  */
-function sendTestEmail(recipientEmail, subject, body, bcc) {
+function sendTestEmail(recipientEmail, subject, body, bcc, cc) {
   const originalRecipient = recipientEmail || '[none]';
   const originalBcc = bcc || '[none]';
+  const originalCc = cc || '[none]';
   const testSubject = `[TEST] ${subject}`;
-  const testBody = buildTestEmailBody(originalRecipient, originalBcc, body);
+  const testBody = buildTestEmailBody(originalRecipient, originalBcc, originalCc, body);
 
   const mailOptions = {
     to: TESTER_EMAIL,
@@ -298,7 +311,7 @@ function sendTestEmail(recipientEmail, subject, body, bcc) {
 
   MailApp.sendEmail(mailOptions);
   Logger.log(
-    `Test email redirected to tester: ${TESTER_EMAIL}, Original recipient: ${originalRecipient}, BCC: ${originalBcc}, Subject: ${testSubject}`
+    `Test email redirected to tester: ${TESTER_EMAIL}, Original recipient: ${originalRecipient}, CC: ${originalCc}, BCC: ${originalBcc}, Subject: ${testSubject}`
   );
 }
 
@@ -306,12 +319,18 @@ function sendTestEmail(recipientEmail, subject, body, bcc) {
  * Builds the test email body with original recipient information.
  * @param {string} originalRecipient - Original recipient email
  * @param {string} originalBcc - Original BCC recipients
+ * @param {string} originalCc - Original CC recipients
  * @param {string} body - Original email body
  * @returns {string} - Formatted test email body
  */
-function buildTestEmailBody(originalRecipient, originalBcc, body) {
+function buildTestEmailBody(originalRecipient, originalBcc, originalCc, body) {
   let testBody = `<p><strong>Testing email would have gone to: ${originalRecipient}</strong></p>
 `;
+
+  if (originalCc !== '[none]') {
+    testBody += `<p><strong>CC would have gone to: ${originalCc}</strong></p>
+`;
+  }
 
   if (originalBcc !== '[none]') {
     testBody += `<p><strong>BCC would have gone to: ${originalBcc}</strong></p>
@@ -329,20 +348,27 @@ ${body}`;
  * @param {string} subject - Email subject
  * @param {string} body - Email body
  * @param {string} bcc - BCC recipients
+ * @param {string} cc - CC recipients
  */
-function sendProductionEmail(recipientEmail, subject, body, bcc) {
+function sendProductionEmail(recipientEmail, subject, body, bcc, cc) {
   const mailOptions = {
     to: recipientEmail,
     subject: subject,
     htmlBody: body,
   };
 
+  if (cc) {
+    mailOptions.cc = cc;
+  }
+
   if (bcc) {
     mailOptions.bcc = bcc;
   }
 
   MailApp.sendEmail(mailOptions);
-  Logger.log(`Email sent to: ${recipientEmail || '[none]'}, BCC: ${bcc || '[none]'}, Subject: ${subject}`);
+  Logger.log(
+    `Email sent to: ${recipientEmail || '[none]'}, CC: ${cc || '[none]'}, BCC: ${bcc || '[none]'}, Subject: ${subject}`
+  );
 }
 
 /**
@@ -350,14 +376,15 @@ function sendProductionEmail(recipientEmail, subject, body, bcc) {
  * @param {string} recipientEmail - Recipient email
  * @param {string} subject - Email subject
  * @param {string} bcc - BCC recipients
+ * @param {string} cc - CC recipients
  */
-function logEmailNotSent(recipientEmail, subject, bcc) {
+function logEmailNotSent(recipientEmail, subject, bcc, cc) {
   if (!testing) {
     Logger.log(
-      `WARNING: Production mode with email disabled. Email logged but NOT SENT to: ${recipientEmail}, BCC: ${bcc}, Subject: ${subject}`
+      `WARNING: Production mode with email disabled. Email logged but NOT SENT to: ${recipientEmail}, CC: ${cc}, BCC: ${bcc}, Subject: ${subject}`
     );
   } else {
-    Logger.log(`Test mode: Email to be sent to: ${recipientEmail}, BCC: ${bcc}, Subject: ${subject}`);
+    Logger.log(`Test mode: Email to be sent to: ${recipientEmail}, CC: ${cc}, BCC: ${bcc}, Subject: ${subject}`);
   }
 }
 
@@ -1208,4 +1235,65 @@ function getCurrentCRTMemberEmails() {
 
   // For each, look up both email and discord handle
   return crtIdentifiers.map((id) => lookupEmailAndDiscord(id) || { email: id, discordHandle: id });
+}
+
+/**
+ * Gets the current reporting month name from the request log.
+ * @returns {string} - The month name (e.g., "January", "February")
+ */
+function getCurrentReportingMonthName() {
+  try {
+    const reportingMonth = getReportingMonthFromRequestLog('Submission');
+    if (reportingMonth && reportingMonth.monthName) {
+      return reportingMonth.monthName.toUpperCase();
+    }
+
+    // Fallback to previous month if no request log found
+    const previousMonth = getPreviousMonthDate();
+    const monthNames = [
+      'JANUARY',
+      'FEBRUARY',
+      'MARCH',
+      'APRIL',
+      'MAY',
+      'JUNE',
+      'JULY',
+      'AUGUST',
+      'SEPTEMBER',
+      'OCTOBER',
+      'NOVEMBER',
+      'DECEMBER',
+    ];
+    return monthNames[previousMonth.getMonth()];
+  } catch (error) {
+    Logger.log(`Error getting current reporting month name: ${error.message}`);
+    return 'CURRENT MONTH';
+  }
+}
+
+/**
+ * Calculates a date that is the specified number of business days from today.
+ * @param {number} businessDays - Number of business days to add
+ * @returns {string} - Formatted date string (e.g., "January 15, 2024")
+ */
+function getBusinessDaysFromToday(businessDays) {
+  try {
+    let currentDate = new Date();
+    let addedDays = 0;
+
+    while (addedDays < businessDays) {
+      currentDate.setDate(currentDate.getDate() + 1);
+      // Check if it's a weekday (Monday = 1, Sunday = 0)
+      const dayOfWeek = currentDate.getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        // Not Saturday or Sunday
+        addedDays++;
+      }
+    }
+
+    return Utilities.formatDate(currentDate, getProjectTimeZone(), 'MMMM dd, yyyy');
+  } catch (error) {
+    Logger.log(`Error calculating business days: ${error.message}`);
+    return 'within 3 business days';
+  }
 }

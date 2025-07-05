@@ -568,43 +568,41 @@ function sendExpulsionNotifications(discordHandle) {
 
 /**
  * Refers an ambassador to the CRT for inadequate contribution.
+ * Sends a notification email directly to the subject ambassador, copying the sponsor.
  * @param {string} discordHandle - The Discord handle of the ambassador being referred.
  * @param {number} inadequateContributionCount - The number of times the ambassador scored below the inadequate contribution threshold in the last 6 months.
  */
 function referInadequateContributionToCRT(discordHandle, inadequateContributionCount) {
   try {
-    // Get CRT members (email and discord) using utility
-    const crtMembers = getCurrentCRTMemberEmails();
-    const crtEmails = crtMembers.map((m) => m.email).filter(Boolean);
-    const crtHandles = crtMembers.map((m) => m.discordHandle).filter(Boolean);
-
     // Get ambassador's email and discord handle using utility
     const accused = lookupEmailAndDiscord(discordHandle);
     const ambassadorEmail = accused ? accused.email : '';
     const ambassadorDiscord = accused ? accused.discordHandle : discordHandle;
 
-    // Compose the email
-    let crtNote = '';
-    if (crtHandles.includes(ambassadorDiscord.toLowerCase()) || crtEmails.includes(ambassadorEmail)) {
-      crtNote = `<br><b>Note:</b> Ambassador ${ambassadorDiscord} also must not participate on the CRT until this complaint is resolved.`;
-    }
-    const emailBody = CRT_INADEQUATE_CONTRIBUTION_EMAIL_TEMPLATE.replaceAll('{discordHandle}', ambassadorDiscord)
-      .replaceAll('{inadequateContributionCount}', inadequateContributionCount)
-      .replaceAll('{crtNote}', crtNote)
-      .replaceAll('{inadequateContributionScoreThreshold}', INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD);
-    const subject = `Referral to CRT: Inadequate Contribution for Ambassador ${ambassadorDiscord}`;
-
-    // BCC all CRT members and the ambassador
-    const bccList = Array.from(new Set([...crtEmails, ambassadorEmail]))
-      .filter(Boolean)
-      .join(',');
-    if (!bccList) {
-      Logger.log('No valid emails found for CRT or ambassador.');
+    if (!ambassadorEmail) {
+      Logger.log(
+        `Error: No email found for ambassador ${ambassadorDiscord}. Cannot send inadequate contribution notification.`
+      );
       return;
     }
-    // Send to sponsor, BCC CRT and accused
-    //sendEmailNotification(SPONSOR_EMAIL, subject, emailBody, bccList);
-    Logger.log(`DID NOT Send CRT referral for ${ambassadorDiscord} to sponsor (${SPONSOR_EMAIL}), BCC: ${bccList}`);
+
+    // Get the current reporting month name and calculate deadline
+    const currentMonthName = getCurrentReportingMonthName();
+    const deadlineDate = getBusinessDaysFromToday(3);
+
+    // Compose the email using the new template
+    const emailBody = INADEQUATE_CONTRIBUTION_NOTIFICATION_EMAIL_TEMPLATE.replaceAll(
+      '{monthName}',
+      currentMonthName
+    ).replaceAll('{deadlineDate}', deadlineDate);
+
+    const subject = `Autonomys AmbasasadorOS CRT complaint - Inadequate Contribution`;
+
+    // Send to ambassador, CC sponsor
+    sendEmailNotification(ambassadorEmail, subject, emailBody, '', SPONSOR_EMAIL);
+    Logger.log(
+      `Sent inadequate contribution notification to ${ambassadorEmail} (${ambassadorDiscord}), CC: ${SPONSOR_EMAIL}`
+    );
   } catch (e) {
     Logger.log('Error in referInadequateContributionToCRT: ' + e);
   }
