@@ -32,7 +32,7 @@ function validateEmailsInSubmissionForm(formResponseSheetId, registrySheetId) {
       )
       .getValues()
       .flat()
-      .map((email) => email.trim().toLowerCase());
+      .map((email) => normalizeEmail(email));
     Logger.log(`Loaded ${registryEmails.length} emails from the Registry.`);
 
     // Get headers and column indices dynamically
@@ -52,7 +52,7 @@ function validateEmailsInSubmissionForm(formResponseSheetId, registrySheetId) {
 
     allRows.forEach((row, index) => {
       const timestamp = new Date(row[timestampColumnIndex - 1]);
-      const email = row[emailColumnIndex - 1]?.trim().toLowerCase();
+      const email = normalizeEmail(row[emailColumnIndex - 1]);
 
       const isWithinWindow = timestamp >= submissionWindowStart && timestamp <= submissionWindowEnd;
       const isValidEmail = registryEmails.includes(email);

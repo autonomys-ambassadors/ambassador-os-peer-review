@@ -99,7 +99,7 @@ function requestSubmissionsModule(month, year) {
   // Filter out ambassadors with 'Expelled' in their status
   const eligibleEmails = registryData
     .filter((row) => !row[registryAmbassadorStatus - 1].toLowerCase().includes('expelled')) // Exclude expelled ambassadors - case-insensitive now
-    .map((row) => [row[registryEmailColIndex - 1], row[registryAmbassadorDiscordHandle - 1]]); // Extract only emails
+    .map((row) => [normalizeEmail(row[registryEmailColIndex - 1]), row[registryAmbassadorDiscordHandle - 1]]); // Extract only emails
   Logger.log(`Eligible ambassadors emails: ${JSON.stringify(eligibleEmails)}`);
 
   // Calculate the exact deadline date based on submission window
@@ -211,7 +211,7 @@ function checkNonRespondents() {
     .getValues();
   const eligibleEmails = registryData
     .filter((row) => !row[registryAmbassadorStatusColIndex - 1].toLowerCase().includes('expelled')) // Case-insensitive check
-    .map((row) => row[registryEmailColIndex - 1]);
+    .map((row) => normalizeEmail(row[registryEmailColIndex - 1]));
 
   Logger.log(`Eligible emails: ${eligibleEmails}`);
 
@@ -226,7 +226,7 @@ function checkNonRespondents() {
     return timestamp >= submissionWindowStart && timestamp <= submissionWindowEnd;
   });
 
-  const respondedEmails = validResponses.map((row) => row[responseEmailColIndex - 1]);
+  const respondedEmails = validResponses.map((row) => normalizeEmail(row[responseEmailColIndex - 1]));
   Logger.log(`Responded emails: ${respondedEmails}`);
 
   // Identify non-respondents

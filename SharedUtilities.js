@@ -388,6 +388,35 @@ function logEmailNotSent(recipientEmail, subject, bcc, cc) {
   }
 }
 
+/**
+ * Normalizes an email address to a consistent format.
+ * - Converts to lowercase.
+ * - For Gmail addresses, removes dots from the local part.
+ * @param {string} email - The email address to normalize.
+ * @returns {string|null} The normalized email address, or null if the input is invalid.
+ */
+function normalizeEmail(email) {
+  if (!email || typeof email !== 'string') {
+    return email;
+  }
+
+  let trimmedEmail = email.trim().toLowerCase();
+  const atIndex = trimmedEmail.lastIndexOf('@');
+
+  if (atIndex === -1) {
+    return trimmedEmail; // Return as-is if not a valid email format
+  }
+
+  const localPart = trimmedEmail.substring(0, atIndex);
+  const domain = trimmedEmail.substring(atIndex);
+
+  if (domain === '@gmail.com') {
+    return `${localPart.replace(/\./g, '')}${domain}`;
+  }
+
+  return trimmedEmail;
+}
+
 //     Submission/Evaluation WINDOW TIME SET/GET
 
 // Save the submission window start time (in PST)
