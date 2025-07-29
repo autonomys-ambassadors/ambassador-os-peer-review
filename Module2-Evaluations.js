@@ -462,9 +462,13 @@ function getContributionDetailsByEmail(email) {
 
     for (let row of formData) {
       const timestamp = new Date(row[formResponseTimestampColumnIndex - 1]); // Assuming Timestamp is in the 1st column
-      const respondentEmail = row[formResponseEmailColumnIndex - 1]?.trim().toLowerCase(); // Assuming Email is in the 2nd column
+      const respondentEmail = normalizeEmail(row[formResponseEmailColumnIndex - 1]); // Assuming Email is in the 2nd column
 
-      if (timestamp >= submissionWindowStart && timestamp <= submissionWindowEnd && respondentEmail === email) {
+      if (
+        timestamp >= submissionWindowStart &&
+        timestamp <= submissionWindowEnd &&
+        respondentEmail === normalizeEmail(email)
+      ) {
         if (!latestTimestamp || timestamp > latestTimestamp) {
           latestTimestamp = timestamp;
           latestSubmissionRow = row;
@@ -520,7 +524,7 @@ function getAmbassadorPrimaryTeam(email) {
 
     // Search for the ambassador's email and return their primary team
     for (let i = 1; i < registryData.length; i++) {
-      if (registryData[i][emailColIndex].toLowerCase() === email.toLowerCase()) {
+      if (normalizeEmail(registryData[i][emailColIndex]) === normalizeEmail(email)) {
         const primaryTeam = registryData[i][primaryTeamColIndex] || '';
         Logger.log(`Primary team found for ${email}: ${primaryTeam}`);
         return primaryTeam;
@@ -636,7 +640,7 @@ function processEvaluationResponse(e) {
       const answer = itemResponse.getResponse();
       Logger.log(`Question: ${question}, Answer: ${answer}, Type of answer: ${typeof answer}`);
       if (question === EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN) {
-        evaluatorEmail = String(answer).trim();
+        evaluatorEmail = normalizeEmail(String(answer));
       } else if (question === GOOGLE_FORM_EVALUATION_HANDLE_COLUMN) {
         submitterDiscordHandle = String(answer).trim();
       } else if (question === GOOGLE_FORM_EVALUATION_GRADE_COLUMN) {
@@ -670,7 +674,7 @@ function processEvaluationResponse(e) {
     const expectedSubmitters = [];
 
     for (const [submitterEmail, evaluators] of Object.entries(assignments)) {
-      if (evaluators.includes(evaluatorEmail)) {
+      if (evaluators.map(normalizeEmail).includes(normalizeEmail(evaluatorEmail))) {
         const submitterDiscord = lookupEmailAndDiscord(submitterEmail)?.discordHandle;
         if (submitterDiscord) expectedSubmitters.push(submitterDiscord.trim());
       }
@@ -887,7 +891,11 @@ function sendEvaluationReminderEmails() {
     for (const [submitterEmail, evaluators] of Object.entries(reviewAssignments)) {
       evaluators.forEach((evaluatorEmail) => {
         // Count assigned evaluations per evaluator only once
-        const assignedEvaluations = reviewAssignments[submitterEmail].includes(evaluatorEmail) ? 1 : 0;
+        const assignedEvaluations = reviewAssignments[submitterEmail]
+          .map(normalizeEmail)
+          .includes(normalizeEmail(evaluatorEmail))
+          ? 1
+          : 0;
 
         // Check if this specific evaluation has been completed
         const completedEvaluations = validEvaluators.has(evaluatorEmail) ? 1 : 0;
@@ -939,7 +947,7 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
 
     nonRespondents.forEach((evaluatorEmail) => {
       // Skip ambassadors who are not eligible (marked as 'Expelled' or not found)
-      if (!eligibleEmails.includes(evaluatorEmail)) {
+      if (!eligibleEmails.map(normalizeEmail).includes(normalizeEmail(evaluatorEmail))) {
         Logger.log(`Skipping evaluator ${evaluatorEmail} (marked as 'Expelled' or not eligible).`);
         return;
       }
