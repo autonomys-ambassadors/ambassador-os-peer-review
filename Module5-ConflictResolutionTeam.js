@@ -40,8 +40,8 @@ function selectCRTMembers() {
   // Filter eligible ambassadors
   const eligibleAmbassadors = registryData
     .filter((row) => !row[statusColumnIndex - 1]?.toLowerCase().includes('expelled')) // Exclude expelled ambassadors
-    .map((row) => row[emailColumnIndex - 1]?.trim().toLowerCase()) // Extract valid emails
-    .filter((email) => email && !recentCRTMembers.includes(email)); // Exclude empty emails and recent CRT members
+    .map((row) => normalizeEmail(row[emailColumnIndex - 1])) // Extract valid emails
+    .filter((email) => email && !recentCRTMembers.map(normalizeEmail).includes(email)); // Exclude empty emails and recent CRT members
 
   Logger.log(`Eligible ambassadors emails: ${JSON.stringify(eligibleAmbassadors)}`);
 

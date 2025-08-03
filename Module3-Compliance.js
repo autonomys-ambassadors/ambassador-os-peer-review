@@ -259,7 +259,7 @@ function calculatePenaltyPoints() {
   const ambassadorData = registryData
     .filter((row) => row[registryEmailColumn]?.trim() && !row[registryStatusColumn]?.toLowerCase().includes('expelled'))
     .map((row) => ({
-      email: row[registryEmailColumn].trim().toLowerCase(),
+      email: normalizeEmail(row[registryEmailColumn]),
       discordHandle: row[registryDiscordColumn]?.trim().toLowerCase(),
     }));
 
@@ -311,9 +311,11 @@ function calculatePenaltyPoints() {
       // if processing current month, first color-code the nonEvaluators and non-submitters
       if (colIndex === currentMonthColIndex) {
         Logger.log(`Processing current month column (${colIndex}) for ${discordHandle}`);
-        const isNonSubmitter = !validSubmitters.includes(email);
+        const isNonSubmitter = !validSubmitters.map(normalizeEmail).includes(normalizeEmail(email));
         const isNonEvaluator = Object.values(assignments).some(
-          (evaluators) => evaluators.includes(email) && !validEvaluators.includes(email)
+          (evaluators) =>
+            evaluators.map(normalizeEmail).includes(normalizeEmail(email)) &&
+            !validEvaluators.map(normalizeEmail).includes(normalizeEmail(email))
         );
 
         const currentCell = overallScoresSheet.getRange(rowInScores, currentMonthColIndex);

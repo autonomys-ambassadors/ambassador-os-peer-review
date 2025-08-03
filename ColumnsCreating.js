@@ -56,7 +56,7 @@ function syncRegistryColumnsToOverallScore() {
     // Sync "Ambassadors' Discord Handles" and "Ambassador Id"
     for (let i = 1; i < registryData.length; i++) {
       let ambassadorId = registryData[i][registryAmbassadorIdColumnIndex - 1]; // Ambassador Id from registry
-      const email = registryData[i][registryEmailColumnIndex - 1]?.trim().toLowerCase(); // Ensure email is lowercased and trimmed
+      const email = normalizeEmail(registryData[i][registryEmailColumnIndex - 1]); // Ensure email is lowercased and trimmed
       const discordHandle = registryData[i][registryDiscordColumnIndex - 1]; // Discord Handle
       const registryAmbassadorStatus = registryData[i][registryStatusColumnIndex - 1]; // Ambassador Status
 
