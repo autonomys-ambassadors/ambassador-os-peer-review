@@ -155,9 +155,14 @@ You have been assessed one penalty point for failing to meet Submission or Evalu
 
 // Expulsion Email Template
 let EXPULSION_EMAIL_TEMPLATE = `
-Dear Ambassador,
-We regret to inform you that you have been expelled from the program for Failure to Participate according to Article 2, Section 10 of the Bylaws.
-`;
+Dear {Discord Handle},
+We regret to inform you that you have been expelled from the program for Failure to Participate according to Article 2, Section 10 of the Bylaws as of {Expulsion Date}.
+
+If you believe the expulsion is incorrect, you have the right to appeal your expulsion through the Conflict Resolution Team. Please email the Sponsor Representative at {Sponsor Email} including the reason for your appeal and any supporting documentation that the CRT should consider if you choose to appeal.
+
+We acknowledge and thank you for your contributions to the project as an Ambassador from {Start Date} to {Expulsion Date}.
+
+Autonomys Community Team`;
 
 // Notify Upcoming Peer Review Email Template
 let NOTIFY_UPCOMING_PEER_REVIEW = `
