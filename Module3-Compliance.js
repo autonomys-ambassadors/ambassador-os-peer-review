@@ -556,8 +556,23 @@ function sendExpulsionNotifications(discordHandle) {
     const subject = 'Expulsion from the Program';
     const sponsorBody = `Ambassador ${email} (${discordHandle}) has been expelled from the program for Failure to Participate according to Article 2, Section 10 of the Bylaws.`;
 
+    // Prepare variables for expulsion email template
+    const currentDate = new Date();
+    const timeZone = getProjectTimeZone();
+    const expulsionDate = Utilities.formatDate(currentDate, timeZone, 'MMMM dd, yyyy');
+
+    // Note: Start date is not currently tracked in the registry
+    // Using a placeholder message until a start date column is added
+    const startDate = 'your start date'; // TODO: Add start date tracking to registry
+
+    // Replace template tokens in the expulsion email
+    let expulsionEmailBody = EXPULSION_EMAIL_TEMPLATE.replace(/{Discord Handle}/g, discordHandle)
+      .replace(/{Expulsion Date}/g, expulsionDate)
+      .replace(/{Start Date}/g, startDate)
+      .replace(/{Sponsor Email}/g, SPONSOR_EMAIL);
+
     // Send notification to the expelled ambassador using generic email function
-    sendEmailNotification(email, subject, EXPULSION_EMAIL_TEMPLATE);
+    sendEmailNotification(email, subject, expulsionEmailBody);
     Logger.log(`Expulsion email sent to ${email}.`);
 
     // Send notification to the sponsor using generic email function
