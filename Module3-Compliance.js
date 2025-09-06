@@ -124,8 +124,9 @@ function getReportingMonthForScoreCopy() {
   // Use the latest Evaluation request to determine the reporting month
   const reportingMonth = getReportingMonthFromRequestLog('Evaluation');
   if (!reportingMonth) {
-    alertAndLog('Error: Could not determine reporting month from Request Log.');
-    throw new Error('Reporting month not found.');
+    const errorMsg = 'Error: Could not determine reporting month from Request Log.';
+    alertAndLog(errorMsg);
+    throw new Error(errorMsg);
   }
   const currentMonthDate = reportingMonth.firstDayDate;
   const spreadsheetTimeZone = getProjectTimeZone();
@@ -136,8 +137,9 @@ function getReportingMonthForScoreCopy() {
   const monthSheet = scoresSpreadsheet.getSheetByName(monthSheetName);
 
   if (!monthSheet) {
-    alertAndLog(`Month sheet "${monthSheetName}" not found.`);
-    throw new Error('Month sheet not found.');
+    const errorMsg = `Month sheet "${monthSheetName}" not found.`;
+    alertAndLog(errorMsg);
+    throw new Error(errorMsg);
   }
 
   return { currentMonthDate, monthSheetName, monthSheet };
@@ -158,8 +160,9 @@ function getScoreCopyColumnIndices(overallScoreSheet, monthSheet, currentMonthDa
     existingColumns.findIndex((header) => header instanceof Date && header.getTime() === currentMonthDate.getTime()) + 1;
   
   if (monthColumnIndex === 0) {
-    alertAndLog(`Column for "${monthSheetName}" not found in Overall score sheet.`);
-    throw new Error('Column for monthly score not found in Overall score sheet.');
+    const errorMsg = `Column for "${monthSheetName}" not found in Overall score sheet.`;
+    alertAndLog(errorMsg);
+    throw new Error(errorMsg);
   }
 
   const monthDiscordColIndex = getRequiredColumnIndexByName(monthSheet, GRADE_SUBMITTER_COLUMN);
@@ -222,8 +225,9 @@ function copyFinalScoresToOverallScore() {
     // Get overall score sheet
     const overallScoreSheet = getOverallScoreSheet();
     if (!overallScoreSheet) {
-      alertAndLog(`Sheet "${OVERALL_SCORE_SHEET_NAME}" isn't found.`);
-      throw new Error('Overall Score sheet not found.');
+      const errorMsg = `Sheet "${OVERALL_SCORE_SHEET_NAME}" not found.`;
+      alertAndLog(errorMsg);
+      throw new Error(errorMsg);
     }
 
     // Get reporting month data and month sheet
@@ -312,15 +316,17 @@ function initializePenaltyCalculationData() {
   const submissionsSheet = getSubmissionResponsesSheet();
 
   if (!registrySheet || !overallScoresSheet || !reviewLogSheet || !evaluationResponsesSheet) {
-    Logger.log('Error: One or more required sheets not found.');
-    throw new Error('Overall Score, Review Log, or Evaluation Response sheets are missing');
+    const errorMsg = 'Error: One or more required sheets not found.';
+    Logger.log(errorMsg);
+    throw new Error(errorMsg);
   }
 
   // Use the latest Evaluation request to determine the reporting month
   const reportingMonth = getReportingMonthFromRequestLog('Evaluation');
   if (!reportingMonth) {
-    alertAndLog('Error: Could not determine reporting month from Request Log.');
-    throw new Error('Reporting month not found.');
+    const errorMsg = 'Error: Could not determine reporting month from Request Log.';
+    alertAndLog(errorMsg);
+    throw new Error(errorMsg);
   }
   const currentReportingMonth = reportingMonth.firstDayDate;
 
@@ -332,8 +338,9 @@ function initializePenaltyCalculationData() {
     1;
 
   if (currentMonthColIndex === 0) {
-    Logger.log('Error: Current reporting month column not found.');
-    throw new Error('Current reporting month column not found.');
+    const errorMsg = 'Error: Current reporting month column not found.';
+    Logger.log(errorMsg);
+    throw new Error(errorMsg);
   }
   Logger.log(`Current reporting month column index: ${currentMonthColIndex}`);
 
