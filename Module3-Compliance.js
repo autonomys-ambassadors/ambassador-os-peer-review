@@ -77,6 +77,101 @@ function checkEvaluationWindowStart() {
 }
 
 /**
+ * Gets the reporting month data and creates the corresponding month sheet.
+ * @returns {Object} Object containing currentMonthDate, monthSheetName, and monthSheet
+ */
+function getReportingMonthForScoreCopy() {
+  // Use the latest Evaluation request to determine the reporting month
+  const reportingMonth = getReportingMonthFromRequestLog('Evaluation');
+  if (!reportingMonth) {
+    alertAndLog('Error: Could not determine reporting month from Request Log.');
+    throw new Error('Reporting month not found.');
+  }
+  const currentMonthDate = reportingMonth.firstDayDate;
+  const spreadsheetTimeZone = getProjectTimeZone();
+  Logger.log(`Current month date for copying scores: ${currentMonthDate.toISOString()}`);
+
+  const monthSheetName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
+  const scoresSpreadsheet = getScoresSpreadsheet();
+  const monthSheet = scoresSpreadsheet.getSheetByName(monthSheetName);
+
+  if (!monthSheet) {
+    alertAndLog(`Month sheet "${monthSheetName}" not found.`);
+    throw new Error('Month sheet not found.');
+  }
+
+  return { currentMonthDate, monthSheetName, monthSheet };
+}
+
+/**
+ * Gets column indices needed for score copying.
+ * @param {Sheet} overallScoreSheet - The Overall Score sheet
+ * @param {Sheet} monthSheet - The month sheet
+ * @param {Date} currentMonthDate - The current month date
+ * @param {string} monthSheetName - The month sheet name
+ * @returns {Object} Object containing column indices
+ */
+function getScoreCopyColumnIndices(overallScoreSheet, monthSheet, currentMonthDate, monthSheetName) {
+  // Find column index in "Overall score" by date
+  const existingColumns = overallScoreSheet.getRange(COMPLIANCE_HEADER_ROW, 1, 1, overallScoreSheet.getLastColumn()).getValues()[0];
+  const monthColumnIndex =
+    existingColumns.findIndex((header) => header instanceof Date && header.getTime() === currentMonthDate.getTime()) + 1;
+  
+  if (monthColumnIndex === 0) {
+    alertAndLog(`Column for "${monthSheetName}" not found in Overall score sheet.`);
+    throw new Error('Column for monthly score not found in Overall score sheet.');
+  }
+
+  const monthDiscordColIndex = getRequiredColumnIndexByName(monthSheet, GRADE_SUBMITTER_COLUMN);
+  const monthFinalScoreColIndex = getRequiredColumnIndexByName(monthSheet, GRADE_FINAL_SCORE_COLUMN);
+
+  return { monthColumnIndex, monthDiscordColIndex, monthFinalScoreColIndex };
+}
+
+/**
+ * Gets final scores from the month sheet.
+ * @param {Sheet} monthSheet - The month sheet
+ * @param {number} monthDiscordColIndex - Discord column index in month sheet
+ * @param {number} monthFinalScoreColIndex - Final score column index in month sheet
+ * @param {string} monthSheetName - The month sheet name for logging
+ * @returns {Array} Array of score objects with handle and score properties
+ */
+function getFinalScoresFromMonthSheet(monthSheet, monthDiscordColIndex, monthFinalScoreColIndex, monthSheetName) {
+  const finalScores = monthSheet
+    .getRange(COMPLIANCE_FIRST_DATA_ROW, 1, monthSheet.getLastRow() - 1, monthSheet.getLastColumn())
+    .getValues()
+    .map((row) => ({
+      handle: row[monthDiscordColIndex - 1],
+      score: row[monthFinalScoreColIndex - 1],
+    }));
+
+  Logger.log(`Retrieved ${finalScores.length} scores from "${monthSheetName}" sheet.`);
+  return finalScores;
+}
+
+/**
+ * Copies final scores to the overall score sheet by matching discord handles.
+ * @param {Array} finalScores - Array of score objects
+ * @param {Sheet} overallScoreSheet - The Overall Score sheet
+ * @param {number} monthColumnIndex - The month column index in overall score sheet
+ */
+function copyScoresToOverallSheet(finalScores, overallScoreSheet, monthColumnIndex) {
+  const overallSheetDiscordColumn = getRequiredColumnIndexByName(overallScoreSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+  const overallHandles = overallScoreSheet
+    .getRange(COMPLIANCE_FIRST_DATA_ROW, overallSheetDiscordColumn, overallScoreSheet.getLastRow() - 1, 1)
+    .getValues()
+    .flat();
+  
+  finalScores.forEach(({ handle, score }) => {
+    const rowIndex = overallHandles.findIndex((overallHandle) => overallHandle === handle) + 2;
+    if (rowIndex > 1 && score !== '') {
+      overallScoreSheet.getRange(rowIndex, monthColumnIndex).setValue(score);
+      Logger.log(`Copied score for handle ${handle} to row ${rowIndex} in Overall score sheet.`);
+    }
+  });
+}
+
+/**
  * Copies Final Score from the current month sheet to the current month column in the Overall score sheet.
  * Note: Even if Evaluations came late, they anyway helpful for accountability, while those evaluators are subject to fine.
  */
@@ -84,70 +179,34 @@ function copyFinalScoresToOverallScore() {
   try {
     Logger.log('Starting copy of Final Scores to Overall Score sheet.');
 
-    // open table "Ambassadors' Scores" and needed sheets
-    const scoresSpreadsheet = getScoresSpreadsheet();
-    const overallScoreSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
-
+    // Get overall score sheet
+    const overallScoreSheet = getOverallScoreSheet();
     if (!overallScoreSheet) {
       alertAndLog(`Sheet "${OVERALL_SCORE_SHEET_NAME}" isn't found.`);
       throw new Error('Overall Score sheet not found.');
     }
 
-    // Use the latest Evaluation request to determine the reporting month
-    const reportingMonth = getReportingMonthFromRequestLog('Evaluation');
-    if (!reportingMonth) {
-      alertAndLog('Error: Could not determine reporting month from Request Log.');
-      throw new Error('Reporting month not found.');
-    }
-    const currentMonthDate = reportingMonth.firstDayDate;
-    const spreadsheetTimeZone = getProjectTimeZone(); // Get project time zone
-    Logger.log(`Current month date for copying scores: ${currentMonthDate.toISOString()}`);
+    // Get reporting month data and month sheet
+    const { currentMonthDate, monthSheetName, monthSheet } = getReportingMonthForScoreCopy();
 
-    const monthSheetName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
-    const monthSheet = scoresSpreadsheet.getSheetByName(monthSheetName);
+    // Get column indices for score copying
+    const { monthColumnIndex, monthDiscordColIndex, monthFinalScoreColIndex } = getScoreCopyColumnIndices(
+      overallScoreSheet, 
+      monthSheet, 
+      currentMonthDate, 
+      monthSheetName
+    );
 
-    if (!monthSheet) {
-      alertAndLog(`Month sheet "${monthSheetName}" not found.`);
-      throw new Error('Month sheet not found.');
-    }
+    // Extract final scores from month sheet
+    const finalScores = getFinalScoresFromMonthSheet(
+      monthSheet, 
+      monthDiscordColIndex, 
+      monthFinalScoreColIndex, 
+      monthSheetName
+    );
 
-    // Searching column index in "Overall score" by date
-    const existingColumns = overallScoreSheet.getRange(COMPLIANCE_HEADER_ROW, 1, 1, overallScoreSheet.getLastColumn()).getValues()[0];
-    const monthColumnIndex =
-      existingColumns.findIndex((header) => header instanceof Date && header.getTime() === currentMonthDate.getTime()) +
-      1;
-    const monthDiscordColIndex = getRequiredColumnIndexByName(monthSheet, GRADE_SUBMITTER_COLUMN);
-    const monthFinalScoreColIndex = getRequiredColumnIndexByName(monthSheet, GRADE_FINAL_SCORE_COLUMN);
-
-    if (monthColumnIndex === 0) {
-      alertAndLog(`Column for "${monthSheetName}" not found in Overall score sheet.`);
-      throw new Error('Column for monthly score not found in Overall score sheet.');
-    }
-
-    // Fetch data from Final Score on month sheet
-    const finalScores = monthSheet
-      .getRange(COMPLIANCE_FIRST_DATA_ROW, 1, monthSheet.getLastRow() - 1, monthSheet.getLastColumn())
-      .getValues()
-      .map((row) => ({
-        handle: row[monthDiscordColIndex - 1],
-        score: row[monthFinalScoreColIndex - 1],
-      }));
-
-    Logger.log(`Retrieved ${finalScores.length} scores from "${monthSheetName}" sheet.`);
-
-    //Copy Final Score values to proper rows Overall score" by Discord Handles
-    const overallSheetDiscordColumn = getRequiredColumnIndexByName(overallScoreSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
-    const overallHandles = overallScoreSheet
-      .getRange(COMPLIANCE_FIRST_DATA_ROW, overallSheetDiscordColumn, overallScoreSheet.getLastRow() - 1, 1)
-      .getValues()
-      .flat();
-    finalScores.forEach(({ handle, score }) => {
-      const rowIndex = overallHandles.findIndex((overallHandle) => overallHandle === handle) + 2;
-      if (rowIndex > 1 && score !== '') {
-        overallScoreSheet.getRange(rowIndex, monthColumnIndex).setValue(score);
-        Logger.log(`Copied score for handle ${handle} to row ${rowIndex} in Overall score sheet.`);
-      }
-    });
+    // Copy scores to overall sheet
+    copyScoresToOverallSheet(finalScores, overallScoreSheet, monthColumnIndex);
 
     Logger.log('Copy of Final Scores to Overall Score sheet completed.');
   } catch (error) {
