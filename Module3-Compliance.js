@@ -11,16 +11,6 @@ const COMPLIANCE_FIRST_DATA_ROW = 2; // Row index for first data row
 
 // ===== Predicate Functions for Complex Conditionals =====
 
-/**
- * Checks if an ambassador registry row represents an active (non-expelled) ambassador.
- * @param {Array} row - Registry row data
- * @param {number} emailColumnIndex - Email column index (0-based)
- * @param {number} statusColumnIndex - Status column index (0-based)
- * @returns {boolean} True if ambassador is active and not expelled
- */
-function isActiveAmbassador(row, emailColumnIndex, statusColumnIndex) {
-  return row[emailColumnIndex]?.trim() && !row[statusColumnIndex]?.toLowerCase().includes('expelled');
-}
 
 /**
  * Checks if an ambassador did not submit their monthly contribution.
@@ -47,14 +37,6 @@ function wasAssignedButDidNotEvaluate(email, assignments, validEvaluators) {
   );
 }
 
-/**
- * Checks if a value is a Date object.
- * @param {*} value - Value to check
- * @returns {boolean} True if value is a Date instance
- */
-function isDate(value) {
-  return value instanceof Date;
-}
 
 /**
  * Checks if a score value is below the inadequate contribution threshold.
@@ -65,23 +47,7 @@ function isInadequateContributionScore(scoreValue) {
   return typeof scoreValue === 'number' && scoreValue < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD;
 }
 
-/**
- * Checks if an ambassador has already been expelled (status contains "Expelled").
- * @param {string} status - Ambassador status string
- * @returns {boolean} True if status indicates expulsion
- */
-function isAlreadyExpelled(status) {
-  return status.includes('Expelled');
-}
 
-/**
- * Checks if an email address is valid (not null/undefined/empty).
- * @param {string} email - Email to validate
- * @returns {boolean} True if email is valid
- */
-function isValidEmail(email) {
-  return email && email.trim();
-}
 
 function runComplianceAudit() {
   // Run evaluation window check and exit if the user presses "Cancel"

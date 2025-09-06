@@ -96,7 +96,7 @@ function requestSubmissionsModule(month, year) {
 
   // Filter out ambassadors with 'Expelled' in their status
   const eligibleEmails = registryData
-    .filter((row) => !row[registryAmbassadorStatus - 1].toLowerCase().includes('expelled')) // Exclude expelled ambassadors - case-insensitive now
+    .filter((row) => isActiveAmbassador(row, registryEmailColIndex - 1, registryAmbassadorStatus - 1)) // Exclude expelled ambassadors
     .map((row) => [normalizeEmail(row[registryEmailColIndex - 1]), row[registryAmbassadorDiscordHandle - 1]]); // Extract only emails
   Logger.log(`Eligible ambassadors emails: ${JSON.stringify(eligibleEmails)}`);
 
@@ -110,8 +110,7 @@ function requestSubmissionsModule(month, year) {
     const discordHandle = row[1]; // Get Discord Handle from Registry
 
     // Validating email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Simple email regex
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       const warningMessage = `Warning: Invalid or missing email for Discord Handle "${discordHandle}". Skipping.`;
       Logger.log(warningMessage);
       return; // Skip invalid emails
@@ -208,7 +207,7 @@ function checkNonRespondents() {
     .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
     .getValues();
   const eligibleEmails = registryData
-    .filter((row) => !row[registryAmbassadorStatusColIndex - 1].toLowerCase().includes('expelled')) // Case-insensitive check
+    .filter((row) => isActiveAmbassador(row, registryEmailColIndex - 1, registryAmbassadorStatusColIndex - 1)) // Case-insensitive check
     .map((row) => normalizeEmail(row[registryEmailColIndex - 1]));
 
   Logger.log(`Eligible emails: ${eligibleEmails}`);
@@ -257,8 +256,7 @@ function sendReminderEmails(nonRespondents) {
 
   nonRespondents.forEach((email) => {
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Simple regex for validating email
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       Logger.log(`Warning: Invalid email "${email}". Skipping.`);
       return; // Skip invalid or empty email
     }

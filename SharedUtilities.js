@@ -739,7 +739,7 @@ function getEligibleAmbassadorsEmails() {
       .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
       .getValues(); // Columns: Email, Discord Handle, Status
     const eligibleEmails = registryData
-      .filter((row) => !row[registryAmbassadorStatusColumnIndex - 1].toLowerCase().includes('expelled')) // Exclude those marked as expelled - case-insensitive now
+      .filter((row) => isActiveAmbassador(row, registryAmbassadorEmailColumnIndex - 1, registryAmbassadorStatusColumnIndex - 1)) // Exclude those marked as expelled
       .map((row) => row[registryAmbassadorEmailColumnIndex - 1]); // Extract emails
 
     Logger.log(`Eligible emails (excluding 'Expelled'): ${JSON.stringify(eligibleEmails)}`);
@@ -1397,4 +1397,49 @@ function getBusinessDaysFromToday(businessDays) {
     Logger.log(`Error calculating business days: ${error.message}`);
     return 'within 3 business days';
   }
+}
+
+// ===== Predicate Functions for Complex Conditionals =====
+
+/**
+ * Checks if a value is a Date object.
+ * @param {*} value - Value to check
+ * @returns {boolean} True if value is a Date instance
+ */
+function isDate(value) {
+  return value instanceof Date;
+}
+
+/**
+ * Checks if an ambassador has already been expelled (status contains "Expelled").
+ * @param {string} status - Ambassador status string
+ * @returns {boolean} True if status indicates expulsion
+ */
+function isAlreadyExpelled(status) {
+  return status && status.includes('Expelled');
+}
+
+/**
+ * Checks if an ambassador registry row represents an active (non-expelled) ambassador.
+ * @param {Array} row - Registry row data
+ * @param {number} emailColumnIndex - Email column index (0-based)
+ * @param {number} statusColumnIndex - Status column index (0-based)
+ * @returns {boolean} True if ambassador is active and not expelled
+ */
+function isActiveAmbassador(row, emailColumnIndex, statusColumnIndex) {
+  return row[emailColumnIndex]?.trim() && !row[statusColumnIndex]?.toLowerCase().includes('expelled');
+}
+
+/**
+ * Checks if an email address is valid (not null/undefined/empty) and passes basic format validation.
+ * @param {string} email - Email to validate
+ * @returns {boolean} True if email is valid
+ */
+function isValidEmail(email) {
+  if (!email || !email.trim()) {
+    return false;
+  }
+  // Basic email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
 }

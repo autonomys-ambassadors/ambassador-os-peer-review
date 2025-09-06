@@ -18,7 +18,7 @@ function notifyUpcomingPeerReview() {
 
     // Filter out ambassadors with 'Expelled' in their status
     const eligibleEmails = registryData
-      .filter((row) => !row[statusColumnIndex - 1]?.includes('Expelled')) // Exclude expelled ambassadors
+      .filter((row) => isActiveAmbassador(row, emailColumnIndex - 1, statusColumnIndex - 1)) // Exclude expelled ambassadors
       .map((row) => normalizeEmail(row[emailColumnIndex - 1])) // Extract valid emails
       .filter((email) => email); // Exclude empty emails
 

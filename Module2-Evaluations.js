@@ -931,8 +931,6 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
     const registryEmailColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
     const registryDiscordColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
 
-    // Define regex for email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     nonRespondents.forEach((evaluatorEmail) => {
       // Skip ambassadors who are not eligible (marked as 'Expelled' or not found)
@@ -942,7 +940,7 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
       }
 
       // Validate email format
-      if (!emailRegex.test(evaluatorEmail)) {
+      if (!isValidEmail(evaluatorEmail)) {
         Logger.log(`Invalid email format for evaluator: "${evaluatorEmail}". Skipping.`);
         return;
       }
