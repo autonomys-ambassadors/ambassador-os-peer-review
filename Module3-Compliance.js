@@ -413,6 +413,127 @@ function initializePenaltyCalculationData() {
 }
 
 /**
+ * Applies color coding to current month cell based on missed activities.
+ * @param {Object} params - Parameters object
+ */
+function applyCurrentMonthColorCoding(params) {
+  const { 
+    email, 
+    discordHandle, 
+    overallScoresSheet, 
+    rowInScores, 
+    currentMonthColIndex, 
+    validSubmitters, 
+    validEvaluators, 
+    assignments 
+  } = params;
+
+  Logger.log(`Processing current month column (${currentMonthColIndex}) for ${discordHandle}`);
+  const missedSubmission = didNotSubmitContribution(email, validSubmitters);
+  const missedEvaluation = wasAssignedButDidNotEvaluate(email, assignments, validEvaluators);
+
+  const currentCell = overallScoresSheet.getRange(rowInScores, currentMonthColIndex);
+
+  if (missedSubmission && missedEvaluation) {
+    currentCell.setBackground(COLOR_MISSED_SUBM_AND_EVAL);
+    Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_BOTH} penalty points for ${discordHandle} (missed submission and evaluation).`);
+  } else if (missedSubmission) {
+    currentCell.setBackground(COLOR_MISSED_SUBMISSION);
+    Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION} penalty point for ${discordHandle} (missed submission).`);
+  } else if (missedEvaluation) {
+    currentCell.setBackground(COLOR_MISSED_EVALUATION);
+    Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION} penalty point for ${discordHandle} (missed evaluation).`);
+  }
+}
+
+/**
+ * Calculates penalty points from a cell's background color.
+ * @param {string} backgroundColor - Cell background color (lowercase)
+ * @returns {number} Penalty points for the background color
+ */
+function getPenaltyPointsFromBackgroundColor(backgroundColor) {
+  if (backgroundColor === COLOR_MISSED_SUBMISSION.toLowerCase()) {
+    return COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION;
+  } else if (backgroundColor === COLOR_MISSED_EVALUATION.toLowerCase()) {
+    return COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION;
+  } else if (backgroundColor === COLOR_MISSED_SUBM_AND_EVAL.toLowerCase()) {
+    return COMPLIANCE_PENALTY_POINT_MISSED_BOTH;
+  }
+  return 0;
+}
+
+/**
+ * Processes a single month column to calculate penalty points and inadequate contributions.
+ * @param {Object} params - Parameters object
+ * @returns {Object} Object containing penalty points and inadequate contribution count for this month
+ */
+function processMonthColumn(params) {
+  const {
+    colIndex,
+    currentMonthColIndex,
+    overallScoresSheet,
+    rowInScores,
+    email,
+    discordHandle,
+    validSubmitters,
+    validEvaluators,
+    assignments
+  } = params;
+
+  // Apply color coding if this is the current month
+  if (colIndex === currentMonthColIndex) {
+    applyCurrentMonthColorCoding({
+      email,
+      discordHandle,
+      overallScoresSheet,
+      rowInScores,
+      currentMonthColIndex,
+      validSubmitters,
+      validEvaluators,
+      assignments
+    });
+  }
+
+  const cell = overallScoresSheet.getRange(rowInScores, colIndex);
+  const backgroundColor = cell.getBackground().toLowerCase();
+  const scoreValue = cell.getValue();
+
+  return {
+    penaltyPoints: getPenaltyPointsFromBackgroundColor(backgroundColor),
+    inadequateContribution: isInadequateContributionScore(scoreValue) ? 1 : 0
+  };
+}
+
+/**
+ * Updates the ambassador's scores in the spreadsheet and refers to CRT if needed.
+ * @param {Object} params - Parameters object
+ */
+function updateAmbassadorScores(params) {
+  const {
+    overallScoresSheet,
+    rowInScores,
+    penaltyPointsColIndex,
+    inadequateContributionColIndex,
+    totalPenaltyPoints,
+    inadequateContributionCount,
+    discordHandle
+  } = params;
+
+  // Update penalty points
+  overallScoresSheet.getRange(rowInScores, penaltyPointsColIndex).setValue(totalPenaltyPoints);
+  Logger.log(`Updated penalty points for ${discordHandle} to ${totalPenaltyPoints}`);
+
+  // Update Inadequate Contribution Count
+  overallScoresSheet.getRange(rowInScores, inadequateContributionColIndex).setValue(inadequateContributionCount);
+  Logger.log(`Updated Inadequate Contribution Count for ${discordHandle} to ${inadequateContributionCount}`);
+
+  // Refer to CRT if threshold met
+  if (inadequateContributionCount >= MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER) {
+    referInadequateContributionToCRT(discordHandle, inadequateContributionCount);
+  }
+}
+
+/**
  * Processes penalty points for a single ambassador.
  * @param {Object} ambassador - Ambassador data with email and discordHandle
  * @param {Object} calculationData - Data from initializePenaltyCalculationData()
@@ -440,59 +561,34 @@ function processAmbassadorPenaltyPoints(ambassador, calculationData) {
   let totalPenaltyPoints = 0;
   let inadequateContributionCount = 0;
 
-  // Process recent months (up to 6)
+  // Process each recent month
   for (const colIndex of recentMonths) {
-    // if processing current month, first color-code the nonEvaluators and non-submitters
-    if (colIndex === currentMonthColIndex) {
-      Logger.log(`Processing current month column (${colIndex}) for ${discordHandle}`);
-      const missedSubmission = didNotSubmitContribution(email, validSubmitters);
-      const missedEvaluation = wasAssignedButDidNotEvaluate(email, assignments, validEvaluators);
-
-      const currentCell = overallScoresSheet.getRange(rowInScores, currentMonthColIndex);
-
-      if (missedSubmission && missedEvaluation) {
-        currentCell.setBackground(COLOR_MISSED_SUBM_AND_EVAL);
-        Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_BOTH} penalty points for ${discordHandle} (missed submission and evaluation).`);
-      } else if (missedSubmission) {
-        currentCell.setBackground(COLOR_MISSED_SUBMISSION);
-        Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION} penalty point for ${discordHandle} (missed submission).`);
-      } else if (missedEvaluation) {
-        currentCell.setBackground(COLOR_MISSED_EVALUATION);
-        Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION} penalty point for ${discordHandle} (missed evaluation).`);
-      }
-    }
-
-    const cell = overallScoresSheet.getRange(rowInScores, colIndex);
-    const backgroundColor = cell.getBackground().toLowerCase();
-
-    if (backgroundColor === COLOR_MISSED_SUBMISSION.toLowerCase()) {
-      totalPenaltyPoints += COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION;
-    } else if (backgroundColor === COLOR_MISSED_EVALUATION.toLowerCase()) {
-      totalPenaltyPoints += COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION;
-    } else if (backgroundColor === COLOR_MISSED_SUBM_AND_EVAL.toLowerCase()) {
-      totalPenaltyPoints += COMPLIANCE_PENALTY_POINT_MISSED_BOTH;
-    }
-
-    // Inadequate Contribution: check if Final Score < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD
-    // Get the value from the cell (should be the score for that month)
-    const scoreValue = cell.getValue();
-    if (isInadequateContributionScore(scoreValue)) {
-      inadequateContributionCount++;
-    }
+    const monthResult = processMonthColumn({
+      colIndex,
+      currentMonthColIndex,
+      overallScoresSheet,
+      rowInScores,
+      email,
+      discordHandle,
+      validSubmitters,
+      validEvaluators,
+      assignments
+    });
+    
+    totalPenaltyPoints += monthResult.penaltyPoints;
+    inadequateContributionCount += monthResult.inadequateContribution;
   }
 
-  // Update penalty points
-  overallScoresSheet.getRange(rowInScores, penaltyPointsColIndex).setValue(totalPenaltyPoints);
-  Logger.log(`Updated penalty points for ${discordHandle} to ${totalPenaltyPoints}`);
-
-  // Update Inadequate Contribution Count
-  overallScoresSheet.getRange(rowInScores, inadequateContributionColIndex).setValue(inadequateContributionCount);
-  Logger.log(`Updated Inadequate Contribution Count for ${discordHandle} to ${inadequateContributionCount}`);
-
-  // Refer to CRT if threshold met
-  if (inadequateContributionCount >= MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER) {
-    referInadequateContributionToCRT(discordHandle, inadequateContributionCount);
-  }
+  // Update scores and handle CRT referral
+  updateAmbassadorScores({
+    overallScoresSheet,
+    rowInScores,
+    penaltyPointsColIndex,
+    inadequateContributionColIndex,
+    totalPenaltyPoints,
+    inadequateContributionCount,
+    discordHandle
+  });
 }
 
 /**
