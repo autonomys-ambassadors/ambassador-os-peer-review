@@ -55,7 +55,7 @@ function createMonthSheetAndOverallColumn(reportingMonth) {
     Logger.log('Execution started');
 
     // Opening "Ambassadors' Scores" spreadsheet and "Overall score" sheet
-    const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
+    const scoresSpreadsheet = getScoresSpreadsheet();
     const overallScoreSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
 
     if (!overallScoreSheet) {
@@ -163,7 +163,7 @@ function generateReviewMatrix() {
     Logger.log('Starting generateReviewMatrix with multiple attempts.');
 
     // Access the Registry and Submission Form Sheets
-    const registrySpreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
+    const registrySpreadsheet = getRegistrySpreadsheet();
     const registrySheet = registrySpreadsheet.getSheetByName(REGISTRY_SHEET_NAME);
     const formResponseSheet = getSubmissionFormResponseSheet();
     const reviewLogSheet = registrySpreadsheet.getSheetByName(REVIEW_LOG_SHEET_NAME);
@@ -256,7 +256,7 @@ function attemptSingleAssignment(validSubmitters, allEvaluators) {
  */
 function writeAssignmentsToReviewLog(assignments) {
   try {
-    const registrySpreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
+    const registrySpreadsheet = getRegistrySpreadsheet();
     const reviewLogSheet = registrySpreadsheet.getSheetByName(REVIEW_LOG_SHEET_NAME);
 
     if (!reviewLogSheet) {
@@ -321,9 +321,7 @@ function sendExemptionEmails(allEvaluators, unassignedEvaluators) {
 function sendEvaluationRequests(reportingMonth) {
   try {
     // Opening Review Log sheet
-    const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
-      REVIEW_LOG_SHEET_NAME
-    ); // Correct ID
+    const reviewLogSheet = getReviewLogSheet(); // Correct ID
     Logger.log(`Opened sheet: ${REVIEW_LOG_SHEET_NAME}`);
 
     // Get project time zone
@@ -415,9 +413,7 @@ function getContributionDetailsByEmail(email) {
     // Use unified project time zone
     const projectTimeZone = getProjectTimeZone();
 
-    const formResponseSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(
-      FORM_RESPONSES_SHEET_NAME
-    );
+    const formResponseSheet = getSubmissionResponsesSheet();
 
     if (!formResponseSheet) {
       Logger.log(`Error: Sheet "${FORM_RESPONSES_SHEET_NAME}" not found.`);
@@ -500,7 +496,7 @@ function getAmbassadorPrimaryTeam(email) {
     Logger.log(`Looking for Primary Team for the email ${email}`);
 
     // Open the Registry spreadsheet
-    const registrySpreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
+    const registrySpreadsheet = getRegistrySpreadsheet();
     const registrySheet = registrySpreadsheet.getSheetByName(REGISTRY_SHEET_NAME);
 
     if (!registrySheet) {
@@ -553,7 +549,7 @@ function populateMonthSheetWithEvaluators(reportingMonth) {
     }
 
     // Open the Ambassadors' Scores spreadsheet and get the month sheet
-    const scoresSheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
+    const scoresSheet = getScoresSpreadsheet();
     const monthSheet = scoresSheet.getSheetByName(reportingMonth.monthName);
 
     if (!monthSheet) {
@@ -608,7 +604,7 @@ function processEvaluationResponse(e) {
     Logger.log('processEvaluationResponse triggered.');
 
     const spreadsheetTimeZone = getProjectTimeZone(); // Get project time zone
-    const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
+    const scoresSpreadsheet = getScoresSpreadsheet();
 
     if (!e || !e.response) {
       Logger.log('Error: Event parameter is missing or does not have a response.');
@@ -865,12 +861,8 @@ function sendEvaluationReminderEmails() {
     Logger.log('Starting to send evaluation reminder emails.');
 
     // Open the Review Log and Form Responses sheets
-    const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
-      REVIEW_LOG_SHEET_NAME
-    );
-    const formResponseSheet = SpreadsheetApp.openById(EVALUATION_RESPONSES_SPREADSHEET_ID).getSheetByName(
-      EVAL_FORM_RESPONSES_SHEET_NAME
-    );
+    const reviewLogSheet = getReviewLogSheet();
+    const formResponseSheet = getEvaluationResponsesSheet();
 
     if (!reviewLogSheet || !formResponseSheet) {
       Logger.log('Review Log sheet or Form Responses sheet not found. Exiting sendEvaluationReminderEmails.');
@@ -929,9 +921,7 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
     // Fetch eligible ambassador emails excluding those with "Expelled" status
     const eligibleEmails = getEligibleAmbassadorsEmails(); // Fetch eligible emails from SharedUtilities
 
-    const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
-      REGISTRY_SHEET_NAME
-    );
+    const registrySheet = getRegistrySheet();
     if (!registrySheet) {
       Logger.log('Registry sheet not found.');
       return;

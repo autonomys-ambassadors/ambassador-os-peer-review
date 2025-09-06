@@ -74,6 +74,73 @@ var COLOR_EXPELLED = '';
 var COLOR_MISSED_SUBM_AND_EVAL = '';
 //var COLOR_OLD_MISSED_SUBMISSION = '';
 
+// ===== Sheet Access Utilities =====
+// Centralized functions to access commonly used sheets across modules
+
+/**
+ * Gets the Registry sheet from the Ambassador Registry spreadsheet.
+ * @returns {Sheet} The Registry sheet
+ */
+function getRegistrySheet() {
+  return SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
+}
+
+/**
+ * Gets the Review Log sheet from the Ambassador Registry spreadsheet.
+ * @returns {Sheet} The Review Log sheet
+ */
+function getReviewLogSheet() {
+  return SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REVIEW_LOG_SHEET_NAME);
+}
+
+/**
+ * Gets the Conflict Resolution Team sheet from the Ambassador Registry spreadsheet.
+ * @returns {Sheet} The CRT sheet
+ */
+function getCRTSheet() {
+  return SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(CONFLICT_RESOLUTION_TEAM_SHEET_NAME);
+}
+
+/**
+ * Gets the Ambassadors Scores spreadsheet.
+ * @returns {Spreadsheet} The Ambassadors Scores spreadsheet
+ */
+function getScoresSpreadsheet() {
+  return SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
+}
+
+/**
+ * Gets the Overall Score sheet from the Ambassadors Scores spreadsheet.
+ * @returns {Sheet} The Overall Score sheet
+ */
+function getOverallScoreSheet() {
+  return getScoresSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
+}
+
+/**
+ * Gets the Ambassador Registry spreadsheet.
+ * @returns {Spreadsheet} The Ambassador Registry spreadsheet
+ */
+function getRegistrySpreadsheet() {
+  return SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
+}
+
+/**
+ * Gets the Submission Form Responses sheet.
+ * @returns {Sheet} The Submission Form Responses sheet
+ */
+function getSubmissionResponsesSheet() {
+  return SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(FORM_RESPONSES_SHEET_NAME);
+}
+
+/**
+ * Gets the Evaluation Form Responses sheet.
+ * @returns {Sheet} The Evaluation Form Responses sheet
+ */
+function getEvaluationResponsesSheet() {
+  return SpreadsheetApp.openById(EVALUATION_RESPONSES_SPREADSHEET_ID).getSheetByName(EVAL_FORM_RESPONSES_SHEET_NAME);
+}
+
 // Triggers and Delays
 // These values will set the due date and reminder schedule for Submissions and Evaluations.
 // The Submission or Evaluation will be due after the relevant WINDOW_MINUTES,

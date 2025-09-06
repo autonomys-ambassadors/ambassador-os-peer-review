@@ -10,10 +10,8 @@ function selectCRTMembers() {
   Logger.log('Starting CRT member selection process.');
 
   // Access Registry and CRT sheets
-  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const crtSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
-    'Conflict Resolution Team'
-  );
+  const registrySheet = getRegistrySheet();
+  const crtSheet = getCRTSheet();
 
   if (!registrySheet) {
     alertAndLog('Error: Registry sheet not found.');

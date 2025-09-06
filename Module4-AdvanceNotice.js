@@ -6,9 +6,7 @@ function notifyUpcomingPeerReview() {
     Logger.log('Starting upcoming peer review notification process.');
 
     // Access the Registry sheet
-    const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
-      REGISTRY_SHEET_NAME
-    );
+    const registrySheet = getRegistrySheet();
 
     // Fetch all rows from the Registry sheet
     const registryData = registrySheet

@@ -85,7 +85,7 @@ function copyFinalScoresToOverallScore() {
     Logger.log('Starting copy of Final Scores to Overall Score sheet.');
 
     // open table "Ambassadors' Scores" and needed sheets
-    const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
+    const scoresSpreadsheet = getScoresSpreadsheet();
     const overallScoreSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
 
     if (!overallScoreSheet) {
@@ -158,7 +158,7 @@ function copyFinalScoresToOverallScore() {
 
 // Function to check and create "Penalty Points" and "Max 6-Month PP" columns in the correct order
 function checkAndCreateColumns() {
-  const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
+  const scoresSpreadsheet = getScoresSpreadsheet();
   const overallScoresSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
 
   // Find the index of the "Average Score" column
@@ -205,18 +205,12 @@ function initializePenaltyCalculationData() {
   Logger.log('Initializing penalty calculation data.');
   
   // Open necessary sheets
-  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
+  const registrySheet = getRegistrySheet();
+  const scoresSpreadsheet = getScoresSpreadsheet();
   const overallScoresSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
-    REVIEW_LOG_SHEET_NAME
-  );
-  const evaluationResponsesSheet = SpreadsheetApp.openById(EVALUATION_RESPONSES_SPREADSHEET_ID).getSheetByName(
-    EVAL_FORM_RESPONSES_SHEET_NAME
-  );
-  const submissionsSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(
-    FORM_RESPONSES_SHEET_NAME
-  );
+  const reviewLogSheet = getReviewLogSheet();
+  const evaluationResponsesSheet = getEvaluationResponsesSheet();
+  const submissionsSheet = getSubmissionResponsesSheet();
 
   if (!registrySheet || !overallScoresSheet || !reviewLogSheet || !evaluationResponsesSheet) {
     Logger.log('Error: One or more required sheets not found.');
@@ -433,8 +427,7 @@ function calculatePenaltyPoints() {
 function calculateMaxPenaltyPointsForSixMonths() {
   Logger.log('Starting calculation of Max 6-Month Penalty Points.');
 
-  const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
-  const overallScoresSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
+  const overallScoresSheet = getOverallScoreSheet();
   const maxPPCol = getRequiredColumnIndexByName(overallScoresSheet, SCORE_MAX_6M_PP_COLUMN);
   const lastRow = overallScoresSheet.getLastRow();
   const lastColumn = overallScoresSheet.getLastColumn();
@@ -533,9 +526,8 @@ function calculateMaxPenaltyPointsForSixMonths() {
 function expelAmbassadors() {
   Logger.log('Starting expelAmbassadors process.');
 
-  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
-  const overallScoresSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
+  const registrySheet = getRegistrySheet();
+  const overallScoresSheet = getOverallScoreSheet();
   const scorePenaltiesColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
   const scoreDiscordHandleColIndex = getRequiredColumnIndexByName(overallScoresSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const registryDiscordHandleColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
@@ -585,7 +577,7 @@ function expelAmbassadors() {
 function sendExpulsionNotifications(discordHandle) {
   Logger.log(`Sending expulsion notifications for ambassador with discord handle: ${discordHandle}`);
 
-  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
+  const registrySheet = getRegistrySheet();
   const registryEmailColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
   const registryDiscordColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
 

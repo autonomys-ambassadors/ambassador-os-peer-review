@@ -3,9 +3,7 @@ function requestMonthlySubmissions() {
 
   // Fetch the form responses spreadsheet
   Logger.log('Finding the Monthly Submission from Responses spreadsheet...');
-  const formResponseSheet = SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(
-    FORM_RESPONSES_SHEET_NAME
-  );
+  const formResponseSheet = getSubmissionResponsesSheet();
 
   // Get the index of the timestamp column
   const timestampColumnIndex = getRequiredColumnIndexByName(formResponseSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
@@ -84,7 +82,7 @@ function requestSubmissionsModule(month, year) {
   updateFormTitlesWithCurrentReportingMonth(month, year);
   Logger.log('Form titles updated with the current reporting month.');
 
-  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME); // Open the "Registry" sheet
+  const registrySheet = getRegistrySheet(); // Open the "Registry" sheet
   Logger.log('Opened "Registry" sheet from "Ambassador Registry" spreadsheet.');
 
   // Fetch data from Registry sheet (Emails and Status)
@@ -194,7 +192,7 @@ function checkNonRespondents() {
   const submissionWindowEnd = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000);
 
   // Open Registry and Form Responses sheets
-  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
+  const registrySheet = getRegistrySheet();
   const formResponseSheet = getSubmissionFormResponseSheet();
 
   Logger.log('Sheets successfully fetched.');
@@ -245,7 +243,7 @@ function checkNonRespondents() {
 // Function for sending reminder emails with logging
 function sendReminderEmails(nonRespondents) {
   Logger.log('Sending reminder emails.');
-  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME); // Open the "Registry" sheet
+  const registrySheet = getRegistrySheet(); // Open the "Registry" sheet
   Logger.log('Opened "Registry" sheet.');
 
   if (!nonRespondents || nonRespondents.length === 0) {
