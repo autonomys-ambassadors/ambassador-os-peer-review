@@ -9,6 +9,80 @@ const COMPLIANCE_BUSINESS_DAYS_DEADLINE = 3; // Business days for CRT complaint 
 const COMPLIANCE_HEADER_ROW = 1; // Row index for headers
 const COMPLIANCE_FIRST_DATA_ROW = 2; // Row index for first data row
 
+// ===== Predicate Functions for Complex Conditionals =====
+
+/**
+ * Checks if an ambassador registry row represents an active (non-expelled) ambassador.
+ * @param {Array} row - Registry row data
+ * @param {number} emailColumnIndex - Email column index (0-based)
+ * @param {number} statusColumnIndex - Status column index (0-based)
+ * @returns {boolean} True if ambassador is active and not expelled
+ */
+function isActiveAmbassador(row, emailColumnIndex, statusColumnIndex) {
+  return row[emailColumnIndex]?.trim() && !row[statusColumnIndex]?.toLowerCase().includes('expelled');
+}
+
+/**
+ * Checks if an ambassador did not submit their monthly contribution.
+ * @param {string} email - Ambassador email
+ * @param {Array} validSubmitters - Array of valid submitter emails
+ * @returns {boolean} True if ambassador did not submit contribution
+ */
+function didNotSubmitContribution(email, validSubmitters) {
+  return !validSubmitters.map(normalizeEmail).includes(normalizeEmail(email));
+}
+
+/**
+ * Checks if an ambassador was assigned to evaluate but did not submit evaluation.
+ * @param {string} email - Ambassador email
+ * @param {Object} assignments - Assignment object mapping submitters to evaluators
+ * @param {Array} validEvaluators - Array of valid evaluator emails
+ * @returns {boolean} True if ambassador was assigned but did not evaluate
+ */
+function wasAssignedButDidNotEvaluate(email, assignments, validEvaluators) {
+  return Object.values(assignments).some(
+    (evaluators) =>
+      evaluators.map(normalizeEmail).includes(normalizeEmail(email)) &&
+      !validEvaluators.map(normalizeEmail).includes(normalizeEmail(email))
+  );
+}
+
+/**
+ * Checks if a value is a Date object.
+ * @param {*} value - Value to check
+ * @returns {boolean} True if value is a Date instance
+ */
+function isDate(value) {
+  return value instanceof Date;
+}
+
+/**
+ * Checks if a score value is below the inadequate contribution threshold.
+ * @param {*} scoreValue - Score value to check
+ * @returns {boolean} True if score is a number below threshold
+ */
+function isInadequateContributionScore(scoreValue) {
+  return typeof scoreValue === 'number' && scoreValue < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD;
+}
+
+/**
+ * Checks if an ambassador has already been expelled (status contains "Expelled").
+ * @param {string} status - Ambassador status string
+ * @returns {boolean} True if status indicates expulsion
+ */
+function isAlreadyExpelled(status) {
+  return status.includes('Expelled');
+}
+
+/**
+ * Checks if an email address is valid (not null/undefined/empty).
+ * @param {string} email - Email to validate
+ * @returns {boolean} True if email is valid
+ */
+function isValidEmail(email) {
+  return email && email.trim();
+}
+
 function runComplianceAudit() {
   // Run evaluation window check and exit if the user presses "Cancel"
   if (!checkEvaluationWindowStart()) {
@@ -315,7 +389,7 @@ function initializePenaltyCalculationData() {
   const registryStatusColumn = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN) - 1;
 
   const ambassadorData = registryData
-    .filter((row) => row[registryEmailColumn]?.trim() && !row[registryStatusColumn]?.toLowerCase().includes('expelled'))
+    .filter((row) => isActiveAmbassador(row, registryEmailColumn, registryStatusColumn))
     .map((row) => ({
       email: normalizeEmail(row[registryEmailColumn]),
       discordHandle: row[registryDiscordColumn]?.trim().toLowerCase(),
@@ -326,7 +400,7 @@ function initializePenaltyCalculationData() {
   // Collect month column indices in chronological order
   const monthColumns = [];
   for (let i = 0; i < headersRange.length; i++) {
-    if (headersRange[i] instanceof Date) {
+    if (isDate(headersRange[i])) {
       monthColumns.push(i + 1); // Add 1 to convert from 0-based to 1-based indexing
       Logger.log(`Found valid month column at index ${i + 1} with date: ${headersRange[i].toISOString()}`);
     } else {
@@ -398,22 +472,18 @@ function processAmbassadorPenaltyPoints(ambassador, calculationData) {
     // if processing current month, first color-code the nonEvaluators and non-submitters
     if (colIndex === currentMonthColIndex) {
       Logger.log(`Processing current month column (${colIndex}) for ${discordHandle}`);
-      const isNonSubmitter = !validSubmitters.map(normalizeEmail).includes(normalizeEmail(email));
-      const isNonEvaluator = Object.values(assignments).some(
-        (evaluators) =>
-          evaluators.map(normalizeEmail).includes(normalizeEmail(email)) &&
-          !validEvaluators.map(normalizeEmail).includes(normalizeEmail(email))
-      );
+      const missedSubmission = didNotSubmitContribution(email, validSubmitters);
+      const missedEvaluation = wasAssignedButDidNotEvaluate(email, assignments, validEvaluators);
 
       const currentCell = overallScoresSheet.getRange(rowInScores, currentMonthColIndex);
 
-      if (isNonSubmitter && isNonEvaluator) {
+      if (missedSubmission && missedEvaluation) {
         currentCell.setBackground(COLOR_MISSED_SUBM_AND_EVAL);
         Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_BOTH} penalty points for ${discordHandle} (missed submission and evaluation).`);
-      } else if (isNonSubmitter) {
+      } else if (missedSubmission) {
         currentCell.setBackground(COLOR_MISSED_SUBMISSION);
         Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION} penalty point for ${discordHandle} (missed submission).`);
-      } else if (isNonEvaluator) {
+      } else if (missedEvaluation) {
         currentCell.setBackground(COLOR_MISSED_EVALUATION);
         Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION} penalty point for ${discordHandle} (missed evaluation).`);
       }
@@ -433,7 +503,7 @@ function processAmbassadorPenaltyPoints(ambassador, calculationData) {
     // Inadequate Contribution: check if Final Score < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD
     // Get the value from the cell (should be the score for that month)
     const scoreValue = cell.getValue();
-    if (typeof scoreValue === 'number' && scoreValue < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD) {
+    if (isInadequateContributionScore(scoreValue)) {
       inadequateContributionCount++;
     }
   }
@@ -487,7 +557,7 @@ function getMonthColumnsForPenaltyCalculation(overallScoresSheet) {
 
   for (let col = 1; col <= lastColumn; col++) {
     const cellValue = headers[col - 1];
-    if (cellValue instanceof Date) {
+    if (isDate(cellValue)) {
       monthColumns.push(col);
       Logger.log(
         `Found month column at index ${col} with date: ${Utilities.formatDate(
@@ -646,7 +716,7 @@ function expelAmbassadors() {
 
     if (registryRowIndex > 1) {
       const currentStatus = registrySheet.getRange(registryRowIndex, registryStatusColIndex).getValue();
-      if (currentStatus.includes('Expelled')) {
+      if (isAlreadyExpelled(currentStatus)) {
         Logger.log(`Notice: Ambassador ${discordHandle} is already marked as expelled.`);
         return;
       }
@@ -688,7 +758,7 @@ function sendExpulsionNotifications(discordHandle) {
     const email = registrySheet.getRange(registryRowIndex, registryEmailColIndex).getValue();
 
     // Check and skip if email is missing
-    if (!email || !email.trim()) {
+    if (!isValidEmail(email)) {
       Logger.log(`Skipping notification for ambassador with discord handle: ${discordHandle} due to missing email.`);
       return;
     }
