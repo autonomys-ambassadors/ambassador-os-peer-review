@@ -1,4 +1,14 @@
 // MODULE 3
+
+// Compliance calculation constants
+const COMPLIANCE_PERIOD_MONTHS = 6; // Number of months to consider for penalty calculations
+const COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION = 1; // Penalty points for missed submission
+const COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION = 1; // Penalty points for missed evaluation  
+const COMPLIANCE_PENALTY_POINT_MISSED_BOTH = 2; // Penalty points for missing both submission and evaluation
+const COMPLIANCE_BUSINESS_DAYS_DEADLINE = 3; // Business days for CRT complaint deadline
+const COMPLIANCE_HEADER_ROW = 1; // Row index for headers
+const COMPLIANCE_FIRST_DATA_ROW = 2; // Row index for first data row
+
 function runComplianceAudit() {
   // Run evaluation window check and exit if the user presses "Cancel"
   if (!checkEvaluationWindowStart()) {
@@ -102,7 +112,7 @@ function copyFinalScoresToOverallScore() {
     }
 
     // Searching column index in "Overall score" by date
-    const existingColumns = overallScoreSheet.getRange(1, 1, 1, overallScoreSheet.getLastColumn()).getValues()[0];
+    const existingColumns = overallScoreSheet.getRange(COMPLIANCE_HEADER_ROW, 1, 1, overallScoreSheet.getLastColumn()).getValues()[0];
     const monthColumnIndex =
       existingColumns.findIndex((header) => header instanceof Date && header.getTime() === currentMonthDate.getTime()) +
       1;
@@ -116,7 +126,7 @@ function copyFinalScoresToOverallScore() {
 
     // Fetch data from Final Score on month sheet
     const finalScores = monthSheet
-      .getRange(2, 1, monthSheet.getLastRow() - 1, monthSheet.getLastColumn())
+      .getRange(COMPLIANCE_FIRST_DATA_ROW, 1, monthSheet.getLastRow() - 1, monthSheet.getLastColumn())
       .getValues()
       .map((row) => ({
         handle: row[monthDiscordColIndex - 1],
@@ -128,7 +138,7 @@ function copyFinalScoresToOverallScore() {
     //Copy Final Score values to proper rows Overall score" by Discord Handles
     const overallSheetDiscordColumn = getRequiredColumnIndexByName(overallScoreSheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
     const overallHandles = overallScoreSheet
-      .getRange(2, overallSheetDiscordColumn, overallScoreSheet.getLastRow() - 1, 1)
+      .getRange(COMPLIANCE_FIRST_DATA_ROW, overallSheetDiscordColumn, overallScoreSheet.getLastRow() - 1, 1)
       .getValues()
       .flat();
     finalScores.forEach(({ handle, score }) => {
@@ -162,7 +172,7 @@ function checkAndCreateColumns() {
   if (penaltyPointsColIndex === -1) {
     nextColIndex += 1; // Next column after "Average Score"
     overallScoresSheet.insertColumnAfter(averageScoreColIndex);
-    overallScoresSheet.getRange(1, nextColIndex).setValue(SCORE_PENALTY_POINTS_COLUMN);
+    overallScoresSheet.getRange(COMPLIANCE_HEADER_ROW, nextColIndex).setValue(SCORE_PENALTY_POINTS_COLUMN);
     Logger.log('Created "Penalty Points" column.');
     penaltyPointsColIndex = nextColIndex; // Update index for the newly created column
   }
@@ -172,7 +182,7 @@ function checkAndCreateColumns() {
   if (maxPenaltyPointsColIndex === -1) {
     nextColIndex = penaltyPointsColIndex + 1; // Next column after "Penalty Points"
     overallScoresSheet.insertColumnAfter(penaltyPointsColIndex);
-    overallScoresSheet.getRange(1, nextColIndex).setValue(SCORE_MAX_6M_PP_COLUMN);
+    overallScoresSheet.getRange(COMPLIANCE_HEADER_ROW, nextColIndex).setValue(SCORE_MAX_6M_PP_COLUMN);
     Logger.log('Created "Max 6-Month PP" column.');
     maxPenaltyPointsColIndex = nextColIndex;
   }
@@ -182,7 +192,7 @@ function checkAndCreateColumns() {
   if (inadequateContributionColIndex === -1) {
     nextColIndex = maxPenaltyPointsColIndex + 1; // Next column after "Max 6-Month PP"
     overallScoresSheet.insertColumnAfter(maxPenaltyPointsColIndex);
-    overallScoresSheet.getRange(1, nextColIndex).setValue(SCORE_INADEQUATE_CONTRIBUTION_COLUMN);
+    overallScoresSheet.getRange(COMPLIANCE_HEADER_ROW, nextColIndex).setValue(SCORE_INADEQUATE_CONTRIBUTION_COLUMN);
     Logger.log('Created "Inadequate Contribution Count" column.');
   }
 }
@@ -226,7 +236,7 @@ function calculatePenaltyPoints() {
   const currentReportingMonth = reportingMonth.firstDayDate;
 
   // Get headers and indices
-  const headersRange = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
+  const headersRange = overallScoresSheet.getRange(COMPLIANCE_HEADER_ROW, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
   const penaltyPointsColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
   const currentMonthColIndex =
     headersRange.findIndex((header) => header instanceof Date && header.getTime() === currentReportingMonth.getTime()) +
@@ -250,7 +260,7 @@ function calculatePenaltyPoints() {
 
   // Fetch data from Registry and filter non-expelled ambassadors
   const registryData = registrySheet
-    .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
+    .getRange(COMPLIANCE_FIRST_DATA_ROW, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
     .getValues();
   const registryEmailColumn = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN) - 1;
   const registryDiscordColumn = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN) - 1;
@@ -286,7 +296,7 @@ function calculatePenaltyPoints() {
   Logger.log(`Found ${monthColumns.length} month columns`);
 
   // Get recent 6 months (or fewer if not enough months available)
-  const recentMonths = monthColumns.slice(-Math.min(6, monthColumns.length));
+  const recentMonths = monthColumns.slice(-Math.min(COMPLIANCE_PERIOD_MONTHS, monthColumns.length));
   Logger.log(`Using ${recentMonths.length} most recent months for penalty calculation`);
 
   const inadequateContributionColIndex = getRequiredColumnIndexByName(
@@ -322,13 +332,13 @@ function calculatePenaltyPoints() {
 
         if (isNonSubmitter && isNonEvaluator) {
           currentCell.setBackground(COLOR_MISSED_SUBM_AND_EVAL);
-          Logger.log(`Added 2 penalty points for ${discordHandle} (missed submission and evaluation).`);
+          Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_BOTH} penalty points for ${discordHandle} (missed submission and evaluation).`);
         } else if (isNonSubmitter) {
           currentCell.setBackground(COLOR_MISSED_SUBMISSION);
-          Logger.log(`Added 1 penalty point for ${discordHandle} (missed submission).`);
+          Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION} penalty point for ${discordHandle} (missed submission).`);
         } else if (isNonEvaluator) {
           currentCell.setBackground(COLOR_MISSED_EVALUATION);
-          Logger.log(`Added 1 penalty point for ${discordHandle} (missed evaluation).`);
+          Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION} penalty point for ${discordHandle} (missed evaluation).`);
         }
       }
 
@@ -336,11 +346,11 @@ function calculatePenaltyPoints() {
       const backgroundColor = cell.getBackground().toLowerCase();
 
       if (backgroundColor === COLOR_MISSED_SUBMISSION.toLowerCase()) {
-        totalPenaltyPoints += 1;
+        totalPenaltyPoints += COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION;
       } else if (backgroundColor === COLOR_MISSED_EVALUATION.toLowerCase()) {
-        totalPenaltyPoints += 1;
+        totalPenaltyPoints += COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION;
       } else if (backgroundColor === COLOR_MISSED_SUBM_AND_EVAL.toLowerCase()) {
-        totalPenaltyPoints += 2;
+        totalPenaltyPoints += COMPLIANCE_PENALTY_POINT_MISSED_BOTH;
       }
 
       // Inadequate Contribution: check if Final Score < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD
@@ -389,7 +399,7 @@ function calculateMaxPenaltyPointsForSixMonths() {
   const spreadsheetTimeZone = getProjectTimeZone();
 
   // Collect indices of all month columns
-  const headers = overallScoresSheet.getRange(1, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
+  const headers = overallScoresSheet.getRange(COMPLIANCE_HEADER_ROW, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
   const monthColumns = [];
   for (let col = 1; col <= lastColumn; col++) {
     const cellValue = headers[col - 1];
@@ -411,7 +421,7 @@ function calculateMaxPenaltyPointsForSixMonths() {
   }
 
   // Set the period length to the minimum of 6 or available months
-  const periodLength = Math.min(6, monthColumns.length);
+  const periodLength = Math.min(COMPLIANCE_PERIOD_MONTHS, monthColumns.length);
   Logger.log(`Period length for calculation: ${periodLength} months.`);
 
   // Process each row
@@ -435,17 +445,17 @@ function calculateMaxPenaltyPointsForSixMonths() {
 
         switch (cellBackgroundColor) {
           case COLOR_MISSED_SUBMISSION:
-            periodTotal += 1;
-            Logger.log(`Row ${row}: Adding 1 point for missed submission at column ${monthColumns[j]}.`);
+            periodTotal += COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION;
+            Logger.log(`Row ${row}: Adding ${COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION} point for missed submission at column ${monthColumns[j]}.`);
             break;
           case COLOR_MISSED_EVALUATION:
-            periodTotal += 1;
-            Logger.log(`Row ${row}: Adding 1 point for missed evaluation at column ${monthColumns[j]}.`);
+            periodTotal += COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION;
+            Logger.log(`Row ${row}: Adding ${COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION} point for missed evaluation at column ${monthColumns[j]}.`);
             break;
           case COLOR_MISSED_SUBM_AND_EVAL:
-            periodTotal += 2;
+            periodTotal += COMPLIANCE_PENALTY_POINT_MISSED_BOTH;
             Logger.log(
-              `Row ${row}: Adding 2 points for missed submission and evaluation at column ${monthColumns[j]}.`
+              `Row ${row}: Adding ${COMPLIANCE_PENALTY_POINT_MISSED_BOTH} points for missed submission and evaluation at column ${monthColumns[j]}.`
             );
             break;
           default:
@@ -465,9 +475,9 @@ function calculateMaxPenaltyPointsForSixMonths() {
     maxPPCell.setHorizontalAlignment('center');
 
     // Set cell background to red if maxPP >= 3
-    if (maxPP >= 3) {
+    if (maxPP >= MAX_PENALTY_POINTS_TO_EXPEL) {
       maxPPCell.setBackground(COLOR_EXPELLED);
-      Logger.log(`Row ${row}: Max PP >= 3. Setting red background in Max 6-Month PP column.`);
+      Logger.log(`Row ${row}: Max PP >= ${MAX_PENALTY_POINTS_TO_EXPEL}. Setting red background in Max 6-Month PP column.`);
     }
 
     Logger.log(`Row ${row}: Max 6-Month Penalty Points finalized as ${maxPP}.`);
@@ -492,7 +502,7 @@ function expelAmbassadors() {
   const newlyExpelled = [];
 
   const scoreData = overallScoresSheet
-    .getRange(2, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn()) // Correct range
+    .getRange(COMPLIANCE_FIRST_DATA_ROW, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn()) // Correct range
     .getValues()
     .filter((row) => row[scorePenaltiesColIndex - 1] >= MAX_PENALTY_POINTS_TO_EXPEL); // -1 for array index
 
@@ -500,7 +510,7 @@ function expelAmbassadors() {
     const discordHandle = row[scoreDiscordHandleColIndex - 1]; // -1 for array index
     const registryRowIndex =
       registrySheet
-        .getRange(2, registryDiscordHandleColIndex, registrySheet.getLastRow() - 1, 1) // Correct range
+        .getRange(COMPLIANCE_FIRST_DATA_ROW, registryDiscordHandleColIndex, registrySheet.getLastRow() - 1, 1) // Correct range
         .getValues()
         .findIndex((regRow) => regRow[0] === discordHandle) + 2; // +2 to adjust for headers and 0-based index
 
@@ -540,7 +550,7 @@ function sendExpulsionNotifications(discordHandle) {
   // Find ambassador's row by discord handle
   const registryRowIndex =
     registrySheet
-      .getRange(2, registryDiscordColIndex, registrySheet.getLastRow() - 1, 1)
+      .getRange(COMPLIANCE_FIRST_DATA_ROW, registryDiscordColIndex, registrySheet.getLastRow() - 1, 1)
       .getValues()
       .findIndex((row) => row[0] === discordHandle) + 2;
 
@@ -605,7 +615,7 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
 
     // Get the current reporting month name and calculate deadline
     const currentMonthName = getCurrentReportingMonthName();
-    const deadlineDate = getBusinessDaysFromToday(3);
+    const deadlineDate = getBusinessDaysFromToday(COMPLIANCE_BUSINESS_DAYS_DEADLINE);
 
     // Compose the email using the new template
     const emailBody = INADEQUATE_CONTRIBUTION_NOTIFICATION_EMAIL_TEMPLATE.replaceAll(
