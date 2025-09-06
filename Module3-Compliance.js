@@ -198,16 +198,12 @@ function checkAndCreateColumns() {
 }
 
 /**
- * Calculates and assigns penalty points for ambassadors based on their participation in submissions and evaluations for the current reporting month.
- * Only considers the last 6 months for penalty points calculation.
- * Highlights the corresponding cells in the Overall Scores sheet to reflect missed activities:
- * - Missed submission: COLOR_MISSED_SUBMISSION
- * - Missed evaluation: COLOR_MISSED_EVALUATION
- * - Both missed submission and evaluation: COLOR_MISSED_SUBM_AND_EVAL
+ * Initializes all data needed for penalty points calculation.
+ * @returns {Object} Object containing sheets, column indices, reporting data, and ambassador data
  */
-function calculatePenaltyPoints() {
-  Logger.log('Starting penalty points calculation for submissions and evaluations (last 6 months only).');
-
+function initializePenaltyCalculationData() {
+  Logger.log('Initializing penalty calculation data.');
+  
   // Open necessary sheets
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
   const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
@@ -256,7 +252,6 @@ function calculatePenaltyPoints() {
 
   // Get assignments from Review Log (who evaluates whom)
   const assignments = getReviewLogAssignments();
-  //Logger.log(`Assignments from Review Log: ${JSON.stringify(assignments)}`); //too extensive log
 
   // Fetch data from Registry and filter non-expelled ambassadors
   const registryData = registrySheet
@@ -304,75 +299,123 @@ function calculatePenaltyPoints() {
     SCORE_INADEQUATE_CONTRIBUTION_COLUMN
   );
 
-  // Process each ambassador
-  ambassadorData.forEach(({ email, discordHandle }) => {
-    const rowInScores = overallScoresSheet.createTextFinder(discordHandle).findNext()?.getRow();
-    if (!rowInScores) {
-      alertAndLog(`Discord handle not found in Overall Scores: ${discordHandle}`);
-      return;
+  return {
+    overallScoresSheet,
+    penaltyPointsColIndex,
+    currentMonthColIndex,
+    validSubmitters,
+    validEvaluators,
+    assignments,
+    ambassadorData,
+    recentMonths,
+    inadequateContributionColIndex
+  };
+}
+
+/**
+ * Processes penalty points for a single ambassador.
+ * @param {Object} ambassador - Ambassador data with email and discordHandle
+ * @param {Object} calculationData - Data from initializePenaltyCalculationData()
+ */
+function processAmbassadorPenaltyPoints(ambassador, calculationData) {
+  const { email, discordHandle } = ambassador;
+  const {
+    overallScoresSheet,
+    penaltyPointsColIndex,
+    currentMonthColIndex,
+    validSubmitters,
+    validEvaluators,
+    assignments,
+    recentMonths,
+    inadequateContributionColIndex
+  } = calculationData;
+
+  const rowInScores = overallScoresSheet.createTextFinder(discordHandle).findNext()?.getRow();
+  if (!rowInScores) {
+    alertAndLog(`Discord handle not found in Overall Scores: ${discordHandle}`);
+    return;
+  }
+
+  // Reset penalty points and recalculate based only on the last 6 months
+  let totalPenaltyPoints = 0;
+  let inadequateContributionCount = 0;
+
+  // Process recent months (up to 6)
+  for (const colIndex of recentMonths) {
+    // if processing current month, first color-code the nonEvaluators and non-submitters
+    if (colIndex === currentMonthColIndex) {
+      Logger.log(`Processing current month column (${colIndex}) for ${discordHandle}`);
+      const isNonSubmitter = !validSubmitters.map(normalizeEmail).includes(normalizeEmail(email));
+      const isNonEvaluator = Object.values(assignments).some(
+        (evaluators) =>
+          evaluators.map(normalizeEmail).includes(normalizeEmail(email)) &&
+          !validEvaluators.map(normalizeEmail).includes(normalizeEmail(email))
+      );
+
+      const currentCell = overallScoresSheet.getRange(rowInScores, currentMonthColIndex);
+
+      if (isNonSubmitter && isNonEvaluator) {
+        currentCell.setBackground(COLOR_MISSED_SUBM_AND_EVAL);
+        Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_BOTH} penalty points for ${discordHandle} (missed submission and evaluation).`);
+      } else if (isNonSubmitter) {
+        currentCell.setBackground(COLOR_MISSED_SUBMISSION);
+        Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION} penalty point for ${discordHandle} (missed submission).`);
+      } else if (isNonEvaluator) {
+        currentCell.setBackground(COLOR_MISSED_EVALUATION);
+        Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION} penalty point for ${discordHandle} (missed evaluation).`);
+      }
     }
 
-    // Reset penalty points and recalculate based only on the last 6 months
-    let totalPenaltyPoints = 0;
-    let inadequateContributionCount = 0;
+    const cell = overallScoresSheet.getRange(rowInScores, colIndex);
+    const backgroundColor = cell.getBackground().toLowerCase();
 
-    // Process recent months (up to 6)
-    for (const colIndex of recentMonths) {
-      // if processing current month, first color-code the nonEvaluators and non-submitters
-      if (colIndex === currentMonthColIndex) {
-        Logger.log(`Processing current month column (${colIndex}) for ${discordHandle}`);
-        const isNonSubmitter = !validSubmitters.map(normalizeEmail).includes(normalizeEmail(email));
-        const isNonEvaluator = Object.values(assignments).some(
-          (evaluators) =>
-            evaluators.map(normalizeEmail).includes(normalizeEmail(email)) &&
-            !validEvaluators.map(normalizeEmail).includes(normalizeEmail(email))
-        );
-
-        const currentCell = overallScoresSheet.getRange(rowInScores, currentMonthColIndex);
-
-        if (isNonSubmitter && isNonEvaluator) {
-          currentCell.setBackground(COLOR_MISSED_SUBM_AND_EVAL);
-          Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_BOTH} penalty points for ${discordHandle} (missed submission and evaluation).`);
-        } else if (isNonSubmitter) {
-          currentCell.setBackground(COLOR_MISSED_SUBMISSION);
-          Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION} penalty point for ${discordHandle} (missed submission).`);
-        } else if (isNonEvaluator) {
-          currentCell.setBackground(COLOR_MISSED_EVALUATION);
-          Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION} penalty point for ${discordHandle} (missed evaluation).`);
-        }
-      }
-
-      const cell = overallScoresSheet.getRange(rowInScores, colIndex);
-      const backgroundColor = cell.getBackground().toLowerCase();
-
-      if (backgroundColor === COLOR_MISSED_SUBMISSION.toLowerCase()) {
-        totalPenaltyPoints += COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION;
-      } else if (backgroundColor === COLOR_MISSED_EVALUATION.toLowerCase()) {
-        totalPenaltyPoints += COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION;
-      } else if (backgroundColor === COLOR_MISSED_SUBM_AND_EVAL.toLowerCase()) {
-        totalPenaltyPoints += COMPLIANCE_PENALTY_POINT_MISSED_BOTH;
-      }
-
-      // Inadequate Contribution: check if Final Score < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD
-      // Get the value from the cell (should be the score for that month)
-      const scoreValue = cell.getValue();
-      if (typeof scoreValue === 'number' && scoreValue < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD) {
-        inadequateContributionCount++;
-      }
+    if (backgroundColor === COLOR_MISSED_SUBMISSION.toLowerCase()) {
+      totalPenaltyPoints += COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION;
+    } else if (backgroundColor === COLOR_MISSED_EVALUATION.toLowerCase()) {
+      totalPenaltyPoints += COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION;
+    } else if (backgroundColor === COLOR_MISSED_SUBM_AND_EVAL.toLowerCase()) {
+      totalPenaltyPoints += COMPLIANCE_PENALTY_POINT_MISSED_BOTH;
     }
 
-    // Update penalty points
-    overallScoresSheet.getRange(rowInScores, penaltyPointsColIndex).setValue(totalPenaltyPoints);
-    Logger.log(`Updated penalty points for ${discordHandle} to ${totalPenaltyPoints}`);
-
-    // Update Inadequate Contribution Count
-    overallScoresSheet.getRange(rowInScores, inadequateContributionColIndex).setValue(inadequateContributionCount);
-    Logger.log(`Updated Inadequate Contribution Count for ${discordHandle} to ${inadequateContributionCount}`);
-
-    // Refer to CRT if threshold met
-    if (inadequateContributionCount >= MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER) {
-      referInadequateContributionToCRT(discordHandle, inadequateContributionCount);
+    // Inadequate Contribution: check if Final Score < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD
+    // Get the value from the cell (should be the score for that month)
+    const scoreValue = cell.getValue();
+    if (typeof scoreValue === 'number' && scoreValue < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD) {
+      inadequateContributionCount++;
     }
+  }
+
+  // Update penalty points
+  overallScoresSheet.getRange(rowInScores, penaltyPointsColIndex).setValue(totalPenaltyPoints);
+  Logger.log(`Updated penalty points for ${discordHandle} to ${totalPenaltyPoints}`);
+
+  // Update Inadequate Contribution Count
+  overallScoresSheet.getRange(rowInScores, inadequateContributionColIndex).setValue(inadequateContributionCount);
+  Logger.log(`Updated Inadequate Contribution Count for ${discordHandle} to ${inadequateContributionCount}`);
+
+  // Refer to CRT if threshold met
+  if (inadequateContributionCount >= MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER) {
+    referInadequateContributionToCRT(discordHandle, inadequateContributionCount);
+  }
+}
+
+/**
+ * Calculates and assigns penalty points for ambassadors based on their participation in submissions and evaluations for the current reporting month.
+ * Only considers the last 6 months for penalty points calculation.
+ * Highlights the corresponding cells in the Overall Scores sheet to reflect missed activities:
+ * - Missed submission: COLOR_MISSED_SUBMISSION
+ * - Missed evaluation: COLOR_MISSED_EVALUATION
+ * - Both missed submission and evaluation: COLOR_MISSED_SUBM_AND_EVAL
+ */
+function calculatePenaltyPoints() {
+  Logger.log('Starting penalty points calculation for submissions and evaluations (last 6 months only).');
+
+  // Initialize all calculation data
+  const calculationData = initializePenaltyCalculationData();
+  
+  // Process each ambassador using the extracted method
+  calculationData.ambassadorData.forEach((ambassador) => {
+    processAmbassadorPenaltyPoints(ambassador, calculationData);
   });
 
   Logger.log('Penalty points calculation for submissions and evaluations completed.');
@@ -392,7 +435,6 @@ function calculateMaxPenaltyPointsForSixMonths() {
 
   const scoresSpreadsheet = SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
   const overallScoresSheet = scoresSpreadsheet.getSheetByName(OVERALL_SCORE_SHEET_NAME);
-  const penaltyPointsCol = getRequiredColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
   const maxPPCol = getRequiredColumnIndexByName(overallScoresSheet, SCORE_MAX_6M_PP_COLUMN);
   const lastRow = overallScoresSheet.getLastRow();
   const lastColumn = overallScoresSheet.getLastColumn();
