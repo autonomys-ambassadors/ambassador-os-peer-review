@@ -64,10 +64,14 @@ Please add links to your contributions during the month`;
   REQUEST_LOG_END_TIME_COLUMN = 'Window End Date Time';
 
   // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
-  SUBMISSION_WINDOW_MINUTES = 20;
-  SUBMISSION_WINDOW_REMINDER_MINUTES = 15; // how many minutes after Submission Requests sent to remind
-  EVALUATION_WINDOW_MINUTES = 20;
-  EVALUATION_WINDOW_REMINDER_MINUTES = 15; // how many minutes after Evaluation Requests sent to remind
+  //SUBMISSION_WINDOW_MINUTES = 20;
+  //SUBMISSION_WINDOW_REMINDER_MINUTES = 15; // how many minutes after Submission Requests sent to remind
+  //EVALUATION_WINDOW_MINUTES = 20;
+  //EVALUATION_WINDOW_REMINDER_MINUTES = 15; // how many minutes after Evaluation Requests sent to remind
+  SUBMISSION_WINDOW_MINUTES = 7 * 24 * 60;
+  SUBMISSION_WINDOW_REMINDER_MINUTES = 5 * 24 * 60; // time (expressed in minutes) after Submission Requests sent to remind
+  EVALUATION_WINDOW_MINUTES = 7 * 24 * 60;
+  EVALUATION_WINDOW_REMINDER_MINUTES = 5 * 24 * 60; // time (expressed in minutes) after Evaluation Requests sent to remind
 
   // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
   MAX_PENALTY_POINTS_TO_EXPEL = 3;
