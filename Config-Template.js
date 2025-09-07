@@ -61,6 +61,7 @@ Please add links to your contributions during the month`;
   GRADE_FINAL_SCORE_COLUMN = 'Final Score';
   CRT_SELECTION_DATE_COLUMN = 'Selection Date';
   SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
+  SCORE_CRT_REFERRAL_HISTORY_COLUMN = 'CRT Referral History';
 
   // Request Log columns
   REQUEST_LOG_REQUEST_TYPE_COLUMN = 'Type';
