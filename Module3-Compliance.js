@@ -464,22 +464,18 @@ function getPenaltyPointsFromBackgroundColor(backgroundColor) {
 
 /**
  * Processes a single month column to calculate penalty points and inadequate contributions.
- * @param {Object} params - Parameters object
+ * @param {Sheet} overallScoresSheet - The Overall Score sheet
+ * @param {number} rowInScores - Row number for the ambassador
+ * @param {number} colIndex - Column index to process
+ * @param {number} currentMonthColIndex - Current month column index
+ * @param {string} email - Ambassador email
+ * @param {string} discordHandle - Ambassador discord handle
+ * @param {Array} validSubmitters - Valid submitter emails
+ * @param {Array} validEvaluators - Valid evaluator emails
+ * @param {Object} assignments - Assignment mappings
  * @returns {Object} Object containing penalty points and inadequate contribution count for this month
  */
-function processMonthColumn(params) {
-  const {
-    colIndex,
-    currentMonthColIndex,
-    overallScoresSheet,
-    rowInScores,
-    email,
-    discordHandle,
-    validSubmitters,
-    validEvaluators,
-    assignments
-  } = params;
-
+function processMonthColumn(overallScoresSheet, rowInScores, colIndex, currentMonthColIndex, email, discordHandle, validSubmitters, validEvaluators, assignments) {
   // Apply color coding if this is the current month
   if (colIndex === currentMonthColIndex) {
     applyCurrentMonthColorCoding({
@@ -505,91 +501,31 @@ function processMonthColumn(params) {
 }
 
 /**
- * Updates the ambassador's scores in the spreadsheet and refers to CRT if needed.
- * @param {Object} params - Parameters object
+ * Updates penalty points in the spreadsheet.
+ * @param {Sheet} overallScoresSheet - The Overall Score sheet
+ * @param {number} rowInScores - Row number for the ambassador
+ * @param {number} penaltyPointsColIndex - Penalty points column index
+ * @param {number} totalPenaltyPoints - Total penalty points to set
+ * @param {string} discordHandle - Ambassador discord handle for logging
  */
-function updateAmbassadorScores(params) {
-  const {
-    overallScoresSheet,
-    rowInScores,
-    penaltyPointsColIndex,
-    inadequateContributionColIndex,
-    totalPenaltyPoints,
-    inadequateContributionCount,
-    discordHandle
-  } = params;
-
-  // Update penalty points
+function updatePenaltyPoints(overallScoresSheet, rowInScores, penaltyPointsColIndex, totalPenaltyPoints, discordHandle) {
   overallScoresSheet.getRange(rowInScores, penaltyPointsColIndex).setValue(totalPenaltyPoints);
   Logger.log(`Updated penalty points for ${discordHandle} to ${totalPenaltyPoints}`);
-
-  // Update Inadequate Contribution Count
-  overallScoresSheet.getRange(rowInScores, inadequateContributionColIndex).setValue(inadequateContributionCount);
-  Logger.log(`Updated Inadequate Contribution Count for ${discordHandle} to ${inadequateContributionCount}`);
-
-  // Refer to CRT if threshold met
-  if (inadequateContributionCount >= MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER) {
-    referInadequateContributionToCRT(discordHandle, inadequateContributionCount);
-  }
 }
 
 /**
- * Processes penalty points for a single ambassador.
- * @param {Object} ambassador - Ambassador data with email and discordHandle
- * @param {Object} calculationData - Data from initializePenaltyCalculationData()
+ * Updates inadequate contribution count in the spreadsheet.
+ * @param {Sheet} overallScoresSheet - The Overall Score sheet
+ * @param {number} rowInScores - Row number for the ambassador
+ * @param {number} inadequateContributionColIndex - Inadequate contribution column index
+ * @param {number} inadequateContributionCount - Count to set
+ * @param {string} discordHandle - Ambassador discord handle for logging
  */
-function processAmbassadorPenaltyPoints(ambassador, calculationData) {
-  const { email, discordHandle } = ambassador;
-  const {
-    overallScoresSheet,
-    penaltyPointsColIndex,
-    currentMonthColIndex,
-    validSubmitters,
-    validEvaluators,
-    assignments,
-    recentMonths,
-    inadequateContributionColIndex
-  } = calculationData;
-
-  const rowInScores = overallScoresSheet.createTextFinder(discordHandle).findNext()?.getRow();
-  if (!rowInScores) {
-    alertAndLog(`Discord handle not found in Overall Scores: ${discordHandle}`);
-    return;
-  }
-
-  // Reset penalty points and recalculate based only on the last 6 months
-  let totalPenaltyPoints = 0;
-  let inadequateContributionCount = 0;
-
-  // Process each recent month
-  for (const colIndex of recentMonths) {
-    const monthResult = processMonthColumn({
-      colIndex,
-      currentMonthColIndex,
-      overallScoresSheet,
-      rowInScores,
-      email,
-      discordHandle,
-      validSubmitters,
-      validEvaluators,
-      assignments
-    });
-    
-    totalPenaltyPoints += monthResult.penaltyPoints;
-    inadequateContributionCount += monthResult.inadequateContribution;
-  }
-
-  // Update scores and handle CRT referral
-  updateAmbassadorScores({
-    overallScoresSheet,
-    rowInScores,
-    penaltyPointsColIndex,
-    inadequateContributionColIndex,
-    totalPenaltyPoints,
-    inadequateContributionCount,
-    discordHandle
-  });
+function updateInadequateContributionCount(overallScoresSheet, rowInScores, inadequateContributionColIndex, inadequateContributionCount, discordHandle) {
+  overallScoresSheet.getRange(rowInScores, inadequateContributionColIndex).setValue(inadequateContributionCount);
+  Logger.log(`Updated Inadequate Contribution Count for ${discordHandle} to ${inadequateContributionCount}`);
 }
+
 
 /**
  * Calculates and assigns penalty points for ambassadors based on their participation in submissions and evaluations for the current reporting month.
@@ -603,11 +539,60 @@ function calculatePenaltyPoints() {
   Logger.log('Starting penalty points calculation for submissions and evaluations (last 6 months only).');
 
   // Initialize all calculation data
-  const calculationData = initializePenaltyCalculationData();
+  const {
+    overallScoresSheet,
+    penaltyPointsColIndex,
+    currentMonthColIndex,
+    validSubmitters,
+    validEvaluators,
+    assignments,
+    ambassadorData,
+    recentMonths,
+    inadequateContributionColIndex
+  } = initializePenaltyCalculationData();
   
-  // Process each ambassador using the extracted method
-  calculationData.ambassadorData.forEach((ambassador) => {
-    processAmbassadorPenaltyPoints(ambassador, calculationData);
+  // Process each ambassador
+  ambassadorData.forEach((ambassador) => {
+    const { email, discordHandle } = ambassador;
+    
+    const rowInScores = overallScoresSheet.createTextFinder(discordHandle).findNext()?.getRow();
+    if (!rowInScores) {
+      alertAndLog(`Discord handle not found in Overall Scores: ${discordHandle}`);
+      return;
+    }
+
+    // Reset penalty points and recalculate based only on the last 6 months
+    let totalPenaltyPoints = 0;
+    let inadequateContributionCount = 0;
+
+    // Process each recent month
+    for (const colIndex of recentMonths) {
+      const monthResult = processMonthColumn(
+        overallScoresSheet, 
+        rowInScores, 
+        colIndex, 
+        currentMonthColIndex, 
+        email, 
+        discordHandle, 
+        validSubmitters, 
+        validEvaluators, 
+        assignments
+      );
+      
+      totalPenaltyPoints += monthResult.penaltyPoints;
+      inadequateContributionCount += monthResult.inadequateContribution;
+    }
+
+    // Update penalty points
+    updatePenaltyPoints(overallScoresSheet, rowInScores, penaltyPointsColIndex, totalPenaltyPoints, discordHandle);
+
+    // Update inadequate contribution count
+    updateInadequateContributionCount(overallScoresSheet, rowInScores, inadequateContributionColIndex, inadequateContributionCount, discordHandle);
+
+    // Refer to CRT if threshold met
+    if (inadequateContributionCount >= MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER) {
+      referInadequateContributionToCRT(discordHandle, inadequateContributionCount);
+    }
   });
 
   Logger.log('Penalty points calculation for submissions and evaluations completed.');
