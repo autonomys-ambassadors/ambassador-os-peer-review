@@ -756,8 +756,81 @@ function calculateMaxPenaltyPointsForSixMonths() {
   Logger.log('Completed calculating Max Penalty Points for all rows.');
 }
 
-// Expel ambassadors based on Max 6-Month PP. Tracks and notify only newly expelled ambassadors.
-// If an ambassador already has status containing "Expelled", they are assumed to have already been notified and will be skipped.
+/**
+ * Gets ambassadors who exceed the penalty point threshold for expulsion.
+ * @param {Sheet} overallScoresSheet - The Overall Score sheet
+ * @param {number} scorePenaltiesColIndex - Column index for penalty points
+ * @param {number} scoreDiscordHandleColIndex - Column index for discord handle in scores sheet
+ * @returns {Array} Array of ambassador data objects with discord handles and penalty points
+ */
+function getAmbassadorsEligibleForExpulsion(overallScoresSheet, scorePenaltiesColIndex, scoreDiscordHandleColIndex) {
+  const scoreData = overallScoresSheet
+    .getRange(COMPLIANCE_FIRST_DATA_ROW, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn())
+    .getValues()
+    .filter((row) => row[scorePenaltiesColIndex - 1] >= MAX_PENALTY_POINTS_TO_EXPEL)
+    .map((row) => ({
+      discordHandle: row[scoreDiscordHandleColIndex - 1],
+      penaltyPoints: row[scorePenaltiesColIndex - 1]
+    }));
+  
+  Logger.log(`Found ${scoreData.length} ambassadors eligible for expulsion`);
+  return scoreData;
+}
+
+/**
+ * Finds the registry row index for a given discord handle.
+ * @param {Sheet} registrySheet - The Registry sheet
+ * @param {string} discordHandle - Discord handle to search for
+ * @param {number} registryDiscordHandleColIndex - Column index for discord handle in registry
+ * @returns {number} Registry row index (1-based), or 0 if not found
+ */
+function findRegistryRowByDiscordHandle(registrySheet, discordHandle, registryDiscordHandleColIndex) {
+  const registryData = registrySheet
+    .getRange(COMPLIANCE_FIRST_DATA_ROW, registryDiscordHandleColIndex, registrySheet.getLastRow() - 1, 1)
+    .getValues();
+  
+  const rowIndex = registryData.findIndex((regRow) => regRow[0] === discordHandle);
+  return rowIndex >= 0 ? rowIndex + 2 : 0; // +2 to adjust for headers and 0-based index
+}
+
+/**
+ * Processes a single ambassador for expulsion if not already expelled.
+ * @param {Object} ambassadorData - Ambassador data with discordHandle and penaltyPoints
+ * @param {Sheet} registrySheet - The Registry sheet
+ * @param {number} registryDiscordHandleColIndex - Discord handle column index
+ * @param {number} registryStatusColIndex - Status column index
+ * @returns {boolean} True if ambassador was newly expelled, false otherwise
+ */
+function processAmbassadorForExpulsion(ambassadorData, registrySheet, registryDiscordHandleColIndex, registryStatusColIndex) {
+  const { discordHandle } = ambassadorData;
+  
+  const registryRowIndex = findRegistryRowByDiscordHandle(registrySheet, discordHandle, registryDiscordHandleColIndex);
+  
+  if (registryRowIndex <= 1) {
+    Logger.log(`Error: Ambassador with discord handle: ${discordHandle} not found in the registry.`);
+    return false;
+  }
+
+  const currentStatus = registrySheet.getRange(registryRowIndex, registryStatusColIndex).getValue();
+  
+  if (isAlreadyExpelled(currentStatus)) {
+    Logger.log(`Notice: Ambassador ${discordHandle} is already marked as expelled.`);
+    return false;
+  }
+
+  // Mark as expelled
+  const currentDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd MMM yy');
+  const updatedStatus = `${currentStatus} | Expelled [${currentDate}].`;
+  registrySheet.getRange(registryRowIndex, registryStatusColIndex).setValue(updatedStatus);
+
+  Logger.log(`Ambassador ${discordHandle} status updated to: "${updatedStatus}"`);
+  return true;
+}
+
+/**
+ * Expels ambassadors based on Max 6-Month PP. Tracks and notifies only newly expelled ambassadors.
+ * If an ambassador already has status containing "Expelled", they are assumed to have already been notified and will be skipped.
+ */
 function expelAmbassadors() {
   Logger.log('Starting expelAmbassadors process.');
 
@@ -768,41 +841,50 @@ function expelAmbassadors() {
   const registryDiscordHandleColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
   const registryStatusColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
 
+  // Get ambassadors eligible for expulsion
+  const eligibleAmbassadors = getAmbassadorsEligibleForExpulsion(
+    overallScoresSheet, 
+    scorePenaltiesColIndex, 
+    scoreDiscordHandleColIndex
+  );
+
+  // Process each ambassador and collect newly expelled ones
   const newlyExpelled = [];
-
-  const scoreData = overallScoresSheet
-    .getRange(COMPLIANCE_FIRST_DATA_ROW, 1, overallScoresSheet.getLastRow() - 1, overallScoresSheet.getLastColumn()) // Correct range
-    .getValues()
-    .filter((row) => row[scorePenaltiesColIndex - 1] >= MAX_PENALTY_POINTS_TO_EXPEL); // -1 for array index
-
-  scoreData.forEach((row) => {
-    const discordHandle = row[scoreDiscordHandleColIndex - 1]; // -1 for array index
-    const registryRowIndex =
-      registrySheet
-        .getRange(COMPLIANCE_FIRST_DATA_ROW, registryDiscordHandleColIndex, registrySheet.getLastRow() - 1, 1) // Correct range
-        .getValues()
-        .findIndex((regRow) => regRow[0] === discordHandle) + 2; // +2 to adjust for headers and 0-based index
-
-    if (registryRowIndex > 1) {
-      const currentStatus = registrySheet.getRange(registryRowIndex, registryStatusColIndex).getValue();
-      if (isAlreadyExpelled(currentStatus)) {
-        Logger.log(`Notice: Ambassador ${discordHandle} is already marked as expelled.`);
-        return;
-      }
-
-      const currentDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd MMM yy');
-      const updatedStatus = `${currentStatus} | Expelled [${currentDate}].`;
-      registrySheet.getRange(registryRowIndex, registryStatusColIndex).setValue(updatedStatus);
-
-      Logger.log(`Ambassador ${discordHandle} status updated to: "${updatedStatus}"`);
-      newlyExpelled.push(discordHandle);
+  eligibleAmbassadors.forEach((ambassadorData) => {
+    const wasNewlyExpelled = processAmbassadorForExpulsion(
+      ambassadorData,
+      registrySheet,
+      registryDiscordHandleColIndex,
+      registryStatusColIndex
+    );
+    
+    if (wasNewlyExpelled) {
+      newlyExpelled.push(ambassadorData.discordHandle);
     }
   });
 
+  // Send notifications to newly expelled ambassadors
   newlyExpelled.forEach((discordHandle) => {
     sendExpulsionNotifications(discordHandle);
   });
-  Logger.log('expelAmbassadors process completed.');
+  
+  Logger.log(`expelAmbassadors process completed. ${newlyExpelled.length} ambassadors newly expelled.`);
+}
+
+/**
+ * Creates expulsion email body by replacing template tokens.
+ * @param {string} discordHandle - Ambassador's discord handle
+ * @param {string} expulsionDate - Formatted expulsion date
+ * @returns {string} Email body with replaced tokens
+ */
+function createExpulsionEmailBody(discordHandle, expulsionDate) {
+  const startDate = 'your start date'; // TODO: Add start date tracking to registry
+  
+  return EXPULSION_EMAIL_TEMPLATE
+    .replace(/{Discord Handle}/g, discordHandle)
+    .replace(/{Expulsion Date}/g, expulsionDate)
+    .replace(/{Start Date}/g, startDate)
+    .replace(/{Sponsor Email}/g, SPONSOR_EMAIL);
 }
 
 /**
@@ -812,54 +894,31 @@ function expelAmbassadors() {
 function sendExpulsionNotifications(discordHandle) {
   Logger.log(`Sending expulsion notifications for ambassador with discord handle: ${discordHandle}`);
 
-  const registrySheet = getRegistrySheet();
-  const registryEmailColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
-  const registryDiscordColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
-
-  // Find ambassador's row by discord handle
-  const registryRowIndex =
-    registrySheet
-      .getRange(COMPLIANCE_FIRST_DATA_ROW, registryDiscordColIndex, registrySheet.getLastRow() - 1, 1)
-      .getValues()
-      .findIndex((row) => row[0] === discordHandle) + 2;
-
-  if (registryRowIndex > 1) {
-    const email = registrySheet.getRange(registryRowIndex, registryEmailColIndex).getValue();
-
-    // Check and skip if email is missing
-    if (!isValidEmail(email)) {
-      Logger.log(`Skipping notification for ambassador with discord handle: ${discordHandle} due to missing email.`);
-      return;
-    }
-
-    const subject = 'Expulsion from the Program';
-    const sponsorBody = `Ambassador ${email} (${discordHandle}) has been expelled from the program for Failure to Participate according to Article 2, Section 10 of the Bylaws.`;
-
-    // Prepare variables for expulsion email template
-    const currentDate = new Date();
-    const timeZone = getProjectTimeZone();
-    const expulsionDate = Utilities.formatDate(currentDate, timeZone, 'MMMM dd, yyyy');
-
-    // Note: Start date is not currently tracked in the registry
-    // Using a placeholder message until a start date column is added
-    const startDate = 'your start date'; // TODO: Add start date tracking to registry
-
-    // Replace template tokens in the expulsion email
-    let expulsionEmailBody = EXPULSION_EMAIL_TEMPLATE.replace(/{Discord Handle}/g, discordHandle)
-      .replace(/{Expulsion Date}/g, expulsionDate)
-      .replace(/{Start Date}/g, startDate)
-      .replace(/{Sponsor Email}/g, SPONSOR_EMAIL);
-
-    // Send notification to the expelled ambassador using generic email function
-    sendEmailNotification(email, subject, expulsionEmailBody);
-    Logger.log(`Expulsion email sent to ${email}.`);
-
-    // Send notification to the sponsor using generic email function
-    sendEmailNotification(SPONSOR_EMAIL, subject, sponsorBody);
-    Logger.log(`Notification sent to sponsor for expelled ambassador: ${email} (${discordHandle}).`);
-  } else {
-    Logger.log(`Error: Ambassador with discord handle: ${discordHandle} not found in the registry.`);
+  // Use existing utility to get ambassador email and discord handle
+  const ambassadorInfo = lookupEmailAndDiscord(discordHandle);
+  if (!ambassadorInfo || !isValidEmail(ambassadorInfo.email)) {
+    Logger.log(`Skipping notification for ambassador with discord handle: ${discordHandle} due to missing or invalid email.`);
+    return;
   }
+
+  const { email } = ambassadorInfo;
+  const subject = 'Expulsion from the Program';
+  
+  // Prepare expulsion date
+  const currentDate = new Date();
+  const timeZone = getProjectTimeZone();
+  const expulsionDate = Utilities.formatDate(currentDate, timeZone, 'MMMM dd, yyyy');
+
+  // Create email bodies
+  const expulsionEmailBody = createExpulsionEmailBody(discordHandle, expulsionDate);
+  const sponsorBody = `Ambassador ${email} (${discordHandle}) has been expelled from the program for Failure to Participate according to Article 2, Section 10 of the Bylaws.`;
+
+  // Send notifications
+  sendEmailNotification(email, subject, expulsionEmailBody);
+  Logger.log(`Expulsion email sent to ${email}.`);
+
+  sendEmailNotification(SPONSOR_EMAIL, subject, sponsorBody);
+  Logger.log(`Notification sent to sponsor for expelled ambassador: ${email} (${discordHandle}).`);
 }
 
 /**
