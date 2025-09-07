@@ -1,7 +1,7 @@
 /**
  * Configuration template
  * Copy this file to Config-[YourName].js and customize for your environment
- * 
+ *
  * Instructions:
  * 1. Replace [YourName] with your actual name in the filename
  * 2. Update the function name to match: setYourNameVariables()
@@ -10,6 +10,7 @@
  */
 
 function setYourNameVariables() {
+  TESTING = true;
   SEND_EMAIL = true; // Set to false if you don't want emails sent during testing
   TESTER_EMAIL = 'your-email@example.com'; // Your email for testing redirects
 

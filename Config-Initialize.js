@@ -1,12 +1,13 @@
 /**
  * Configuration Variable Declarations
- * 
+ *
  * This file declares (but does not initialize) all configuration variables used across the application.
  * The actual values are set by the appropriate configuration function based on CONFIG_NAME in SharedUtilities.js
- * 
+ *
  * Since Google Apps Script loads all .js files together, we need to declare variables in one place
  * to avoid conflicts, then let the configuration functions assign the values.
  */
+var TESTING; // Boolean to indicate if the script is in testing mode
 
 // Configuration control
 var SEND_EMAIL; // Will control whether emails are sent - must be true for production; may be true or false for testing depending on testing needs.
@@ -67,7 +68,7 @@ var REQUEST_LOG_END_TIME_COLUMN;
 
 // Email Configuration
 var SPONSOR_EMAIL; // Sponsor's email
-var TESTER_EMAIL; // Tester's email for redirecting test emails (only used in test configurations)
+var TESTER_EMAIL; // Tester's email for redirecting test emails (only used in test configurations) SHOULD STAY UNDEFINED IN PRODUCTION.
 
 // Timing Configuration
 var SUBMISSION_WINDOW_MINUTES;

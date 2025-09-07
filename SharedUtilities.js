@@ -1,34 +1,3 @@
-// (( Configuration System ))
-// Configuration selection - set this to the name of your configuration:
-// 'Production' for live environment, or any tester name like 'Jonathan', 'Wilyam', etc.
-const CONFIG_NAME = 'Jonathan'; // Available: 'Production', 'Jonathan', 'Wilyam' - add more in Config-[Name].js files
-
-// Note: All configuration variables are declared in Config-Initialize.js
-// Their values are set by the configuration functions in Config-[Name].js files
-
-// Unified configuration loader - calls the appropriate configuration function based on CONFIG_NAME
-switch (CONFIG_NAME) {
-  case 'Production':
-    setProductionVariables();
-    break;
-  case 'Jonathan':
-    setJonathanVariables();
-    break;
-  case 'Wilyam':
-    setWilyamVariables();
-    break;
-  default:
-    throw new Error(
-      `Unknown configuration: "${CONFIG_NAME}". Available configurations: 'Production', 'Jonathan', 'Wilyam'. To add a new configuration, create a Config-[Name].js file with a set[Name]Variables() function.`
-    );
-}
-
-// Log which configuration is active
-Logger.log(`Configuration loaded: ${CONFIG_NAME}`);
-if (typeof TESTER_EMAIL !== 'undefined') {
-  Logger.log(`Tester email: ${TESTER_EMAIL}`);
-}
-
 // ===== Sheet Access Utilities =====
 // Centralized functions to access commonly used sheets across modules
 
@@ -118,32 +87,6 @@ function onOpen() {
   Logger.log('Menu initialized.');
 }
 
-// ⚠️ functions to prevent Google using of cached outdated variables when run from GUI
-function refreshScriptState() {
-  Logger.log('Starting Refresh Script State');
-  refreshGlobalVariables();
-  Logger.log('Script state refreshed: cache cleared, variables refreshed, and flush completed.');
-}
-
-function refreshGlobalVariables() {
-  Logger.log('Refreshing global variables.');
-
-  if (testing) {
-    setTestVariables();
-  } else {
-    setProductionVariables();
-  }
-
-  // Log the reinitialization of templates
-  Logger.log('Templates and constants reinitialized to ensure accurate processing.');
-
-  Logger.log('Color for missed submission: ' + COLOR_MISSED_SUBMISSION);
-  //Logger.log('Color for missed submission: ' + COLOR_OLD_MISSED_SUBMISSION);
-  Logger.log('Color for missed evaluation: ' + COLOR_MISSED_EVALUATION);
-  Logger.log('Color for missed submiss and eval: ' + COLOR_MISSED_SUBM_AND_EVAL);
-  Logger.log('Color for expelled: ' + COLOR_EXPELLED);
-}
-
 // ===== Generic function to send email =====
 /**
  * Sends an email notification. Supports TO, CC, and BCC recipients.
@@ -161,7 +104,7 @@ function sendEmailNotification(recipientEmail, subject, body, bcc, cc) {
       return;
     }
 
-    if (testing) {
+    if (TESTING) {
       sendTestEmail(recipientEmail, subject, body, bcc, cc);
     } else {
       sendProductionEmail(recipientEmail, subject, body, bcc, cc);
@@ -262,7 +205,7 @@ function sendProductionEmail(recipientEmail, subject, body, bcc, cc) {
  * @param {string} cc - CC recipients
  */
 function logEmailNotSent(recipientEmail, subject, bcc, cc) {
-  if (!testing) {
+  if (!TESTING) {
     Logger.log(
       `WARNING: Production mode with email disabled. Email logged but NOT SENT to: ${recipientEmail}, CC: ${cc}, BCC: ${bcc}, Subject: ${subject}`
     );

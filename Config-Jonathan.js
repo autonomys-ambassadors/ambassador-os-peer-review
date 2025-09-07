@@ -3,6 +3,7 @@
  * Contains all testing variables and settings specific to Jonathan's test environment
  */
 function setJonathanVariables() {
+  TESTING = true;
   SEND_EMAIL = true;
   TESTER_EMAIL = 'ambassadoros+tester@jkw.fm'; // Jonathan's email for testing redirects
 
@@ -44,8 +45,7 @@ function setJonathanVariables() {
 Please add text to your contributions during the month`;
   GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
 Please add links to your contributions during the month`;
-  GOOGLE_FORM_EVALUATION_HANDLE_COLUMN =
-    'Discord handle of the ambassador you are evaluating? (Not your own D-Handle)'; //values must match google form questions
+  GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating? (Not your own D-Handle)'; //values must match google form questions
   GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5.';
   GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks (required)';
   SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points Last 6 Months';

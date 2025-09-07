@@ -3,6 +3,7 @@
  * Contains all testing variables and settings specific to Wilyam's test environment
  */
 function setWilyamVariables() {
+  TESTING = true;
   SEND_EMAIL = true;
   TESTER_EMAIL = 'economicsilver@starmail.net'; // Wilyam's email for testing redirects
 
