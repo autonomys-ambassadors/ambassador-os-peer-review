@@ -297,6 +297,16 @@ function checkAndCreateColumns() {
     overallScoresSheet.insertColumnAfter(maxPenaltyPointsColIndex);
     overallScoresSheet.getRange(COMPLIANCE_HEADER_ROW, nextColIndex).setValue(SCORE_INADEQUATE_CONTRIBUTION_COLUMN);
     Logger.log('Created "Inadequate Contribution Count" column.');
+    inadequateContributionColIndex = nextColIndex;
+  }
+
+  // Check if "CRT Referral History" column exists
+  let crtReferralHistoryColIndex = getColumnIndexByName(overallScoresSheet, SCORE_CRT_REFERRAL_HISTORY_COLUMN);
+  if (crtReferralHistoryColIndex === -1) {
+    nextColIndex = inadequateContributionColIndex + 1; // Next column after "Inadequate Contribution Count"
+    overallScoresSheet.insertColumnAfter(inadequateContributionColIndex);
+    overallScoresSheet.getRange(COMPLIANCE_HEADER_ROW, nextColIndex).setValue(SCORE_CRT_REFERRAL_HISTORY_COLUMN);
+    Logger.log('Created "CRT Referral History" column.');
   }
 }
 
@@ -589,10 +599,8 @@ function calculatePenaltyPoints() {
     // Update inadequate contribution count
     updateInadequateContributionCount(overallScoresSheet, rowInScores, inadequateContributionColIndex, inadequateContributionCount, discordHandle);
 
-    // Refer to CRT if threshold met
-    if (inadequateContributionCount >= MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER) {
-      referInadequateContributionToCRT(discordHandle, inadequateContributionCount);
-    }
+    // Use smart CRT referral logic to prevent duplicate referrals
+    smartCRTReferralCheck(overallScoresSheet, rowInScores, recentMonths, discordHandle, inadequateContributionCount);
   });
 
   Logger.log('Penalty points calculation for submissions and evaluations completed.');
@@ -907,12 +915,161 @@ function sendExpulsionNotifications(discordHandle) {
 }
 
 /**
+ * Parses a CRT referral history string into an array of referral entries.
+ * Format: "months:date|months:date" where months is comma-separated like "2024-01,2024-02"
+ * @param {string} historyString - The CRT referral history string
+ * @returns {Array} Array of referral entries: [{months: ['2024-01', '2024-02'], date: '2024-04-15'}]
+ */
+function parseCRTReferralHistory(historyString) {
+  if (!historyString || historyString.trim() === '') {
+    return [];
+  }
+  
+  return historyString.split('|').map(entry => {
+    const [monthsStr, dateStr] = entry.split(':');
+    return {
+      months: monthsStr.split(',').map(m => m.trim()),
+      date: dateStr.trim()
+    };
+  });
+}
+
+/**
+ * Formats CRT referral history entries into a string for storage.
+ * @param {Array} referralEntries - Array of referral entries
+ * @returns {string} Formatted history string
+ */
+function formatCRTReferralHistory(referralEntries) {
+  return referralEntries.map(entry => `${entry.months.join(',')}:${entry.date}`).join('|');
+}
+
+/**
+ * Gets the month string in YYYY-MM format for a given date.
+ * @param {Date} date - The date to convert
+ * @returns {string} Month string in YYYY-MM format
+ */
+function getMonthString(date) {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+/**
+ * Gets inadequate contribution months for an ambassador from the overall scores sheet.
+ * @param {Sheet} overallScoresSheet - The Overall Score sheet
+ * @param {number} rowIndex - Row index for the ambassador
+ * @param {Array} recentMonths - Array of recent month column indices
+ * @returns {Array} Array of month strings where ambassador scored < 3
+ */
+function getInadequateContributionMonths(overallScoresSheet, rowIndex, recentMonths) {
+  const headers = overallScoresSheet.getRange(COMPLIANCE_HEADER_ROW, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
+  const inadequateMonths = [];
+  
+  for (const colIndex of recentMonths) {
+    const cellValue = overallScoresSheet.getRange(rowIndex, colIndex).getValue();
+    if (isInadequateContributionScore(cellValue)) {
+      const headerDate = headers[colIndex - 1];
+      if (isDate(headerDate)) {
+        inadequateMonths.push(getMonthString(headerDate));
+      }
+    }
+  }
+  
+  return inadequateMonths;
+}
+
+/**
+ * Checks if there are new inadequate contribution months that haven't been referred to CRT.
+ * @param {Array} currentInadequateMonths - Current months with inadequate scores
+ * @param {Array} referralHistory - Previous CRT referral entries
+ * @returns {Array} New inadequate months not previously referred
+ */
+function getNewInadequateMonths(currentInadequateMonths, referralHistory) {
+  const previouslyReferredMonths = new Set();
+  
+  // Collect all months that were previously referred
+  referralHistory.forEach(entry => {
+    entry.months.forEach(month => previouslyReferredMonths.add(month));
+  });
+  
+  // Return only months that haven't been referred before
+  return currentInadequateMonths.filter(month => !previouslyReferredMonths.has(month));
+}
+
+/**
+ * Updates the CRT referral history for an ambassador.
+ * @param {Sheet} overallScoresSheet - The Overall Score sheet
+ * @param {number} rowIndex - Row index for the ambassador
+ * @param {number} historyColIndex - Column index for CRT referral history
+ * @param {Array} newInadequateMonths - New inadequate months to record
+ * @param {string} discordHandle - Ambassador discord handle for logging
+ */
+function updateCRTReferralHistory(overallScoresSheet, rowIndex, historyColIndex, newInadequateMonths, discordHandle) {
+  const currentHistoryString = overallScoresSheet.getRange(rowIndex, historyColIndex).getValue() || '';
+  const referralHistory = parseCRTReferralHistory(currentHistoryString);
+  
+  // Add new referral entry
+  const currentDate = Utilities.formatDate(new Date(), getProjectTimeZone(), 'yyyy-MM-dd');
+  referralHistory.push({
+    months: newInadequateMonths,
+    date: currentDate
+  });
+  
+  // Update the cell
+  const updatedHistoryString = formatCRTReferralHistory(referralHistory);
+  overallScoresSheet.getRange(rowIndex, historyColIndex).setValue(updatedHistoryString);
+  
+  Logger.log(`Updated CRT referral history for ${discordHandle}: ${updatedHistoryString}`);
+}
+
+/**
+ * Smart CRT referral function that only refers ambassadors for new inadequate contribution months.
+ * Prevents multiple referrals for the same poor scoring months.
+ * @param {Sheet} overallScoresSheet - The Overall Score sheet
+ * @param {number} rowIndex - Row index for the ambassador
+ * @param {Array} recentMonths - Array of recent month column indices
+ * @param {string} discordHandle - Ambassador discord handle
+ * @param {number} inadequateContributionCount - Number of inadequate contributions
+ */
+function smartCRTReferralCheck(overallScoresSheet, rowIndex, recentMonths, discordHandle, inadequateContributionCount) {
+  // Only proceed if threshold is met
+  if (inadequateContributionCount < MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER) {
+    return;
+  }
+  
+  // Get CRT referral history column
+  const crtHistoryColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_CRT_REFERRAL_HISTORY_COLUMN);
+  const currentHistoryString = overallScoresSheet.getRange(rowIndex, crtHistoryColIndex).getValue() || '';
+  const referralHistory = parseCRTReferralHistory(currentHistoryString);
+  
+  // Get current inadequate contribution months
+  const currentInadequateMonths = getInadequateContributionMonths(overallScoresSheet, rowIndex, recentMonths);
+  
+  // Find new inadequate months that haven't been referred before
+  const newInadequateMonths = getNewInadequateMonths(currentInadequateMonths, referralHistory);
+  
+  // Only refer if there are new inadequate months
+  if (newInadequateMonths.length > 0) {
+    Logger.log(`${discordHandle}: Found ${newInadequateMonths.length} new inadequate months: ${newInadequateMonths.join(', ')}`);
+    
+    // Update referral history
+    updateCRTReferralHistory(overallScoresSheet, rowIndex, crtHistoryColIndex, newInadequateMonths, discordHandle);
+    
+    // Send CRT referral
+    referInadequateContributionToCRT(discordHandle, inadequateContributionCount, newInadequateMonths);
+  } else {
+    Logger.log(`${discordHandle}: All inadequate months (${currentInadequateMonths.join(', ')}) have already been referred to CRT. Skipping referral.`);
+  }
+}
+
+/**
  * Refers an ambassador to the CRT for inadequate contribution.
  * Sends a notification email directly to the subject ambassador, copying the sponsor.
  * @param {string} discordHandle - The Discord handle of the ambassador being referred.
  * @param {number} inadequateContributionCount - The number of times the ambassador scored below the inadequate contribution threshold in the last 6 months.
+ * @param {Array} newInadequateMonths - Optional array of new inadequate months being referred
  */
-function referInadequateContributionToCRT(discordHandle, inadequateContributionCount) {
+function referInadequateContributionToCRT(discordHandle, inadequateContributionCount, newInadequateMonths = []) {
   try {
     // Get ambassador's email and discord handle using utility
     const accused = lookupEmailAndDiscord(discordHandle);
@@ -930,18 +1087,26 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
     const currentMonthName = getCurrentReportingMonthName();
     const deadlineDate = getBusinessDaysFromToday(COMPLIANCE_BUSINESS_DAYS_DEADLINE);
 
-    // Compose the email using the new template
-    const emailBody = INADEQUATE_CONTRIBUTION_NOTIFICATION_EMAIL_TEMPLATE.replaceAll(
+    // Compose the email using the template
+    let emailBody = INADEQUATE_CONTRIBUTION_NOTIFICATION_EMAIL_TEMPLATE.replaceAll(
       '{monthName}',
       currentMonthName
     ).replaceAll('{deadlineDate}', deadlineDate);
+    
+    // If specific months are provided, add them to the email
+    if (newInadequateMonths && newInadequateMonths.length > 0) {
+      const monthDetails = `\n\nSpecifically, this referral is for inadequate contributions in: ${newInadequateMonths.join(', ')}`;
+      emailBody += monthDetails;
+    }
 
     const subject = `Autonomys AmbasasadorOS CRT complaint - Inadequate Contribution`;
 
     // Send to ambassador, CC sponsor
     sendEmailNotification(ambassadorEmail, subject, emailBody, '', SPONSOR_EMAIL);
+    
+    const monthsInfo = newInadequateMonths && newInadequateMonths.length > 0 ? ` for months: ${newInadequateMonths.join(', ')}` : '';
     Logger.log(
-      `Sent inadequate contribution notification to ${ambassadorEmail} (${ambassadorDiscord}), CC: ${SPONSOR_EMAIL}`
+      `Sent inadequate contribution notification to ${ambassadorEmail} (${ambassadorDiscord})${monthsInfo}, CC: ${SPONSOR_EMAIL}`
     );
   } catch (e) {
     Logger.log('Error in referInadequateContributionToCRT: ' + e);
