@@ -10,10 +10,8 @@ function selectCRTMembers() {
   Logger.log('Starting CRT member selection process.');
 
   // Access Registry and CRT sheets
-  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const crtSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
-    'Conflict Resolution Team'
-  );
+  const registrySheet = getRegistrySheet();
+  const crtSheet = getCRTSheet();
 
   if (!registrySheet) {
     alertAndLog('Error: Registry sheet not found.');
@@ -39,7 +37,7 @@ function selectCRTMembers() {
 
   // Filter eligible ambassadors
   const eligibleAmbassadors = registryData
-    .filter((row) => !row[statusColumnIndex - 1]?.toLowerCase().includes('expelled')) // Exclude expelled ambassadors
+    .filter((row) => isActiveAmbassador(row, emailColumnIndex - 1, statusColumnIndex - 1)) // Exclude expelled ambassadors
     .map((row) => normalizeEmail(row[emailColumnIndex - 1])) // Extract valid emails
     .filter((email) => email && !recentCRTMembers.map(normalizeEmail).includes(email)); // Exclude empty emails and recent CRT members
 
@@ -74,7 +72,7 @@ function getRecentCRTMembers(crtSheet) {
 
   data.forEach((row) => {
     const date = row[selectionDateIndex - 1]; // Assuming the date is in the first column
-    if (date instanceof Date && date >= twoMonthsAgo) {
+    if (isDate(date) && date >= twoMonthsAgo) {
       recentMembers.push(...row.slice(1)); // Add CRT members from the row
     }
   });

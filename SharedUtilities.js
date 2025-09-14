@@ -1,269 +1,70 @@
-// (( Global Variables ))
-// Declare & initialize global variables; these will be updated by the setProductionVariables() or setTestVariables() functions
+// ===== Sheet Access Utilities =====
+// Centralized functions to access commonly used sheets across modules
 
-// testing constant will be used to load production vs. test values for the global variables
-const testing = true; // Set to true for testing (logs instead of sending emails, uses test sheets and forms)
-var SEND_EMAIL; // Will control whether emails are sent - must be true for production; may be true or false for testing depending on testing needs.
-
-// Provide the actual Id of the google sheet for the registry and scoreing sheets in EnvironmentVariables[Prod|Test].js:
-var AMBASSADOR_REGISTRY_SPREADSHEET_ID = ''; //"Ambassador Registry"
-var AMBASSADORS_SCORES_SPREADSHEET_ID = ''; // "Ambassadors' Scores"
-var AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = ''; // "Ambassador Submission Responses"
-var EVALUATION_RESPONSES_SPREADSHEET_ID = ''; // "Evaluation Responses"
-
-// Provide the actual Id and submission URL for the submission and evaluation google forms in EnvironmentVariables[Prod|Test].js:
-var SUBMISSION_FORM_ID = ''; // ID for Submission form
-var EVALUATION_FORM_ID = ''; // ID for Evaluation form
-var SUBMISSION_FORM_URL = ''; // Submission Form URL for mailing
-var EVALUATION_FORM_URL = ''; // Evaluation Form URL for mailing
-
-// Provide the actual sheet names for the registry, review log, CRT, and overall score sheets in EnvironmentVariables[Prod|Test].js:
-var REGISTRY_SHEET_NAME = '';
-var FORM_RESPONSES_SHEET_NAME = '';
-var REVIEW_LOG_SHEET_NAME = '';
-var CONFLICT_RESOLUTION_TEAM_SHEET_NAME = '';
-var OVERALL_SCORE_SHEET_NAME = ''; // Overall score sheet in Ambassadors' Scores
-var EVAL_FORM_RESPONSES_SHEET_NAME = ''; // Evaluation Form responses sheet
-
-// Columns in Registry Sheet:
-// set the actual values in EnvironmentVariables[Prod|Test].js
-var AMBASSADOR_ID_COLUMN = '';
-var AMBASSADOR_EMAIL_COLUMN = '';
-var AMBASSADOR_DISCORD_HANDLE_COLUMN = '';
-var AMBASSADOR_STATUS_COLUMN = '';
-var AMBASSADOR_PRIMARY_TEAM_COLUMN = '';
-var GOOGLE_FORM_TIMESTAMP_COLUMN = '';
-var GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = '';
-var GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = '';
-var SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = '';
-var EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = '';
-var GOOGLE_FORM_REAL_EMAIL_COLUMN = '';
-var GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = '';
-var GOOGLE_FORM_EVALUATION_GRADE_COLUMN = '';
-var GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = '';
-var SCORE_PENALTY_POINTS_COLUMN = '';
-var SCORE_AVERAGE_SCORE_COLUMN = '';
-var SCORE_MAX_6M_PP_COLUMN = '';
-var GRADE_SUBMITTER_COLUMN = '';
-var GRADE_FINAL_SCORE_COLUMN = '';
-var CRT_SELECTION_DATE_COLUMN = '';
-var SCORE_INADEQUATE_CONTRIBUTION_COLUMN = '';
-
-// Request Log columns
-var REQUEST_LOG_REQUEST_TYPE_COLUMN = '';
-var REQUEST_LOG_MONTH_COLUMN = '';
-var REQUEST_LOG_YEAR_COLUMN = '';
-var REQUEST_LOG_START_TIME_COLUMN = '';
-var REQUEST_LOG_END_TIME_COLUMN = '';
-
-// Sponsor Email (for notifications when ambassadors are expelled)
-// set the actual values in EnvironmentVariables[Prod|Test].js
-var SPONSOR_EMAIL = ''; // Sponsor's email
-var TESTER_EMAIL = ''; // Tester's email for redirecting test emails
-
-// Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
-var MAX_PENALTY_POINTS_TO_EXPEL = '';
-var MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = '';
-var INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = '';
-
-// Color variables .The color hex string must be in lowercase!
-// set the actual values in EnvironmentVariables[Prod|Test].js
-var COLOR_MISSED_SUBMISSION = '';
-var COLOR_MISSED_EVALUATION = '';
-var COLOR_EXPELLED = '';
-var COLOR_MISSED_SUBM_AND_EVAL = '';
-//var COLOR_OLD_MISSED_SUBMISSION = '';
-
-// Triggers and Delays
-// These values will set the due date and reminder schedule for Submissions and Evaluations.
-// The Submission or Evaluation will be due after the relevant WINDOW_MINUTES,
-// and each ambassador will receive a reminder after the relevant WINDOW_REMINDER_MINUTES.
-// specifies as days * hours * minutes
-// set the actual values in EnvironmentVariables[Prod|Test].js
-var SUBMISSION_WINDOW_MINUTES = '';
-var SUBMISSION_WINDOW_REMINDER_MINUTES = ''; // how many minutes after Submission Requests sent to remind
-var EVALUATION_WINDOW_MINUTES = '';
-var EVALUATION_WINDOW_REMINDER_MINUTES = ''; // how many minutes after Evaluation Requests sent to remind
-
-const ButtonSet = {
-  OK: 'OK',
-  OK_CANCEL: 'OK_CANCEL',
-  YES_NO: 'YES_NO',
-  YES_NO_CANCEL: 'YES_NO_CANCEL',
-};
-
-const ButtonResponse = {
-  OK: 'ok',
-  CANCEL: 'cancel',
-  YES: 'yes',
-  NO: 'no',
-};
-
-if (testing) {
-  setTestVariables();
-} else {
-  setProductionVariables();
+/**
+ * Gets the Registry sheet from the Ambassador Registry spreadsheet.
+ * @returns {Sheet} The Registry sheet
+ */
+function getRegistrySheet() {
+  return SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
 }
 
-//		 ======= 	 Email Content Templates 	=======
-
-// Request Submission Email Template
-let REQUEST_SUBMISSION_EMAIL_TEMPLATE = `
-<p>Dear {AmbassadorDiscordHandle},</p>
-
-<p>Please submit your deliverables for {Month} {Year} using the link below:</p>
-<p><a href="{SubmissionFormURL}">Submission Form</a></p>
-
-<p>The deadline is {SUBMISSION_DEADLINE_DATE}.</p>
-
-<p>Thank you,<br>
-Ambassador Program Team</p>
-`;
-
-// Request Evaluation Email Template
-let REQUEST_EVALUATION_EMAIL_TEMPLATE = `
-<p>Dear {AmbassadorDiscordHandle},</p>
-<p>Please review the following deliverables for the month of <strong>{Month}</strong> by:</p>
-
-<p>
-<strong>{AmbassadorSubmitter}<br><br>
-Primary Team:  {PrimaryTeam}<br><br>
-Primary Team Responsibilities:</strong><br>{PrimaryTeamResponsibilities}<br><br>
-</p>
-
-<strong>Work Submitted:</strong><br>
-<p>{SubmissionsList}</p>
-
-<p>Assign a grade using the form:</p>
-<p><a href="{EvaluationFormURL}">Evaluation Form</a></p>
-
-<p>The deadline is {EVALUATION_DEADLINE_DATE}.</p>
-
-<p>Thank you,<br>Ambassador Program Team</p>
-`;
-
-// Reminder Email Template
-let REMINDER_EMAIL_TEMPLATE = `
-Hi there! Just a friendly reminder that we are still waiting for your response to the Request for Submission/Evaluation. Please respond soon to avoid any penalties. Thank you!.
-`;
-
-// Penalty Warning Email Template
-let PENALTY_WARNING_EMAIL_TEMPLATE = `
-Dear Ambassador,
-You have been assessed one penalty point for failing to meet Submission or Evaluation deadlines. Further penalties may result in expulsion from the program. Please be vigillant.
-`;
-
-// Expulsion Email Template
-let EXPULSION_EMAIL_TEMPLATE = `
-Dear {Discord Handle},
-We regret to inform you that you have been expelled from the program for Failure to Participate according to Article 2, Section 10 of the Bylaws as of {Expulsion Date}.
-
-If you believe the expulsion is incorrect, you have the right to appeal your expulsion through the Conflict Resolution Team. Please email the Sponsor Representative at {Sponsor Email} including the reason for your appeal and any supporting documentation that the CRT should consider if you choose to appeal.
-
-We acknowledge and thank you for your contributions to the project as an Ambassador from {Start Date} to {Expulsion Date}.
-
-Autonomys Community Team`;
-
-// Notify Upcoming Peer Review Email Template
-let NOTIFY_UPCOMING_PEER_REVIEW = `
-Dear Ambassador,
-By this we notify you about upcoming Peer Review mailing, please be vigilant!
-`;
-
-// EXEMPTION FROM EVALUATION e-mail template
-let EXEMPTION_FROM_EVALUATION_TEMPLATE = `
-Dear Ambassador, you have been relieved of the obligation to evaluate your colleagues this month.
-`;
-
-// CRT Referral for Inadequate Contribution Email Template
-let CRT_INADEQUATE_CONTRIBUTION_EMAIL_TEMPLATE = `
-To: CRT Members and accused Ambassador and Sponsor,<br><br>
-Ambassador {discordHandle} is being referred to the CRT due to Inadequate Contribution as defined in the bylaws in Article 2.<br>
-{discordHandle} has scored below {inadequateContributionScoreThreshold} a total of {inadequateContributionCount} times in the last 6 evaluation months.<br>
-{crtNote}
-`;
-
-// Inadequate Contribution Notification Email Template (sent directly to ambassador)
-let INADEQUATE_CONTRIBUTION_NOTIFICATION_EMAIL_TEMPLATE = `
-Hello Ambassador,<br><br>
-I write to inform you that the AmbassadorOS process has lodged a formal case to the Conflict Resolution Team based on {monthName} DELIVERABLES triggering Inadequate Contribution. You have scored below 3 in more than 2 of the last 6 months.<br><br>
-Peer ambassadors noticing deceptive or low-quality contributions often feel disappointed by the lack of fairness and accountability expected in the Ambassador Program.<br><br>
-I look forward to your response within 3 business days ({deadlineDate}).<br><br>
-Thank you for your attention to this matter.<br><br>
-The Autonomys Community Team
-`;
-
-// Primary team Responsibilities
-const PrimaryTeamResponsibilities = {
-  support: `Provide peer-to-peer support and create support materials (e.g., articles),<br>
-      Gather information and help investigate and solve technical issues,<br>
-      Assist or directly participate in technical development of the project,<br>
-      Answer questions in Discord, Telegram, and the Networks forum,<br>
-      Moderate Telegram and Discord channels,<br>
-      Communicate about current releases and important events`,
-  content: `Create and improve an educational plan for onboarding new Apprentices,<br>
-      Develop materials, resources, and documentation on the protocol, Program, and community,<br>
-      Create high-quality content to educate the community about the Network,<br>
-      Cultivate content creators by recognizing and promoting users with the Content Creator role`,
-  engagement: `Promote the growth of the Network by establishing connections with the community,<br>
-      Identify target audiences and develop strategies to attract them to the Network,<br>
-      Create and disseminate high-quality content across various platforms,<br>
-      Increase user engagement and encourage active community participation,<br>
-      Act as a voice for the Network, ensuring smooth communication among stakeholders`,
-  onboarding: `Create and administer Ambassador selection processes,<br>
-      Introduce and integrate Apprentices and new Ambassadors to the Program,<br>
-      Recruit new ambassador cohorts and host events/workshops,<br>
-      Mentor Apprentice Ambassadors and develop peer relationships,<br>
-      Collaborate with the Content & Education team to keep Ambassadors updated`,
-  governance: `Create and maintain the Bylaws and facilitate General Assembly operations,<br>
-      Develop transparent systems and processes to implement the Bylaws,<br>
-      Administer processes and evaluate adherence to Ambassador Rights and Obligations`,
-};
-
-//    On Open Menu
-
-function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-  Logger.log('Initializing menu on spreadsheet open.');
-  ui.createMenu('Ambassador Program')
-    .addItem('Request Submissions', 'requestMonthlySubmissions') // Request Submissions
-    .addItem('Request Evaluations', 'requestEvaluationsModule') // Request Evaluations
-    .addItem('Compliance Audit', 'runComplianceAudit') // Process Scores and Penalties
-    .addItem('Notify Upcoming Peer Review', 'notifyUpcomingPeerReview') // Peer Review notifications
-    .addItem('Select CRT members', 'selectCRTMembers') // CRT
-    .addItem('🔧️Batch process scores', 'batchProcessEvaluationResponses') //Re-runs score responses
-    .addItem('🔧️Create/Sync Columns', 'syncRegistryColumnsToOverallScore') // creates Ambassador Status column in Overall score sheet; Syncs Ambassadors' Discord Handles and Ambassador Status columns between Registry and Overall score.
-    .addItem('🔧️Check Emails in Submission Form responses', 'validateEmailsInSubmissionForm') // Checks completance of emails in 'Your Email Address' field of Submission Form. Recommended to run before Evaluation Requests to avoid errors caused by users' typo.
-    .addItem('🔧️Delete Existing Triggers', 'deleteExistingTriggers') // Optional item
-    .addItem('🔧️Force Authorization', 'forceAuthorization') // Authorization trigger
-    .addToUi();
-  Logger.log('Menu initialized.');
+/**
+ * Gets the Review Log sheet from the Ambassador Registry spreadsheet.
+ * @returns {Sheet} The Review Log sheet
+ */
+function getReviewLogSheet() {
+  return SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REVIEW_LOG_SHEET_NAME);
 }
 
-// ⚠️ functions to prevent Google using of cached outdated variables when run from GUI
-function refreshScriptState() {
-  Logger.log('Starting Refresh Script State');
-  refreshGlobalVariables();
-  Logger.log('Script state refreshed: cache cleared, variables refreshed, and flush completed.');
+/**
+ * Gets the Conflict Resolution Team sheet from the Ambassador Registry spreadsheet.
+ * @returns {Sheet} The CRT sheet
+ */
+function getCRTSheet() {
+  return SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
+    CONFLICT_RESOLUTION_TEAM_SHEET_NAME
+  );
 }
 
-function refreshGlobalVariables() {
-  Logger.log('Refreshing global variables.');
+/**
+ * Gets the Ambassadors Scores spreadsheet.
+ * @returns {Spreadsheet} The Ambassadors Scores spreadsheet
+ */
+function getScoresSpreadsheet() {
+  return SpreadsheetApp.openById(AMBASSADORS_SCORES_SPREADSHEET_ID);
+}
 
-  if (testing) {
-    setTestVariables();
-  } else {
-    setProductionVariables();
-  }
+/**
+ * Gets the Overall Score sheet from the Ambassadors Scores spreadsheet.
+ * @returns {Sheet} The Overall Score sheet
+ */
+function getOverallScoreSheet() {
+  return getScoresSpreadsheet().getSheetByName(OVERALL_SCORE_SHEET_NAME);
+}
 
-  // Log the reinitialization of templates
-  Logger.log('Templates and constants reinitialized to ensure accurate processing.');
+/**
+ * Gets the Ambassador Registry spreadsheet.
+ * @returns {Spreadsheet} The Ambassador Registry spreadsheet
+ */
+function getRegistrySpreadsheet() {
+  return SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
+}
 
-  Logger.log('Color for missed submission: ' + COLOR_MISSED_SUBMISSION);
-  //Logger.log('Color for missed submission: ' + COLOR_OLD_MISSED_SUBMISSION);
-  Logger.log('Color for missed evaluation: ' + COLOR_MISSED_EVALUATION);
-  Logger.log('Color for missed submiss and eval: ' + COLOR_MISSED_SUBM_AND_EVAL);
-  Logger.log('Color for expelled: ' + COLOR_EXPELLED);
+/**
+ * Gets the Submission Form Responses sheet.
+ * @returns {Sheet} The Submission Form Responses sheet
+ */
+function getSubmissionResponsesSheet() {
+  return SpreadsheetApp.openById(AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID).getSheetByName(FORM_RESPONSES_SHEET_NAME);
+}
+
+/**
+ * Gets the Evaluation Form Responses sheet.
+ * @returns {Sheet} The Evaluation Form Responses sheet
+ */
+function getEvaluationResponsesSheet() {
+  return SpreadsheetApp.openById(EVALUATION_RESPONSES_SPREADSHEET_ID).getSheetByName(EVAL_FORM_RESPONSES_SHEET_NAME);
 }
 
 // ===== Generic function to send email =====
@@ -283,7 +84,7 @@ function sendEmailNotification(recipientEmail, subject, body, bcc, cc) {
       return;
     }
 
-    if (testing) {
+    if (TESTING) {
       sendTestEmail(recipientEmail, subject, body, bcc, cc);
     } else {
       sendProductionEmail(recipientEmail, subject, body, bcc, cc);
@@ -384,7 +185,7 @@ function sendProductionEmail(recipientEmail, subject, body, bcc, cc) {
  * @param {string} cc - CC recipients
  */
 function logEmailNotSent(recipientEmail, subject, bcc, cc) {
-  if (!testing) {
+  if (!TESTING) {
     Logger.log(
       `WARNING: Production mode with email disabled. Email logged but NOT SENT to: ${recipientEmail}, CC: ${cc}, BCC: ${bcc}, Subject: ${subject}`
     );
@@ -672,7 +473,9 @@ function getEligibleAmbassadorsEmails() {
       .getRange(2, 1, registrySheet.getLastRow() - 1, registrySheet.getLastColumn())
       .getValues(); // Columns: Email, Discord Handle, Status
     const eligibleEmails = registryData
-      .filter((row) => !row[registryAmbassadorStatusColumnIndex - 1].toLowerCase().includes('expelled')) // Exclude those marked as expelled - case-insensitive now
+      .filter((row) =>
+        isActiveAmbassador(row, registryAmbassadorEmailColumnIndex - 1, registryAmbassadorStatusColumnIndex - 1)
+      ) // Exclude those marked as expelled
       .map((row) => row[registryAmbassadorEmailColumnIndex - 1]); // Extract emails
 
     Logger.log(`Eligible emails (excluding 'Expelled'): ${JSON.stringify(eligibleEmails)}`);
@@ -1330,4 +1133,49 @@ function getBusinessDaysFromToday(businessDays) {
     Logger.log(`Error calculating business days: ${error.message}`);
     return 'within 3 business days';
   }
+}
+
+// ===== Predicate Functions for Complex Conditionals =====
+
+/**
+ * Checks if a value is a Date object.
+ * @param {*} value - Value to check
+ * @returns {boolean} True if value is a Date instance
+ */
+function isDate(value) {
+  return value instanceof Date;
+}
+
+/**
+ * Checks if an ambassador has already been expelled (status contains "Expelled").
+ * @param {string} status - Ambassador status string
+ * @returns {boolean} True if status indicates expulsion
+ */
+function isAlreadyExpelled(status) {
+  return status && status.includes('Expelled');
+}
+
+/**
+ * Checks if an ambassador registry row represents an active (non-expelled) ambassador.
+ * @param {Array} row - Registry row data
+ * @param {number} emailColumnIndex - Email column index (0-based)
+ * @param {number} statusColumnIndex - Status column index (0-based)
+ * @returns {boolean} True if ambassador is active and not expelled
+ */
+function isActiveAmbassador(row, emailColumnIndex, statusColumnIndex) {
+  return row[emailColumnIndex]?.trim() && !row[statusColumnIndex]?.toLowerCase().includes('expelled');
+}
+
+/**
+ * Checks if an email address is valid (not null/undefined/empty) and passes basic format validation.
+ * @param {string} email - Email to validate
+ * @returns {boolean} True if email is valid
+ */
+function isValidEmail(email) {
+  if (!email || !email.trim()) {
+    return false;
+  }
+  // Basic email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
 }
