@@ -93,8 +93,7 @@ Please add links to your contributions during the month`;
   COLOR_EXPELLED = '#d36a6a';
   COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
 
-  // Coda Integration (optional - leave empty if not using Coda)
-  CODA_API_TOKEN = ''; // Your Coda API token
-  CODA_DOC_ID = ''; // Your Coda document ID (from URL: https://coda.io/d/_dORJu5J0YW4)
+  // Coda Integration (loaded from PropertiesService)
+  loadCodaConfiguration();
   //COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
 }

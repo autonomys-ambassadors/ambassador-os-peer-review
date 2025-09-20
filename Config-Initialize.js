@@ -94,6 +94,22 @@ var COLOR_MISSED_EVALUATION;
 var COLOR_EXPELLED;
 var COLOR_MISSED_SUBM_AND_EVAL;
 
-// Coda Integration Configuration
+// Coda Integration Configuration (loaded from PropertiesService)
 var CODA_API_TOKEN;
 var CODA_DOC_ID;
+
+/**
+ * Loads Coda configuration from PropertiesService
+ * Call this function in your configuration setup functions
+ */
+function loadCodaConfiguration() {
+  const properties = PropertiesService.getScriptProperties();
+  CODA_API_TOKEN = properties.getProperty('CODA_API_TOKEN');
+  CODA_DOC_ID = properties.getProperty('CODA_DOC_ID');
+
+  if (CODA_API_TOKEN && CODA_DOC_ID) {
+    Logger.log('Coda integration configured via PropertiesService');
+  } else {
+    Logger.log('Coda integration not configured - API token or doc ID missing');
+  }
+}
