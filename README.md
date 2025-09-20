@@ -90,6 +90,36 @@ Open your sheet to verify it is setup correctly.
 Your sheet should be named "Autonomys Ambassador OS Peer Review" and you should have a menu labeled "Ambassador Program" on the menu bar.
 You can verify the code is present by choosing Apps Script from the Extensions menu to enter the apps script editor.
 
+### Configure Secure Properties
+
+The project includes a setup script to securely store API credentials and configuration properties using Google Apps Script's PropertiesService. You can use clasp to run these setup functions directly from the command line:
+
+#### Set Coda Integration Credentials
+```bash
+clasp run setCodaCredentials -p '["your_api_token", "your_doc_id"]'
+```
+
+#### Set Custom Properties
+```bash
+clasp run setCustomProperty -p '["PROPERTY_NAME", "property_value"]'
+```
+
+#### Check Configuration Status
+```bash
+# Check all stored properties (sensitive values are masked)
+clasp run checkAllProperties
+
+# Check only Coda configuration
+clasp run checkCodaConfiguration
+```
+
+#### Remove Properties
+```bash
+clasp run removeProperty -p '["PROPERTY_NAME"]'
+```
+
+This approach is more secure than hardcoding credentials in your script files, as the properties are stored securely in Google's PropertiesService and can be accessed by your scripts at runtime.
+
 ### Clone the prototype sheets and update your sheet ids (if you already have Google Apps Project):
 
 Make a copy of the google sheets for your own testing - e.g. open the example testing Registry and Scoring sheets below and choose File/Make a copy to create your own copy of the testing sheets.

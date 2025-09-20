@@ -54,8 +54,14 @@ var GOOGLE_FORM_EVALUATION_REMARKS_COLUMN;
 var SCORE_PENALTY_POINTS_COLUMN;
 var SCORE_AVERAGE_SCORE_COLUMN;
 var SCORE_MAX_6M_PP_COLUMN;
-var GRADE_SUBMITTER_COLUMN;
+var SUBMITTER_HANDLE_COLUMN_IN_MONTHLY_SCORE;
 var GRADE_FINAL_SCORE_COLUMN;
+var GRADE_EVAL_1_SCORE_COLUMN;
+var GRADE_EVAL_1_REMARKS_COLUMN;
+var GRADE_EVAL_2_SCORE_COLUMN;
+var GRADE_EVAL_2_REMARKS_COLUMN;
+var GRADE_EVAL_3_SCORE_COLUMN;
+var GRADE_EVAL_3_REMARKS_COLUMN;
 var CRT_SELECTION_DATE_COLUMN;
 var SCORE_INADEQUATE_CONTRIBUTION_COLUMN;
 var SCORE_CRT_REFERRAL_HISTORY_COLUMN;
@@ -87,3 +93,23 @@ var COLOR_MISSED_SUBMISSION;
 var COLOR_MISSED_EVALUATION;
 var COLOR_EXPELLED;
 var COLOR_MISSED_SUBM_AND_EVAL;
+
+// Coda Integration Configuration (loaded from PropertiesService)
+var CODA_API_TOKEN;
+var CODA_DOC_ID;
+
+/**
+ * Loads Coda configuration from PropertiesService
+ * Call this function in your configuration setup functions
+ */
+function loadCodaConfiguration() {
+  const properties = PropertiesService.getScriptProperties();
+  CODA_API_TOKEN = properties.getProperty('CODA_API_TOKEN');
+  CODA_DOC_ID = properties.getProperty('CODA_DOC_ID');
+
+  if (CODA_API_TOKEN && CODA_DOC_ID) {
+    Logger.log('Coda integration configured via PropertiesService');
+  } else {
+    Logger.log('Coda integration not configured - API token or doc ID missing');
+  }
+}

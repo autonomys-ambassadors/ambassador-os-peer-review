@@ -9,7 +9,7 @@ const CONFIG_NAME = 'Jonathan'; // Available: 'Production', 'Jonathan', 'Wilyam'
 // Unified configuration loader - calls the appropriate configuration function based on CONFIG_NAME
 switch (CONFIG_NAME) {
   case 'Production':
-    setProductionVariables();
+    setNewProductionVariables();
     break;
   case 'Jonathan':
     setJonathanVariables();

@@ -429,7 +429,7 @@ function getReviewLogAssignments() {
 
   // Get header row to determine column indices dynamically
   const headers = reviewLogSheet.getRange(1, 1, 1, lastColumn).getValues()[0];
-  const submitterColIndex = getRequiredColumnIndexByName(reviewLogSheet, GRADE_SUBMITTER_COLUMN);
+  const submitterColIndex = getRequiredColumnIndexByName(reviewLogSheet, SUBMITTER_HANDLE_COLUMN_IN_MONTHLY_SCORE);
   const evaluatorCols = ['Reviewer 1', 'Reviewer 2', 'Reviewer 3'].map((header) => headers.indexOf(header) + 1);
 
   if (evaluatorCols.some((index) => index === 0)) {
