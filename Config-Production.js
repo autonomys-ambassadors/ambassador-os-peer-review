@@ -2,7 +2,7 @@
  * Production configuration
  * Contains all production environment variables and settings
  */
-function setProductionVariables() {
+function setNewProductionVariables() {
   TESTING = false;
   // Always send emails in production
   SEND_EMAIL = true;
