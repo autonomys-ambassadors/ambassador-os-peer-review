@@ -3,14 +3,13 @@
 // Compliance calculation constants
 const COMPLIANCE_PERIOD_MONTHS = 6; // Number of months to consider for penalty calculations
 const COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION = 1; // Penalty points for missed submission
-const COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION = 1; // Penalty points for missed evaluation  
+const COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION = 1; // Penalty points for missed evaluation
 const COMPLIANCE_PENALTY_POINT_MISSED_BOTH = 2; // Penalty points for missing both submission and evaluation
 const COMPLIANCE_BUSINESS_DAYS_DEADLINE = 3; // Business days for CRT complaint deadline
 const COMPLIANCE_HEADER_ROW = 1; // Row index for headers
 const COMPLIANCE_FIRST_DATA_ROW = 2; // Row index for first data row
 
 // ===== Predicate Functions for Complex Conditionals =====
-
 
 /**
  * Checks if an ambassador did not submit their monthly contribution.
@@ -37,7 +36,6 @@ function wasAssignedButDidNotEvaluate(email, assignments, validEvaluators) {
   );
 }
 
-
 /**
  * Checks if a score value is below the inadequate contribution threshold.
  * @param {*} scoreValue - Score value to check
@@ -46,8 +44,6 @@ function wasAssignedButDidNotEvaluate(email, assignments, validEvaluators) {
 function isInadequateContributionScore(scoreValue) {
   return typeof scoreValue === 'number' && scoreValue < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD;
 }
-
-
 
 function runComplianceAudit() {
   // Run evaluation window check and exit if the user presses "Cancel"
@@ -162,10 +158,13 @@ function getReportingMonthForScoreCopy() {
  */
 function getScoreCopyColumnIndices(overallScoreSheet, monthSheet, currentMonthDate, monthSheetName) {
   // Find column index in "Overall score" by date
-  const existingColumns = overallScoreSheet.getRange(COMPLIANCE_HEADER_ROW, 1, 1, overallScoreSheet.getLastColumn()).getValues()[0];
+  const existingColumns = overallScoreSheet
+    .getRange(COMPLIANCE_HEADER_ROW, 1, 1, overallScoreSheet.getLastColumn())
+    .getValues()[0];
   const monthColumnIndex =
-    existingColumns.findIndex((header) => header instanceof Date && header.getTime() === currentMonthDate.getTime()) + 1;
-  
+    existingColumns.findIndex((header) => header instanceof Date && header.getTime() === currentMonthDate.getTime()) +
+    1;
+
   if (monthColumnIndex === 0) {
     const errorMsg = `Column for "${monthSheetName}" not found in Overall score sheet.`;
     alertAndLog(errorMsg);
@@ -211,7 +210,7 @@ function copyScoresToOverallSheet(finalScores, overallScoreSheet, monthColumnInd
     .getRange(COMPLIANCE_FIRST_DATA_ROW, overallSheetDiscordColumn, overallScoreSheet.getLastRow() - 1, 1)
     .getValues()
     .flat();
-  
+
   finalScores.forEach(({ handle, score }) => {
     const rowIndex = overallHandles.findIndex((overallHandle) => overallHandle === handle) + 2;
     if (rowIndex > 1 && score !== '') {
@@ -242,17 +241,17 @@ function copyFinalScoresToOverallScore() {
 
     // Get column indices for score copying
     const { monthColumnIndex, monthDiscordColIndex, monthFinalScoreColIndex } = getScoreCopyColumnIndices(
-      overallScoreSheet, 
-      monthSheet, 
-      currentMonthDate, 
+      overallScoreSheet,
+      monthSheet,
+      currentMonthDate,
       monthSheetName
     );
 
     // Extract final scores from month sheet
     const finalScores = getFinalScoresFromMonthSheet(
-      monthSheet, 
-      monthDiscordColIndex, 
-      monthFinalScoreColIndex, 
+      monthSheet,
+      monthDiscordColIndex,
+      monthFinalScoreColIndex,
       monthSheetName
     );
 
@@ -323,7 +322,7 @@ function checkAndCreateColumns() {
  */
 function initializePenaltyCalculationData() {
   Logger.log('Initializing penalty calculation data.');
-  
+
   // Open necessary sheets
   const registrySheet = getRegistrySheet();
   const scoresSpreadsheet = getScoresSpreadsheet();
@@ -348,7 +347,9 @@ function initializePenaltyCalculationData() {
   const currentReportingMonth = reportingMonth.firstDayDate;
 
   // Get headers and indices
-  const headersRange = overallScoresSheet.getRange(COMPLIANCE_HEADER_ROW, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
+  const headersRange = overallScoresSheet
+    .getRange(COMPLIANCE_HEADER_ROW, 1, 1, overallScoresSheet.getLastColumn())
+    .getValues()[0];
   const penaltyPointsColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_PENALTY_POINTS_COLUMN);
   const currentMonthColIndex =
     headersRange.findIndex((header) => header instanceof Date && header.getTime() === currentReportingMonth.getTime()) +
@@ -425,7 +426,7 @@ function initializePenaltyCalculationData() {
     assignments,
     ambassadorData,
     recentMonths,
-    inadequateContributionColIndex
+    inadequateContributionColIndex,
   };
 }
 
@@ -434,15 +435,15 @@ function initializePenaltyCalculationData() {
  * @param {Object} params - Parameters object
  */
 function applyCurrentMonthColorCoding(params) {
-  const { 
-    email, 
-    discordHandle, 
-    overallScoresSheet, 
-    rowInScores, 
-    currentMonthColIndex, 
-    validSubmitters, 
-    validEvaluators, 
-    assignments 
+  const {
+    email,
+    discordHandle,
+    overallScoresSheet,
+    rowInScores,
+    currentMonthColIndex,
+    validSubmitters,
+    validEvaluators,
+    assignments,
   } = params;
 
   Logger.log(`Processing current month column (${currentMonthColIndex}) for ${discordHandle}`);
@@ -453,13 +454,19 @@ function applyCurrentMonthColorCoding(params) {
 
   if (missedSubmission && missedEvaluation) {
     currentCell.setBackground(COLOR_MISSED_SUBM_AND_EVAL);
-    Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_BOTH} penalty points for ${discordHandle} (missed submission and evaluation).`);
+    Logger.log(
+      `Added ${COMPLIANCE_PENALTY_POINT_MISSED_BOTH} penalty points for ${discordHandle} (missed submission and evaluation).`
+    );
   } else if (missedSubmission) {
     currentCell.setBackground(COLOR_MISSED_SUBMISSION);
-    Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION} penalty point for ${discordHandle} (missed submission).`);
+    Logger.log(
+      `Added ${COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION} penalty point for ${discordHandle} (missed submission).`
+    );
   } else if (missedEvaluation) {
     currentCell.setBackground(COLOR_MISSED_EVALUATION);
-    Logger.log(`Added ${COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION} penalty point for ${discordHandle} (missed evaluation).`);
+    Logger.log(
+      `Added ${COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION} penalty point for ${discordHandle} (missed evaluation).`
+    );
   }
 }
 
@@ -492,7 +499,17 @@ function getPenaltyPointsFromBackgroundColor(backgroundColor) {
  * @param {Object} assignments - Assignment mappings
  * @returns {Object} Object containing penalty points and inadequate contribution count for this month
  */
-function processMonthColumn(overallScoresSheet, rowInScores, colIndex, currentMonthColIndex, email, discordHandle, validSubmitters, validEvaluators, assignments) {
+function processMonthColumn(
+  overallScoresSheet,
+  rowInScores,
+  colIndex,
+  currentMonthColIndex,
+  email,
+  discordHandle,
+  validSubmitters,
+  validEvaluators,
+  assignments
+) {
   // Apply color coding if this is the current month
   if (colIndex === currentMonthColIndex) {
     applyCurrentMonthColorCoding({
@@ -503,7 +520,7 @@ function processMonthColumn(overallScoresSheet, rowInScores, colIndex, currentMo
       currentMonthColIndex,
       validSubmitters,
       validEvaluators,
-      assignments
+      assignments,
     });
   }
 
@@ -513,7 +530,7 @@ function processMonthColumn(overallScoresSheet, rowInScores, colIndex, currentMo
 
   return {
     penaltyPoints: getPenaltyPointsFromBackgroundColor(backgroundColor),
-    inadequateContribution: isInadequateContributionScore(scoreValue) ? 1 : 0
+    inadequateContribution: isInadequateContributionScore(scoreValue) ? 1 : 0,
   };
 }
 
@@ -525,7 +542,13 @@ function processMonthColumn(overallScoresSheet, rowInScores, colIndex, currentMo
  * @param {number} totalPenaltyPoints - Total penalty points to set
  * @param {string} discordHandle - Ambassador discord handle for logging
  */
-function updatePenaltyPoints(overallScoresSheet, rowInScores, penaltyPointsColIndex, totalPenaltyPoints, discordHandle) {
+function updatePenaltyPoints(
+  overallScoresSheet,
+  rowInScores,
+  penaltyPointsColIndex,
+  totalPenaltyPoints,
+  discordHandle
+) {
   overallScoresSheet.getRange(rowInScores, penaltyPointsColIndex).setValue(totalPenaltyPoints);
   Logger.log(`Updated penalty points for ${discordHandle} to ${totalPenaltyPoints}`);
 }
@@ -538,11 +561,16 @@ function updatePenaltyPoints(overallScoresSheet, rowInScores, penaltyPointsColIn
  * @param {number} inadequateContributionCount - Count to set
  * @param {string} discordHandle - Ambassador discord handle for logging
  */
-function updateInadequateContributionCount(overallScoresSheet, rowInScores, inadequateContributionColIndex, inadequateContributionCount, discordHandle) {
+function updateInadequateContributionCount(
+  overallScoresSheet,
+  rowInScores,
+  inadequateContributionColIndex,
+  inadequateContributionCount,
+  discordHandle
+) {
   overallScoresSheet.getRange(rowInScores, inadequateContributionColIndex).setValue(inadequateContributionCount);
   Logger.log(`Updated Inadequate Contribution Count for ${discordHandle} to ${inadequateContributionCount}`);
 }
-
 
 /**
  * Calculates and assigns penalty points for ambassadors based on their participation in submissions and evaluations for the current reporting month.
@@ -565,13 +593,13 @@ function calculatePenaltyPoints() {
     assignments,
     ambassadorData,
     recentMonths,
-    inadequateContributionColIndex
+    inadequateContributionColIndex,
   } = initializePenaltyCalculationData();
-  
+
   // Process each ambassador
   ambassadorData.forEach((ambassador) => {
     const { email, discordHandle } = ambassador;
-    
+
     const rowInScores = overallScoresSheet.createTextFinder(discordHandle).findNext()?.getRow();
     if (!rowInScores) {
       alertAndLog(`Discord handle not found in Overall Scores: ${discordHandle}`);
@@ -585,17 +613,17 @@ function calculatePenaltyPoints() {
     // Process each recent month
     for (const colIndex of recentMonths) {
       const monthResult = processMonthColumn(
-        overallScoresSheet, 
-        rowInScores, 
-        colIndex, 
-        currentMonthColIndex, 
-        email, 
-        discordHandle, 
-        validSubmitters, 
-        validEvaluators, 
+        overallScoresSheet,
+        rowInScores,
+        colIndex,
+        currentMonthColIndex,
+        email,
+        discordHandle,
+        validSubmitters,
+        validEvaluators,
         assignments
       );
-      
+
       totalPenaltyPoints += monthResult.penaltyPoints;
       inadequateContributionCount += monthResult.inadequateContribution;
     }
@@ -604,7 +632,13 @@ function calculatePenaltyPoints() {
     updatePenaltyPoints(overallScoresSheet, rowInScores, penaltyPointsColIndex, totalPenaltyPoints, discordHandle);
 
     // Update inadequate contribution count
-    updateInadequateContributionCount(overallScoresSheet, rowInScores, inadequateContributionColIndex, inadequateContributionCount, discordHandle);
+    updateInadequateContributionCount(
+      overallScoresSheet,
+      rowInScores,
+      inadequateContributionColIndex,
+      inadequateContributionCount,
+      discordHandle
+    );
 
     // Use smart CRT referral logic to prevent duplicate referrals
     smartCRTReferralCheck(overallScoresSheet, rowInScores, recentMonths, discordHandle, inadequateContributionCount);
@@ -664,11 +698,15 @@ function calculatePenaltyPointsForPeriod(backgroundColors, startIndex, periodLen
     switch (cellBackgroundColor) {
       case COLOR_MISSED_SUBMISSION:
         periodTotal += COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION;
-        Logger.log(`Row ${row}: Adding ${COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION} point for missed submission at column ${monthColumns[j]}.`);
+        Logger.log(
+          `Row ${row}: Adding ${COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION} point for missed submission at column ${monthColumns[j]}.`
+        );
         break;
       case COLOR_MISSED_EVALUATION:
         periodTotal += COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION;
-        Logger.log(`Row ${row}: Adding ${COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION} point for missed evaluation at column ${monthColumns[j]}.`);
+        Logger.log(
+          `Row ${row}: Adding ${COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION} point for missed evaluation at column ${monthColumns[j]}.`
+        );
         break;
       case COLOR_MISSED_SUBM_AND_EVAL:
         periodTotal += COMPLIANCE_PENALTY_POINT_MISSED_BOTH;
@@ -718,7 +756,9 @@ function processAmbassadorRowForMaxPenalty(overallScoresSheet, row, monthColumns
   // Set cell background to red if maxPP >= expulsion threshold
   if (maxPP >= MAX_PENALTY_POINTS_TO_EXPEL) {
     maxPPCell.setBackground(COLOR_EXPELLED);
-    Logger.log(`Row ${row}: Max PP >= ${MAX_PENALTY_POINTS_TO_EXPEL}. Setting red background in Max 6-Month PP column.`);
+    Logger.log(
+      `Row ${row}: Max PP >= ${MAX_PENALTY_POINTS_TO_EXPEL}. Setting red background in Max 6-Month PP column.`
+    );
   }
 
   Logger.log(`Row ${row}: Max 6-Month Penalty Points finalized as ${maxPP}.`);
@@ -770,9 +810,9 @@ function getAmbassadorsEligibleForExpulsion(overallScoresSheet, scorePenaltiesCo
     .filter((row) => row[scorePenaltiesColIndex - 1] >= MAX_PENALTY_POINTS_TO_EXPEL)
     .map((row) => ({
       discordHandle: row[scoreDiscordHandleColIndex - 1],
-      penaltyPoints: row[scorePenaltiesColIndex - 1]
+      penaltyPoints: row[scorePenaltiesColIndex - 1],
     }));
-  
+
   Logger.log(`Found ${scoreData.length} ambassadors eligible for expulsion`);
   return scoreData;
 }
@@ -788,7 +828,7 @@ function findRegistryRowByDiscordHandle(registrySheet, discordHandle, registryDi
   const registryData = registrySheet
     .getRange(COMPLIANCE_FIRST_DATA_ROW, registryDiscordHandleColIndex, registrySheet.getLastRow() - 1, 1)
     .getValues();
-  
+
   const rowIndex = registryData.findIndex((regRow) => regRow[0] === discordHandle);
   return rowIndex >= 0 ? rowIndex + 2 : 0; // +2 to adjust for headers and 0-based index
 }
@@ -801,18 +841,23 @@ function findRegistryRowByDiscordHandle(registrySheet, discordHandle, registryDi
  * @param {number} registryStatusColIndex - Status column index
  * @returns {boolean} True if ambassador was newly expelled, false otherwise
  */
-function processAmbassadorForExpulsion(ambassadorData, registrySheet, registryDiscordHandleColIndex, registryStatusColIndex) {
+function processAmbassadorForExpulsion(
+  ambassadorData,
+  registrySheet,
+  registryDiscordHandleColIndex,
+  registryStatusColIndex
+) {
   const { discordHandle } = ambassadorData;
-  
+
   const registryRowIndex = findRegistryRowByDiscordHandle(registrySheet, discordHandle, registryDiscordHandleColIndex);
-  
+
   if (registryRowIndex <= 1) {
     Logger.log(`Error: Ambassador with discord handle: ${discordHandle} not found in the registry.`);
     return false;
   }
 
   const currentStatus = registrySheet.getRange(registryRowIndex, registryStatusColIndex).getValue();
-  
+
   if (isAlreadyExpelled(currentStatus)) {
     Logger.log(`Notice: Ambassador ${discordHandle} is already marked as expelled.`);
     return false;
@@ -843,8 +888,8 @@ function expelAmbassadors() {
 
   // Get ambassadors eligible for expulsion
   const eligibleAmbassadors = getAmbassadorsEligibleForExpulsion(
-    overallScoresSheet, 
-    scorePenaltiesColIndex, 
+    overallScoresSheet,
+    scorePenaltiesColIndex,
     scoreDiscordHandleColIndex
   );
 
@@ -857,7 +902,7 @@ function expelAmbassadors() {
       registryDiscordHandleColIndex,
       registryStatusColIndex
     );
-    
+
     if (wasNewlyExpelled) {
       newlyExpelled.push(ambassadorData.discordHandle);
     }
@@ -867,7 +912,7 @@ function expelAmbassadors() {
   newlyExpelled.forEach((discordHandle) => {
     sendExpulsionNotifications(discordHandle);
   });
-  
+
   Logger.log(`expelAmbassadors process completed. ${newlyExpelled.length} ambassadors newly expelled.`);
 }
 
@@ -879,9 +924,8 @@ function expelAmbassadors() {
  */
 function createExpulsionEmailBody(discordHandle, expulsionDate) {
   const startDate = 'your start date'; // TODO: Add start date tracking to registry
-  
-  return EXPULSION_EMAIL_TEMPLATE
-    .replace(/{Discord Handle}/g, discordHandle)
+
+  return EXPULSION_EMAIL_TEMPLATE.replace(/{Discord Handle}/g, discordHandle)
     .replace(/{Expulsion Date}/g, expulsionDate)
     .replace(/{Start Date}/g, startDate)
     .replace(/{Sponsor Email}/g, SPONSOR_EMAIL);
@@ -897,13 +941,15 @@ function sendExpulsionNotifications(discordHandle) {
   // Use existing utility to get ambassador email and discord handle
   const ambassadorInfo = lookupEmailAndDiscord(discordHandle);
   if (!ambassadorInfo || !isValidEmail(ambassadorInfo.email)) {
-    Logger.log(`Skipping notification for ambassador with discord handle: ${discordHandle} due to missing or invalid email.`);
+    Logger.log(
+      `Skipping notification for ambassador with discord handle: ${discordHandle} due to missing or invalid email.`
+    );
     return;
   }
 
   const { email } = ambassadorInfo;
   const subject = 'Expulsion from the Program';
-  
+
   // Prepare expulsion date
   const currentDate = new Date();
   const timeZone = getProjectTimeZone();
@@ -931,12 +977,12 @@ function parseCRTReferralHistory(historyString) {
   if (!historyString || historyString.trim() === '') {
     return [];
   }
-  
-  return historyString.split('|').map(entry => {
+
+  return historyString.split('|').map((entry) => {
     const [monthsStr, dateStr] = entry.split(':');
     return {
-      months: monthsStr.split(',').map(m => m.trim()),
-      date: dateStr.trim()
+      months: monthsStr.split(',').map((m) => m.trim()),
+      date: dateStr.trim(),
     };
   });
 }
@@ -947,7 +993,7 @@ function parseCRTReferralHistory(historyString) {
  * @returns {string} Formatted history string
  */
 function formatCRTReferralHistory(referralEntries) {
-  return referralEntries.map(entry => `${entry.months.join(',')}:${entry.date}`).join('|');
+  return referralEntries.map((entry) => `${entry.months.join(',')}:${entry.date}`).join('|');
 }
 
 /**
@@ -969,9 +1015,11 @@ function getMonthString(date) {
  * @returns {Array} Array of month strings where ambassador scored < 3
  */
 function getInadequateContributionMonths(overallScoresSheet, rowIndex, recentMonths) {
-  const headers = overallScoresSheet.getRange(COMPLIANCE_HEADER_ROW, 1, 1, overallScoresSheet.getLastColumn()).getValues()[0];
+  const headers = overallScoresSheet
+    .getRange(COMPLIANCE_HEADER_ROW, 1, 1, overallScoresSheet.getLastColumn())
+    .getValues()[0];
   const inadequateMonths = [];
-  
+
   for (const colIndex of recentMonths) {
     const cellValue = overallScoresSheet.getRange(rowIndex, colIndex).getValue();
     if (isInadequateContributionScore(cellValue)) {
@@ -981,7 +1029,7 @@ function getInadequateContributionMonths(overallScoresSheet, rowIndex, recentMon
       }
     }
   }
-  
+
   return inadequateMonths;
 }
 
@@ -993,14 +1041,14 @@ function getInadequateContributionMonths(overallScoresSheet, rowIndex, recentMon
  */
 function getNewInadequateMonths(currentInadequateMonths, referralHistory) {
   const previouslyReferredMonths = new Set();
-  
+
   // Collect all months that were previously referred
-  referralHistory.forEach(entry => {
-    entry.months.forEach(month => previouslyReferredMonths.add(month));
+  referralHistory.forEach((entry) => {
+    entry.months.forEach((month) => previouslyReferredMonths.add(month));
   });
-  
+
   // Return only months that haven't been referred before
-  return currentInadequateMonths.filter(month => !previouslyReferredMonths.has(month));
+  return currentInadequateMonths.filter((month) => !previouslyReferredMonths.has(month));
 }
 
 /**
@@ -1014,18 +1062,18 @@ function getNewInadequateMonths(currentInadequateMonths, referralHistory) {
 function updateCRTReferralHistory(overallScoresSheet, rowIndex, historyColIndex, newInadequateMonths, discordHandle) {
   const currentHistoryString = overallScoresSheet.getRange(rowIndex, historyColIndex).getValue() || '';
   const referralHistory = parseCRTReferralHistory(currentHistoryString);
-  
+
   // Add new referral entry
   const currentDate = Utilities.formatDate(new Date(), getProjectTimeZone(), 'yyyy-MM-dd');
   referralHistory.push({
     months: newInadequateMonths,
-    date: currentDate
+    date: currentDate,
   });
-  
+
   // Update the cell
   const updatedHistoryString = formatCRTReferralHistory(referralHistory);
   overallScoresSheet.getRange(rowIndex, historyColIndex).setValue(updatedHistoryString);
-  
+
   Logger.log(`Updated CRT referral history for ${discordHandle}: ${updatedHistoryString}`);
 }
 
@@ -1043,29 +1091,33 @@ function smartCRTReferralCheck(overallScoresSheet, rowIndex, recentMonths, disco
   if (inadequateContributionCount < MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER) {
     return;
   }
-  
+
   // Get CRT referral history column
   const crtHistoryColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_CRT_REFERRAL_HISTORY_COLUMN);
   const currentHistoryString = overallScoresSheet.getRange(rowIndex, crtHistoryColIndex).getValue() || '';
   const referralHistory = parseCRTReferralHistory(currentHistoryString);
-  
+
   // Get current inadequate contribution months
   const currentInadequateMonths = getInadequateContributionMonths(overallScoresSheet, rowIndex, recentMonths);
-  
+
   // Find new inadequate months that haven't been referred before
   const newInadequateMonths = getNewInadequateMonths(currentInadequateMonths, referralHistory);
-  
+
   // Only refer if there are new inadequate months
   if (newInadequateMonths.length > 0) {
-    Logger.log(`${discordHandle}: Found ${newInadequateMonths.length} new inadequate months: ${newInadequateMonths.join(', ')}`);
-    
+    Logger.log(
+      `${discordHandle}: Found ${newInadequateMonths.length} new inadequate months: ${newInadequateMonths.join(', ')}`
+    );
+
     // Update referral history
     updateCRTReferralHistory(overallScoresSheet, rowIndex, crtHistoryColIndex, newInadequateMonths, discordHandle);
-    
+
     // Send CRT referral
     referInadequateContributionToCRT(discordHandle, inadequateContributionCount, newInadequateMonths);
   } else {
-    Logger.log(`${discordHandle}: All inadequate months (${currentInadequateMonths.join(', ')}) have already been referred to CRT. Skipping referral.`);
+    Logger.log(
+      `${discordHandle}: All inadequate months (${currentInadequateMonths.join(', ')}) have already been referred to CRT. Skipping referral.`
+    );
   }
 }
 
@@ -1099,7 +1151,7 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
       '{monthName}',
       currentMonthName
     ).replaceAll('{deadlineDate}', deadlineDate);
-    
+
     // If specific months are provided, add them to the email
     if (newInadequateMonths && newInadequateMonths.length > 0) {
       const monthDetails = `\n\nSpecifically, this referral is for inadequate contributions in: ${newInadequateMonths.join(', ')}`;
@@ -1110,8 +1162,9 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
 
     // Send to ambassador, CC sponsor
     sendEmailNotification(ambassadorEmail, subject, emailBody, '', SPONSOR_EMAIL);
-    
-    const monthsInfo = newInadequateMonths && newInadequateMonths.length > 0 ? ` for months: ${newInadequateMonths.join(', ')}` : '';
+
+    const monthsInfo =
+      newInadequateMonths && newInadequateMonths.length > 0 ? ` for months: ${newInadequateMonths.join(', ')}` : '';
     Logger.log(
       `Sent inadequate contribution notification to ${ambassadorEmail} (${ambassadorDiscord})${monthsInfo}, CC: ${SPONSOR_EMAIL}`
     );
@@ -1157,7 +1210,6 @@ function publishAnonymousScoresToCoda() {
     createCodaSubpageWithScores(monthName, anonymousScores);
 
     Logger.log(`Successfully published ${anonymousScores.length} anonymous scores to Coda subpage for ${monthName}.`);
-
   } catch (error) {
     Logger.log(`Error in publishAnonymousScoresToCoda: ${error}`);
     throw error;
@@ -1208,13 +1260,13 @@ function collectAnonymousScoreData(monthName) {
 
       const scoreRow = {
         Submitter: submitter,
-        'Score-1': score1ColIndex > 0 ? (row[score1ColIndex - 1] || '') : '',
-        'Remarks-1': remarks1ColIndex > 0 ? (row[remarks1ColIndex - 1] || '') : '',
-        'Score-2': score2ColIndex > 0 ? (row[score2ColIndex - 1] || '') : '',
-        'Remarks-2': remarks2ColIndex > 0 ? (row[remarks2ColIndex - 1] || '') : '',
-        'Score-3': score3ColIndex > 0 ? (row[score3ColIndex - 1] || '') : '',
-        'Remarks-3': remarks3ColIndex > 0 ? (row[remarks3ColIndex - 1] || '') : '',
-        'Final Score': finalScoreColIndex > 0 ? (row[finalScoreColIndex - 1] || '') : ''
+        'Score-1': score1ColIndex > 0 ? row[score1ColIndex - 1] || '' : '',
+        'Remarks-1': remarks1ColIndex > 0 ? row[remarks1ColIndex - 1] || '' : '',
+        'Score-2': score2ColIndex > 0 ? row[score2ColIndex - 1] || '' : '',
+        'Remarks-2': remarks2ColIndex > 0 ? row[remarks2ColIndex - 1] || '' : '',
+        'Score-3': score3ColIndex > 0 ? row[score3ColIndex - 1] || '' : '',
+        'Remarks-3': remarks3ColIndex > 0 ? row[remarks3ColIndex - 1] || '' : '',
+        'Final Score': finalScoreColIndex > 0 ? row[finalScoreColIndex - 1] || '' : '',
       };
 
       anonymousScores.push(scoreRow);
@@ -1222,7 +1274,6 @@ function collectAnonymousScoreData(monthName) {
 
     Logger.log(`Collected ${anonymousScores.length} score records for ${monthName}.`);
     return anonymousScores;
-
   } catch (error) {
     Logger.log(`Error collecting anonymous score data: ${error}`);
     throw error;
@@ -1246,7 +1297,6 @@ function createCodaSubpageWithScores(monthName, anonymousScores) {
 
     // Insert the score data into the table
     insertScoresIntoCodaTable(tableId, anonymousScores);
-
   } catch (error) {
     Logger.log(`Error creating Coda subpage with scores: ${error}`);
     throw error;
@@ -1262,26 +1312,32 @@ function createCodaSubpage(monthName) {
   Logger.log(`Creating Coda subpage for ${monthName}.`);
 
   try {
+    // Add TEST prefix if in testing mode
+    const pageTitle = TESTING ? `TEST - ${monthName} Monthly Scores` : `${monthName} Monthly Scores`;
+    const pageSubtitle = TESTING
+      ? `[TEST] Anonymous peer review scores for ${monthName}`
+      : `Anonymous peer review scores for ${monthName}`;
+
     const pageData = {
-      name: `${monthName} Monthly Scores`,
-      subtitle: `Anonymous peer review scores for ${monthName}`,
+      name: pageTitle,
+      subtitle: pageSubtitle,
       iconName: 'clipboard-list',
       pageContent: {
         type: 'canvas',
         canvasContent: {
           format: 'html',
-          content: `<p><b>${monthName} Monthly Scores</b></p><p>This page contains the anonymous peer review scores for ${monthName}. Scorer identities are hidden to maintain objectivity in the monthly score reporting.</p>`
-        }
-      }
+          content: `<p><b>${pageTitle}</b></p><p>This page contains the anonymous peer review scores for ${monthName}. Scorer identities are hidden to maintain objectivity in the monthly score reporting.</p>`,
+        },
+      },
     };
 
     const response = UrlFetchApp.fetch(`https://coda.io/apis/v1/docs/${CODA_DOC_ID}/pages`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${CODA_API_TOKEN}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${CODA_API_TOKEN}`,
+        'Content-Type': 'application/json',
       },
-      payload: JSON.stringify(pageData)
+      payload: JSON.stringify(pageData),
     });
 
     if (response.getResponseCode() !== 201) {
@@ -1291,7 +1347,6 @@ function createCodaSubpage(monthName) {
     const result = JSON.parse(response.getContentText());
     Logger.log(`Created Coda subpage: ${result.id}`);
     return result.id;
-
   } catch (error) {
     Logger.log(`Error creating Coda subpage: ${error}`);
     throw error;
@@ -1319,17 +1374,17 @@ function createCodaTableOnPage(pageId, monthName) {
         { name: 'Remarks-2', type: 'text' },
         { name: 'Score-3', type: 'text' },
         { name: 'Remarks-3', type: 'text' },
-        { name: 'Final Score', type: 'text' }
-      ]
+        { name: 'Final Score', type: 'text' },
+      ],
     };
 
     const response = UrlFetchApp.fetch(`https://coda.io/apis/v1/docs/${CODA_DOC_ID}/tables`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${CODA_API_TOKEN}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${CODA_API_TOKEN}`,
+        'Content-Type': 'application/json',
       },
-      payload: JSON.stringify(tableData)
+      payload: JSON.stringify(tableData),
     });
 
     if (response.getResponseCode() !== 201) {
@@ -1339,7 +1394,6 @@ function createCodaTableOnPage(pageId, monthName) {
     const result = JSON.parse(response.getContentText());
     Logger.log(`Created Coda table: ${result.id}`);
     return result.id;
-
   } catch (error) {
     Logger.log(`Error creating Coda table: ${error}`);
     throw error;
@@ -1356,7 +1410,7 @@ function insertScoresIntoCodaTable(tableId, anonymousScores) {
 
   try {
     // Prepare rows for insertion
-    const rows = anonymousScores.map(score => ({
+    const rows = anonymousScores.map((score) => ({
       cells: [
         { column: 'Submitter', value: score.Submitter },
         { column: 'Score-1', value: score['Score-1'] },
@@ -1365,22 +1419,22 @@ function insertScoresIntoCodaTable(tableId, anonymousScores) {
         { column: 'Remarks-2', value: score['Remarks-2'] },
         { column: 'Score-3', value: score['Score-3'] },
         { column: 'Remarks-3', value: score['Remarks-3'] },
-        { column: 'Final Score', value: score['Final Score'] }
-      ]
+        { column: 'Final Score', value: score['Final Score'] },
+      ],
     }));
 
     const payload = {
       rows: rows,
-      keyColumns: ['Submitter']
+      keyColumns: ['Submitter'],
     };
 
     const response = UrlFetchApp.fetch(`https://coda.io/apis/v1/docs/${CODA_DOC_ID}/tables/${tableId}/rows`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${CODA_API_TOKEN}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${CODA_API_TOKEN}`,
+        'Content-Type': 'application/json',
       },
-      payload: JSON.stringify(payload)
+      payload: JSON.stringify(payload),
     });
 
     if (response.getResponseCode() !== 202) {
@@ -1388,7 +1442,6 @@ function insertScoresIntoCodaTable(tableId, anonymousScores) {
     }
 
     Logger.log(`Successfully inserted ${anonymousScores.length} scores into Coda table.`);
-
   } catch (error) {
     Logger.log(`Error inserting scores into Coda table: ${error}`);
     throw error;
