@@ -1218,6 +1218,7 @@ function publishAnonymousScoresToGoogleSheet() {
 
 /**
  * Collects anonymous score data from the current month's evaluation results.
+ * Includes primary team and contribution details for each submitter.
  * @param {string} monthName - The reporting month name (e.g., "January 2025")
  * @returns {Array} Array of anonymous score objects
  */
@@ -1251,15 +1252,44 @@ function collectAnonymousScoreData(monthName) {
     const anonymousScores = [];
 
     data.forEach((row, index) => {
-      const submitter = row[submitterColIndex - 1];
+      const submitterHandle = row[submitterColIndex - 1];
 
       // Skip empty rows
-      if (!submitter || submitter.toString().trim() === '') {
+      if (!submitterHandle || submitterHandle.toString().trim() === '') {
         return;
       }
 
+      // Get email from discord handle to fetch primary team and contributions
+      const submitterInfo = lookupEmailAndDiscord(submitterHandle);
+      const submitterEmail = submitterInfo ? submitterInfo.email : '';
+
+      // Get primary team
+      let primaryTeam = '';
+      if (submitterEmail) {
+        try {
+          primaryTeam = getAmbassadorPrimaryTeam(submitterEmail);
+        } catch (error) {
+          Logger.log(`Error getting primary team for ${submitterEmail}: ${error}`);
+        }
+      }
+
+      // Get contribution details
+      let contributionDetails = '';
+      if (submitterEmail) {
+        try {
+          contributionDetails = getContributionDetailsByEmail(submitterEmail);
+          // Remove HTML tags for cleaner display in spreadsheet
+          contributionDetails = contributionDetails.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '');
+        } catch (error) {
+          Logger.log(`Error getting contributions for ${submitterEmail}: ${error}`);
+          contributionDetails = 'No contribution details found.';
+        }
+      }
+
       const scoreRow = {
-        Submitter: submitter,
+        Submitter: submitterHandle,
+        'Primary Team': primaryTeam || '',
+        Contributions: contributionDetails || '',
         'Score-1': score1ColIndex > 0 ? row[score1ColIndex - 1] || '' : '',
         'Remarks-1': remarks1ColIndex > 0 ? row[remarks1ColIndex - 1] || '' : '',
         'Score-2': score2ColIndex > 0 ? row[score2ColIndex - 1] || '' : '',
@@ -1282,6 +1312,7 @@ function collectAnonymousScoreData(monthName) {
 
 /**
  * Creates a new sheet tab in the anonymous scores spreadsheet with score data.
+ * Includes Primary Team and Contributions columns.
  * @param {string} monthName - The reporting month name
  * @param {Array} anonymousScores - Array of anonymous score objects
  */
@@ -1305,8 +1336,19 @@ function createAnonymousScoresSheet(monthName, anonymousScores) {
       sheet = spreadsheet.insertSheet(sheetName);
     }
 
-    // Set up headers
-    const headers = ['Submitter', 'Score-1', 'Remarks-1', 'Score-2', 'Remarks-2', 'Score-3', 'Remarks-3', 'Final Score'];
+    // Set up headers with Primary Team and Contributions columns
+    const headers = [
+      'Submitter',
+      'Primary Team',
+      'Contributions',
+      'Score-1',
+      'Remarks-1',
+      'Score-2',
+      'Remarks-2',
+      'Score-3',
+      'Remarks-3',
+      'Final Score'
+    ];
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
     // Format header row
@@ -1319,6 +1361,8 @@ function createAnonymousScoresSheet(monthName, anonymousScores) {
     if (anonymousScores.length > 0) {
       const dataRows = anonymousScores.map(score => [
         score.Submitter || '',
+        score['Primary Team'] || '',
+        score.Contributions || '',
         score['Score-1'] || '',
         score['Remarks-1'] || '',
         score['Score-2'] || '',
@@ -1332,9 +1376,23 @@ function createAnonymousScoresSheet(monthName, anonymousScores) {
       Logger.log(`Inserted ${dataRows.length} score records into sheet "${sheetName}".`);
     }
 
-    // Auto-resize columns
+    // Auto-resize columns first
     for (let i = 1; i <= headers.length; i++) {
       sheet.autoResizeColumn(i);
+    }
+
+    // Set specific column widths for Contributions and Remarks columns
+    sheet.setColumnWidth(3, 500); // Contributions column (C)
+    sheet.setColumnWidth(5, 200); // Remarks-1 column (E)
+    sheet.setColumnWidth(7, 200); // Remarks-2 column (G)
+    sheet.setColumnWidth(9, 200); // Remarks-3 column (I)
+
+    // Enable word wrap for Contributions and Remarks columns
+    if (sheet.getLastRow() > 1) {
+      sheet.getRange(2, 3, sheet.getLastRow() - 1, 1).setWrap(true); // Contributions (C)
+      sheet.getRange(2, 5, sheet.getLastRow() - 1, 1).setWrap(true); // Remarks-1 (E)
+      sheet.getRange(2, 7, sheet.getLastRow() - 1, 1).setWrap(true); // Remarks-2 (G)
+      sheet.getRange(2, 9, sheet.getLastRow() - 1, 1).setWrap(true); // Remarks-3 (I)
     }
 
     // Freeze header row

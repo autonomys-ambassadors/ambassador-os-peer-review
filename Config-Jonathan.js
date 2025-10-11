@@ -13,7 +13,7 @@ function setJonathanVariables() {
   AMBASSADORS_SCORES_SPREADSHEET_ID = '1ZzU1egqRtQCvCH8flvLUr9gmVyIyYH2AejGaEH5gvc8'; // "Ambassadors' Scores"
   AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1EQRSjcvODXQpHzK2g4XNd6imCTsx2m7vTwe-HeNNjjM'; // "Ambassador Submission Responses"
   EVALUATION_RESPONSES_SPREADSHEET_ID = '12S_qu-Uiq0BupN_Z6lVHJ76YaVM5NG0JQY_IC-gFWmg'; // "Ambassador Evaluations' Responses"
-  ANONYMOUS_SCORES_SPREADSHEET_ID = ''; // TODO: Set your anonymous scores spreadsheet ID
+  ANONYMOUS_SCORES_SPREADSHEET_ID = '1JBQRzpqC6dv4iiP1TJdpRkGeVHCX9P-HXNuxnC2OSqI'; // Your anonymous scores spreadsheet ID
 
   // Google Forms
   SUBMISSION_FORM_ID = '1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE'; // ID for Submission form
