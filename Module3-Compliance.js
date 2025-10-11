@@ -81,11 +81,11 @@ function runComplianceAudit() {
   SpreadsheetApp.flush();
   Logger.log('Compliance Audit process completed.');
 
-  // Publish anonymous scores to Coda if configured
+  // Publish anonymous scores to Google Sheet if configured
   try {
-    publishAnonymousScoresToCoda();
+    publishAnonymousScoresToGoogleSheet();
   } catch (error) {
-    Logger.log(`Error publishing scores to Coda: ${error}`);
+    Logger.log(`Error publishing anonymous scores: ${error}`);
   }
 }
 
@@ -1173,19 +1173,19 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
   }
 }
 
-// ===== CODA INTEGRATION FUNCTIONS =====
+// ===== ANONYMOUS SCORES PUBLISHING FUNCTIONS =====
 
 /**
- * Publishes anonymous audit scores to Coda.
- * Creates a new subpage and table for the current reporting month.
+ * Publishes anonymous audit scores to a Google Sheet.
+ * Creates a new sheet tab for the current reporting month.
  */
-function publishAnonymousScoresToCoda() {
-  if (!CODA_API_TOKEN || !CODA_DOC_ID) {
-    Logger.log('Coda integration not configured. Skipping score publishing.');
+function publishAnonymousScoresToGoogleSheet() {
+  if (!ANONYMOUS_SCORES_SPREADSHEET_ID) {
+    Logger.log('Anonymous scores spreadsheet not configured. Skipping score publishing.');
     return;
   }
 
-  Logger.log('Starting anonymous score publishing to Coda.');
+  Logger.log('Starting anonymous score publishing to Google Sheets.');
 
   try {
     // Get reporting month data using existing helper function
@@ -1202,14 +1202,14 @@ function publishAnonymousScoresToCoda() {
     const anonymousScores = collectAnonymousScoreData(monthName);
 
     if (anonymousScores.length === 0) {
-      Logger.log('No scores found to publish to Coda.');
+      Logger.log('No scores found to publish.');
       return;
     }
 
-    // Create subpage and table, then publish data
-    createCodaSubpageWithScores(monthName, anonymousScores);
+    // Create sheet tab and publish data
+    createAnonymousScoresSheet(monthName, anonymousScores);
 
-    Logger.log(`Successfully published ${anonymousScores.length} anonymous scores to Coda subpage for ${monthName}.`);
+    Logger.log(`Successfully published ${anonymousScores.length} anonymous scores to sheet for ${monthName}.`);
   } catch (error) {
     Logger.log(`Error in publishAnonymousScoresToCoda: ${error}`);
     throw error;
@@ -1281,169 +1281,69 @@ function collectAnonymousScoreData(monthName) {
 }
 
 /**
- * Creates a new subpage in Coda and adds a table with anonymous scores.
+ * Creates a new sheet tab in the anonymous scores spreadsheet with score data.
  * @param {string} monthName - The reporting month name
  * @param {Array} anonymousScores - Array of anonymous score objects
  */
-function createCodaSubpageWithScores(monthName, anonymousScores) {
-  Logger.log(`Creating Coda subpage with scores for ${monthName}.`);
+function createAnonymousScoresSheet(monthName, anonymousScores) {
+  Logger.log(`Creating anonymous scores sheet for ${monthName}.`);
 
   try {
-    // Create the subpage first
-    const pageId = createCodaSubpage(monthName);
+    // Get the anonymous scores spreadsheet
+    const spreadsheet = SpreadsheetApp.openById(ANONYMOUS_SCORES_SPREADSHEET_ID);
 
-    // Create table on the subpage
-    const tableId = createCodaTableOnPage(pageId, monthName);
+    // Format sheet name: "Scores - {Month} {Year}" or "TEST - Scores - {Month} {Year}"
+    const sheetName = TESTING ? `TEST - Scores - ${monthName}` : `Scores - ${monthName}`;
 
-    // Insert the score data into the table
-    insertScoresIntoCodaTable(tableId, anonymousScores);
-  } catch (error) {
-    Logger.log(`Error creating Coda subpage with scores: ${error}`);
-    throw error;
-  }
-}
-
-/**
- * Creates a new subpage in the Coda document.
- * @param {string} monthName - The reporting month name
- * @returns {string} The created page ID
- */
-function createCodaSubpage(monthName) {
-  Logger.log(`Creating Coda subpage for ${monthName}.`);
-
-  try {
-    // Add TEST prefix if in testing mode
-    const pageTitle = TESTING ? `TEST - ${monthName} Monthly Scores` : `${monthName} Monthly Scores`;
-    const pageSubtitle = TESTING
-      ? `[TEST] Anonymous peer review scores for ${monthName}`
-      : `Anonymous peer review scores for ${monthName}`;
-
-    const pageData = {
-      name: pageTitle,
-      subtitle: pageSubtitle,
-      iconName: 'clipboard-list',
-      pageContent: {
-        type: 'canvas',
-        canvasContent: {
-          format: 'html',
-          content: `<p><b>${pageTitle}</b></p><p>This page contains the anonymous peer review scores for ${monthName}. Scorer identities are hidden to maintain objectivity in the monthly score reporting.</p>`,
-        },
-      },
-    };
-
-    const response = UrlFetchApp.fetch(`https://coda.io/apis/v1/docs/${CODA_DOC_ID}/pages`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${CODA_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      payload: JSON.stringify(pageData),
-    });
-
-    if (response.getResponseCode() !== 201) {
-      throw new Error(`Failed to create Coda subpage: ${response.getContentText()}`);
+    // Check if sheet already exists
+    let sheet = spreadsheet.getSheetByName(sheetName);
+    if (sheet) {
+      Logger.log(`Sheet "${sheetName}" already exists. Clearing existing data.`);
+      sheet.clear();
+    } else {
+      Logger.log(`Creating new sheet: "${sheetName}"`);
+      sheet = spreadsheet.insertSheet(sheetName);
     }
 
-    const result = JSON.parse(response.getContentText());
-    Logger.log(`Created Coda subpage: ${result.id}`);
-    return result.id;
-  } catch (error) {
-    Logger.log(`Error creating Coda subpage: ${error}`);
-    throw error;
-  }
-}
+    // Set up headers
+    const headers = ['Submitter', 'Score-1', 'Remarks-1', 'Score-2', 'Remarks-2', 'Score-3', 'Remarks-3', 'Final Score'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
-/**
- * Creates a table on a specific Coda page.
- * @param {string} pageId - The page ID where to create the table
- * @param {string} monthName - The reporting month name
- * @returns {string} The created table ID
- */
-function createCodaTableOnPage(pageId, monthName) {
-  Logger.log(`Creating Coda table on page ${pageId} for ${monthName}.`);
+    // Format header row
+    const headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setFontWeight('bold');
+    headerRange.setBackground('#4285f4');
+    headerRange.setFontColor('#ffffff');
 
-  try {
-    const tableData = {
-      name: `${monthName} Scores`,
-      parentPageId: pageId,
-      columns: [
-        { name: 'Submitter', type: 'text' },
-        { name: 'Score-1', type: 'text' },
-        { name: 'Remarks-1', type: 'text' },
-        { name: 'Score-2', type: 'text' },
-        { name: 'Remarks-2', type: 'text' },
-        { name: 'Score-3', type: 'text' },
-        { name: 'Remarks-3', type: 'text' },
-        { name: 'Final Score', type: 'text' },
-      ],
-    };
+    // Insert score data
+    if (anonymousScores.length > 0) {
+      const dataRows = anonymousScores.map(score => [
+        score.Submitter || '',
+        score['Score-1'] || '',
+        score['Remarks-1'] || '',
+        score['Score-2'] || '',
+        score['Remarks-2'] || '',
+        score['Score-3'] || '',
+        score['Remarks-3'] || '',
+        score['Final Score'] || ''
+      ]);
 
-    const response = UrlFetchApp.fetch(`https://coda.io/apis/v1/docs/${CODA_DOC_ID}/tables`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${CODA_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      payload: JSON.stringify(tableData),
-    });
-
-    if (response.getResponseCode() !== 201) {
-      throw new Error(`Failed to create Coda table: ${response.getContentText()}`);
+      sheet.getRange(2, 1, dataRows.length, headers.length).setValues(dataRows);
+      Logger.log(`Inserted ${dataRows.length} score records into sheet "${sheetName}".`);
     }
 
-    const result = JSON.parse(response.getContentText());
-    Logger.log(`Created Coda table: ${result.id}`);
-    return result.id;
-  } catch (error) {
-    Logger.log(`Error creating Coda table: ${error}`);
-    throw error;
-  }
-}
-
-/**
- * Inserts anonymous scores into a Coda table.
- * @param {string} tableId - The Coda table ID
- * @param {Array} anonymousScores - Array of anonymous score objects
- */
-function insertScoresIntoCodaTable(tableId, anonymousScores) {
-  Logger.log(`Inserting ${anonymousScores.length} scores into Coda table ${tableId}.`);
-
-  try {
-    // Prepare rows for insertion
-    const rows = anonymousScores.map((score) => ({
-      cells: [
-        { column: 'Submitter', value: score.Submitter },
-        { column: 'Score-1', value: score['Score-1'] },
-        { column: 'Remarks-1', value: score['Remarks-1'] },
-        { column: 'Score-2', value: score['Score-2'] },
-        { column: 'Remarks-2', value: score['Remarks-2'] },
-        { column: 'Score-3', value: score['Score-3'] },
-        { column: 'Remarks-3', value: score['Remarks-3'] },
-        { column: 'Final Score', value: score['Final Score'] },
-      ],
-    }));
-
-    const payload = {
-      rows: rows,
-      keyColumns: ['Submitter'],
-    };
-
-    const response = UrlFetchApp.fetch(`https://coda.io/apis/v1/docs/${CODA_DOC_ID}/tables/${tableId}/rows`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${CODA_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      payload: JSON.stringify(payload),
-    });
-
-    if (response.getResponseCode() !== 202) {
-      throw new Error(`Failed to insert rows into Coda table: ${response.getContentText()}`);
+    // Auto-resize columns
+    for (let i = 1; i <= headers.length; i++) {
+      sheet.autoResizeColumn(i);
     }
 
-    Logger.log(`Successfully inserted ${anonymousScores.length} scores into Coda table.`);
+    // Freeze header row
+    sheet.setFrozenRows(1);
+
+    Logger.log(`Successfully created anonymous scores sheet "${sheetName}" with ${anonymousScores.length} records.`);
   } catch (error) {
-    Logger.log(`Error inserting scores into Coda table: ${error}`);
+    Logger.log(`Error creating anonymous scores sheet: ${error}`);
     throw error;
   }
 }
+
