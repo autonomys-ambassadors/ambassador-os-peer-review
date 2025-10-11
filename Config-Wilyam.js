@@ -92,8 +92,11 @@ Please add links your contributions during the month `;
   COLOR_EXPELLED = '#d36a6a';
   COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
 
-  // Coda Integration (loaded from PropertiesService)
+  // Coda Integration (API token loaded from PropertiesService)
   loadCodaConfiguration();
+  CODA_DOC_ID = ''; // TODO: Set Wilyam's test Coda document ID
+  CODA_PARENT_PAGE_ID = ''; // TODO: Set the parent page ID for monthly score subpages
+
   //COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
 
   // Wilyam Test vars

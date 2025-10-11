@@ -19,6 +19,7 @@ function setYourNameVariables() {
   AMBASSADORS_SCORES_SPREADSHEET_ID = 'your-scores-spreadsheet-id';
   AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = 'your-submissions-spreadsheet-id';
   EVALUATION_RESPONSES_SPREADSHEET_ID = 'your-evaluation-responses-spreadsheet-id';
+  ANONYMOUS_SCORES_SPREADSHEET_ID = 'your-anonymous-scores-spreadsheet-id';
   FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Adjust sheet name as needed
   EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Adjust sheet name as needed
 
@@ -92,7 +93,4 @@ Please add links to your contributions during the month`;
   COLOR_MISSED_EVALUATION = '#d9d9d9';
   COLOR_EXPELLED = '#d36a6a';
   COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
-
-  // Coda Integration (loaded from PropertiesService)
-  loadCodaConfiguration();
 }

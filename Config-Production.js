@@ -13,6 +13,7 @@ function setNewProductionVariables() {
   AMBASSADORS_SCORES_SPREADSHEET_ID = '1cjhrqgc84HdS59eQJPsiNIPKbusHtp2j7dN55u-mKdc'; // "Ambassadors Scores"
   AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1EQRSjcvODXQpHzK2g4XNd6imCTsx2m7vTwe-HeNNjjM'; // "Ambassador Submission Responses"
   EVALUATION_RESPONSES_SPREADSHEET_ID = '12S_qu-Uiq0BupN_Z6lVHJ76YaVM5NG0JQY_IC-gFWmg'; // "Ambassador Evaluations' Responses"
+  ANONYMOUS_SCORES_SPREADSHEET_ID = ''; // TODO: Set production anonymous scores spreadsheet ID
 
   // Provide the Id and submission URL for the submission and evaluation google forms:
   SUBMISSION_FORM_ID = '1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE'; // ID for Submission form
@@ -92,8 +93,4 @@ Please add links to your contributions during the month`;
   COLOR_MISSED_EVALUATION = '#d9d9d9';
   COLOR_EXPELLED = '#d36a6a';
   COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
-
-  // Coda Integration (loaded from PropertiesService)
-  loadCodaConfiguration();
-  //COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
 }
