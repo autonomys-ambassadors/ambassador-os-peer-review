@@ -12,6 +12,23 @@ const COMPLIANCE_FIRST_DATA_ROW = 2; // Row index for first data row
 // ===== Predicate Functions for Complex Conditionals =====
 
 /**
+ * Strips HTML tags from a string through repeated application to prevent bypass via nested tags.
+ * This prevents HTML injection vulnerabilities by ensuring all tags are removed, even if nested.
+ * @param {string} str - String potentially containing HTML tags
+ * @returns {string} Sanitized string with all HTML tags removed
+ */
+function stripHtmlTags(str) {
+  if (!str) return '';
+  let previous;
+  let sanitized = str;
+  do {
+    previous = sanitized;
+    sanitized = sanitized.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '');
+  } while (sanitized !== previous);
+  return sanitized;
+}
+
+/**
  * Checks if an ambassador did not submit their monthly contribution.
  * @param {string} email - Ambassador email
  * @param {Array} validSubmitters - Array of valid submitter emails
@@ -1279,7 +1296,7 @@ function collectAnonymousScoreData(monthName) {
         try {
           contributionDetails = getContributionDetailsByEmail(submitterEmail);
           // Remove HTML tags for cleaner display in spreadsheet
-          contributionDetails = contributionDetails.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '');
+          contributionDetails = stripHtmlTags(contributionDetails);
         } catch (error) {
           Logger.log(`Error getting contributions for ${submitterEmail}: ${error}`);
           contributionDetails = 'No contribution details found.';
