@@ -9,59 +9,6 @@ const COMPLIANCE_BUSINESS_DAYS_DEADLINE = 3; // Business days for CRT complaint 
 const COMPLIANCE_HEADER_ROW = 1; // Row index for headers
 const COMPLIANCE_FIRST_DATA_ROW = 2; // Row index for first data row
 
-// ===== Predicate Functions for Complex Conditionals =====
-
-/**
- * Strips HTML tags from a string through repeated application to prevent bypass via nested tags.
- * This prevents HTML injection vulnerabilities by ensuring all tags are removed, even if nested.
- * @param {string} str - String potentially containing HTML tags
- * @returns {string} Sanitized string with all HTML tags removed
- */
-function stripHtmlTags(str) {
-  if (!str) return '';
-  let previous;
-  let sanitized = str;
-  do {
-    previous = sanitized;
-    sanitized = sanitized.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '');
-  } while (sanitized !== previous);
-  return sanitized;
-}
-
-/**
- * Checks if an ambassador did not submit their monthly contribution.
- * @param {string} email - Ambassador email
- * @param {Array} validSubmitters - Array of valid submitter emails
- * @returns {boolean} True if ambassador did not submit contribution
- */
-function didNotSubmitContribution(email, validSubmitters) {
-  return !validSubmitters.map(normalizeEmail).includes(normalizeEmail(email));
-}
-
-/**
- * Checks if an ambassador was assigned to evaluate but did not submit evaluation.
- * @param {string} email - Ambassador email
- * @param {Object} assignments - Assignment object mapping submitters to evaluators
- * @param {Array} validEvaluators - Array of valid evaluator emails
- * @returns {boolean} True if ambassador was assigned but did not evaluate
- */
-function wasAssignedButDidNotEvaluate(email, assignments, validEvaluators) {
-  return Object.values(assignments).some(
-    (evaluators) =>
-      evaluators.map(normalizeEmail).includes(normalizeEmail(email)) &&
-      !validEvaluators.map(normalizeEmail).includes(normalizeEmail(email))
-  );
-}
-
-/**
- * Checks if a score value is below the inadequate contribution threshold.
- * @param {*} scoreValue - Score value to check
- * @returns {boolean} True if score is a number below threshold
- */
-function isInadequateContributionScore(scoreValue) {
-  return typeof scoreValue === 'number' && scoreValue < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD;
-}
-
 function runComplianceAudit() {
   // Run evaluation window check and exit if the user presses "Cancel"
   if (!checkEvaluationWindowStart()) {
@@ -1228,7 +1175,7 @@ function publishAnonymousScoresToGoogleSheet() {
 
     Logger.log(`Successfully published ${anonymousScores.length} anonymous scores to sheet for ${monthName}.`);
   } catch (error) {
-    Logger.log(`Error in publishAnonymousScoresToCoda: ${error}`);
+    Logger.log(`Error in publishAnonymousScoresToGoogleSheet: ${error}`);
     throw error;
   }
 }
@@ -1364,7 +1311,7 @@ function createAnonymousScoresSheet(monthName, anonymousScores) {
       'Remarks-2',
       'Score-3',
       'Remarks-3',
-      'Final Score'
+      'Final Score',
     ];
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
@@ -1376,7 +1323,7 @@ function createAnonymousScoresSheet(monthName, anonymousScores) {
 
     // Insert score data
     if (anonymousScores.length > 0) {
-      const dataRows = anonymousScores.map(score => [
+      const dataRows = anonymousScores.map((score) => [
         score.Submitter || '',
         score['Primary Team'] || '',
         score.Contributions || '',
@@ -1386,7 +1333,7 @@ function createAnonymousScoresSheet(monthName, anonymousScores) {
         score['Remarks-2'] || '',
         score['Score-3'] || '',
         score['Remarks-3'] || '',
-        score['Final Score'] || ''
+        score['Final Score'] || '',
       ]);
 
       sheet.getRange(2, 1, dataRows.length, headers.length).setValues(dataRows);
@@ -1422,3 +1369,55 @@ function createAnonymousScoresSheet(monthName, anonymousScores) {
   }
 }
 
+// ===== Predicate Functions for Complex Conditionals =====
+
+/**
+ * Strips HTML tags from a string through repeated application to prevent bypass via nested tags.
+ * This prevents HTML injection vulnerabilities by ensuring all tags are removed, even if nested.
+ * @param {string} str - String potentially containing HTML tags
+ * @returns {string} Sanitized string with all HTML tags removed
+ */
+function stripHtmlTags(str) {
+  if (!str) return '';
+  let previous;
+  let sanitized = str;
+  do {
+    previous = sanitized;
+    sanitized = sanitized.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '');
+  } while (sanitized !== previous);
+  return sanitized;
+}
+
+/**
+ * Checks if an ambassador did not submit their monthly contribution.
+ * @param {string} email - Ambassador email
+ * @param {Array} validSubmitters - Array of valid submitter emails
+ * @returns {boolean} True if ambassador did not submit contribution
+ */
+function didNotSubmitContribution(email, validSubmitters) {
+  return !validSubmitters.map(normalizeEmail).includes(normalizeEmail(email));
+}
+
+/**
+ * Checks if an ambassador was assigned to evaluate but did not submit evaluation.
+ * @param {string} email - Ambassador email
+ * @param {Object} assignments - Assignment object mapping submitters to evaluators
+ * @param {Array} validEvaluators - Array of valid evaluator emails
+ * @returns {boolean} True if ambassador was assigned but did not evaluate
+ */
+function wasAssignedButDidNotEvaluate(email, assignments, validEvaluators) {
+  return Object.values(assignments).some(
+    (evaluators) =>
+      evaluators.map(normalizeEmail).includes(normalizeEmail(email)) &&
+      !validEvaluators.map(normalizeEmail).includes(normalizeEmail(email))
+  );
+}
+
+/**
+ * Checks if a score value is below the inadequate contribution threshold.
+ * @param {*} scoreValue - Score value to check
+ * @returns {boolean} True if score is a number below threshold
+ */
+function isInadequateContributionScore(scoreValue) {
+  return typeof scoreValue === 'number' && scoreValue < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD;
+}
