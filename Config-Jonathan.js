@@ -15,6 +15,11 @@ function setJonathanVariables() {
   EVALUATION_RESPONSES_SPREADSHEET_ID = '12S_qu-Uiq0BupN_Z6lVHJ76YaVM5NG0JQY_IC-gFWmg'; // "Ambassador Evaluations' Responses"
   ANONYMOUS_SCORES_SPREADSHEET_ID = '1JBQRzpqC6dv4iiP1TJdpRkGeVHCX9P-HXNuxnC2OSqI'; // Your anonymous scores spreadsheet ID
 
+  // Coda Configuration (optional - for publishing scores to Coda)
+  // API key should be stored in Project Settings > Script Properties as 'CODA_API_KEY'
+  CODA_TEMPLATE_DOC_ID = 'canvas-OKde7f1PnK'; // ID of the template doc to copy (e.g., 'abc123xyz')
+  CODA_FOLDER_ID = 'canvas-BfuFePriIf'; // Optional: Folder ID where new docs should be created (e.g., 'fl-xyz123')
+
   // Google Forms
   SUBMISSION_FORM_ID = '1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE'; // ID for Submission form
   EVALUATION_FORM_ID = '1WKQ1acvwVVXJOtYRZgiX-4YXOUgnwwlquL3c5l494ew'; // ID for Evaluation form

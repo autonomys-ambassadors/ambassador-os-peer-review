@@ -23,6 +23,11 @@ function setYourNameVariables() {
   FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Adjust sheet name as needed
   EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Adjust sheet name as needed
 
+  // Coda Configuration (optional - for publishing scores to Coda)
+  // API key should be stored in Project Settings > Script Properties as 'CODA_API_KEY'
+  CODA_TEMPLATE_DOC_ID = ''; // ID of the template doc to copy (e.g., 'abc123xyz')
+  CODA_FOLDER_ID = ''; // Optional: Folder ID where new docs should be created (e.g., 'fl-xyz123')
+
   // Google Forms - Replace with your test form IDs and URLs
   SUBMISSION_FORM_ID = 'your-submission-form-id';
   EVALUATION_FORM_ID = 'your-evaluation-form-id';
