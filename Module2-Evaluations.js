@@ -374,7 +374,7 @@ function sendEvaluationRequests(reportingMonth) {
       Logger.log(`Discord Submitter: ${submitterDiscordHandle}`);
 
       // Getting the details of the contribution
-      const contributionDetails = getContributionDetailsByEmail(submitterEmail, spreadsheetTimeZone); // Call from SharedUtilities
+      const contributionDetails = getContributionDetailsByEmail(submitterEmail); // Call from SharedUtilities
       Logger.log(`Contribution details: ${contributionDetails}`);
 
       const primaryTeam = getAmbassadorPrimaryTeam(submitterEmail);
@@ -406,7 +406,7 @@ function sendEvaluationRequests(reportingMonth) {
 }
 
 // Function to get contribution details by email within the submission window
-function getContributionDetailsByEmail(email) {
+function getContributionDetailsByEmail(email, submissionWindowStart = null, submissionWindowEnd = null) {
   try {
     Logger.log(`Fetching contribution details for email: ${email}`);
 
@@ -421,12 +421,17 @@ function getContributionDetailsByEmail(email) {
     }
 
     // Retrieve submission window start and calculate end times
-    const submissionWindowStart = getSubmissionWindowStart(); // Retrieve start time from SharedUtilities
+    // If not provided, get from current script properties (for current evaluation cycle)
     if (!submissionWindowStart) {
-      Logger.log('Error: Submission window start time not found.');
-      return 'No contribution details found for this submitter.';
+      submissionWindowStart = getSubmissionWindowStart(); // Retrieve start time from SharedUtilities
+      if (!submissionWindowStart) {
+        Logger.log('Error: Submission window start time not found.');
+        return 'No contribution details found for this submitter.';
+      }
     }
-    const submissionWindowEnd = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000);
+    if (!submissionWindowEnd) {
+      submissionWindowEnd = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000);
+    }
     Logger.log(`Submission window: ${submissionWindowStart} to ${submissionWindowEnd}`);
 
     // Get form responses

@@ -1162,8 +1162,25 @@ function publishAnonymousScoresToGoogleSheet() {
     const spreadsheetTimeZone = getProjectTimeZone();
     const monthName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
 
+    // Get submission window times for the reporting month from Request Log
+    const submissionRequest = getLatestRequestByType('Submission');
+    if (!submissionRequest) {
+      throw new Error('Could not find Submission request in Request Log.');
+    }
+
+    // Verify submission request matches reporting month
+    if (submissionRequest.month !== reportingMonth.month || submissionRequest.year !== reportingMonth.year) {
+      Logger.log(
+        `Warning: Submission request (${submissionRequest.month} ${submissionRequest.year}) does not match reporting month (${reportingMonth.month} ${reportingMonth.year})`
+      );
+    }
+
+    const submissionWindowStart = submissionRequest.requestDateTime;
+    const submissionWindowEnd = submissionRequest.windowEndDateTime;
+    Logger.log(`Using submission window: ${submissionWindowStart} to ${submissionWindowEnd}`);
+
     // Collect anonymous score data
-    const anonymousScores = collectAnonymousScoreData(monthName);
+    const anonymousScores = collectAnonymousScoreData(monthName, submissionWindowStart, submissionWindowEnd);
 
     if (anonymousScores.length === 0) {
       Logger.log('No scores found to publish.');
@@ -1184,9 +1201,11 @@ function publishAnonymousScoresToGoogleSheet() {
  * Collects anonymous score data from the current month's evaluation results.
  * Includes primary team and contribution details for each submitter.
  * @param {string} monthName - The reporting month name (e.g., "January 2025")
+ * @param {Date} submissionWindowStart - Start of submission window for the reporting month
+ * @param {Date} submissionWindowEnd - End of submission window for the reporting month
  * @returns {Array} Array of anonymous score objects
  */
-function collectAnonymousScoreData(monthName) {
+function collectAnonymousScoreData(monthName, submissionWindowStart, submissionWindowEnd) {
   Logger.log(`Collecting anonymous score data for ${monthName}.`);
 
   try {
@@ -1241,7 +1260,7 @@ function collectAnonymousScoreData(monthName) {
       let contributionDetails = '';
       if (submitterEmail) {
         try {
-          contributionDetails = getContributionDetailsByEmail(submitterEmail);
+          contributionDetails = getContributionDetailsByEmail(submitterEmail, submissionWindowStart, submissionWindowEnd);
           // Remove HTML tags for cleaner display in spreadsheet
           contributionDetails = stripHtmlTags(contributionDetails);
         } catch (error) {

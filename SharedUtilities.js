@@ -227,7 +227,7 @@ function normalizeEmail(email) {
 
 // Save the submission window start time (in PST)
 function setSubmissionWindowStart(time) {
-  const formattedTime = Utilities.formatDate(time, getProjectTimeZone(), 'yyyy-MM-dd HH:mm:ss z'); // Format the time
+  const formattedTime = Utilities.formatDate(time, getProjectTimeZone(), "yyyy-MM-dd'T'HH:mm:ssXXX"); // Format with timezone offset
   PropertiesService.getScriptProperties().setProperty('submissionWindowStart', formattedTime); // Save the formatted time
   Logger.log(`Submission window start time saved: ${formattedTime}`);
 }
@@ -261,7 +261,7 @@ function getSubmissionWindowTimes() {
 
 // Save the evaluation window start time (in PST)
 function setEvaluationWindowStart(time) {
-  const formattedTime = Utilities.formatDate(time, getProjectTimeZone(), 'yyyy-MM-dd HH:mm:ss z'); // Format the time
+  const formattedTime = Utilities.formatDate(time, getProjectTimeZone(), "yyyy-MM-dd'T'HH:mm:ssXXX"); // Format with timezone offset
   PropertiesService.getScriptProperties().setProperty('evaluationWindowStart', formattedTime); // Save the formatted time
   Logger.log(`Evaluation window start time saved: ${formattedTime}`);
 }
@@ -900,12 +900,13 @@ function logRequest(type, month, year, requestDateTime, windowEndDateTime) {
   }
 
   // Append the new request details
+  // Store dates in ISO 8601 format with explicit timezone offset
   requestLogSheet.appendRow([
     type,
     month,
     year,
-    Utilities.formatDate(requestDateTime, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss'),
-    Utilities.formatDate(windowEndDateTime, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss'),
+    Utilities.formatDate(requestDateTime, Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ssXXX"),
+    Utilities.formatDate(windowEndDateTime, Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ssXXX"),
   ]);
 
   Logger.log(`Logged ${type} request for ${month} ${year} in "Request Log" sheet.`);
