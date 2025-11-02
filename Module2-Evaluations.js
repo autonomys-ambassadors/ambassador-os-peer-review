@@ -351,7 +351,7 @@ function sendEvaluationRequests(reportingMonth) {
 
     // Calculate evaluation window deadline date
     const evaluationWindowStart = new Date();
-    const evaluationDeadline = new Date(evaluationWindowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000); // Adjust to milliseconds
+    const evaluationDeadline = new Date(evaluationWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES));
     const evaluationDeadlineDate = Utilities.formatDate(evaluationDeadline, 'UTC', 'MMMM dd, yyyy HH:mm:ss') + ' UTC';
     try {
       logRequest('Evaluation', reportingMonth.month, reportingMonth.year, evaluationWindowStart, evaluationDeadline);
@@ -430,7 +430,7 @@ function getContributionDetailsByEmail(email, submissionWindowStart = null, subm
       }
     }
     if (!submissionWindowEnd) {
-      submissionWindowEnd = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000);
+      submissionWindowEnd = new Date(submissionWindowStart.getTime() + minutesToMilliseconds(SUBMISSION_WINDOW_MINUTES));
     }
     Logger.log(`Submission window: ${submissionWindowStart} to ${submissionWindowEnd}`);
 
@@ -675,8 +675,7 @@ function processEvaluationResponse(e) {
     }
 
     // Retrieve assignments from Review Log and find expected submitters
-    const assignments = getReviewLogAssignments();
-    const allAssignments = getAllReviewLogAssignments(); // Get all assignments including supplemental
+    const allAssignments = getReviewLogAssignments(); // Get all assignments including supplemental
     const expectedSubmitters = [];
 
     // Check both original and supplemental assignments
@@ -946,7 +945,7 @@ function requestSupplementalEvaluations() {
 /**
  * Gets the list of submitters who have received fewer than 3 evaluations.
  * @param {Object} reportingMonth - The reporting month object
- * @returns {Array<Object>} - Array of objects with submitterEmail, submitterDiscord, and currentReviewCount
+ * @returns {Array<Object>} - Array of objects with submitterEmail, submitterDiscord, currentReviewCount, emptySlots, and emptySlotIndices
  */
 function getSubmittersNeedingSupplementalEvaluations(reportingMonth) {
   const scoresSpreadsheet = getScoresSpreadsheet();
@@ -976,14 +975,24 @@ function getSubmittersNeedingSupplementalEvaluations(reportingMonth) {
     const submitterDiscord = monthSheet.getRange(row, submitterCol).getValue();
     if (!submitterDiscord) continue;
 
-    // Count how many scores are filled
+    // Check which scores are filled
     const score1 = monthSheet.getRange(row, score1Col).getValue();
     const score2 = monthSheet.getRange(row, score2Col).getValue();
     const score3 = monthSheet.getRange(row, score3Col).getValue();
 
-    const reviewCount = [score1, score2, score3].filter((score) => typeof score === 'number' && !isNaN(score)).length;
+    const scores = [score1, score2, score3];
+    const emptySlotIndices = [];
 
-    if (reviewCount < 3) {
+    // Identify which specific slots are empty (1, 2, or 3)
+    scores.forEach((score, index) => {
+      if (!(typeof score === 'number' && !isNaN(score))) {
+        emptySlotIndices.push(index + 1); // 1-based indexing (1, 2, 3)
+      }
+    });
+
+    const reviewCount = 3 - emptySlotIndices.length;
+
+    if (emptySlotIndices.length > 0) {
       // Look up email from discord handle
       const lookupResult = lookupEmailAndDiscord(submitterDiscord);
       if (lookupResult) {
@@ -991,8 +1000,10 @@ function getSubmittersNeedingSupplementalEvaluations(reportingMonth) {
           submitterEmail: lookupResult.email,
           submitterDiscord: submitterDiscord,
           currentReviewCount: reviewCount,
+          emptySlots: emptySlotIndices.length,
+          emptySlotIndices: emptySlotIndices, // Array like [1, 3] if slots 1 and 3 are empty
         });
-        Logger.log(`Submitter ${submitterDiscord} has ${reviewCount} reviews, needs supplemental evaluations.`);
+        Logger.log(`Submitter ${submitterDiscord} has ${reviewCount} reviews, needs ${emptySlotIndices.length} supplemental evaluation(s) in slot(s): ${emptySlotIndices.join(', ')}`);
       }
     }
   }
@@ -1053,10 +1064,11 @@ function getNonResponders() {
 
 /**
  * Assigns supplemental evaluators to submitters, excluding original evaluators and non-responders.
+ * Only assigns the exact number of evaluators needed based on empty slots.
  * @param {Array<Object>} submittersNeedingReviews - Submitters needing supplemental evaluations
  * @param {Object} currentAssignments - Current assignments from Review Log
  * @param {Array<string>} nonResponders - List of non-responder emails
- * @returns {Array<Object>} - Array of supplemental assignments
+ * @returns {Array<Object>} - Array of supplemental assignments with emptySlotIndices
  */
 function assignSupplementalEvaluators(submittersNeedingReviews, currentAssignments, nonResponders) {
   const supplementalAssignments = [];
@@ -1064,7 +1076,7 @@ function assignSupplementalEvaluators(submittersNeedingReviews, currentAssignmen
   const normalizedNonResponders = nonResponders.map(normalizeEmail);
 
   submittersNeedingReviews.forEach((submitter) => {
-    const { submitterEmail, submitterDiscord, currentReviewCount } = submitter;
+    const { submitterEmail, submitterDiscord, emptySlots, emptySlotIndices } = submitter;
 
     // Get original evaluators for this submitter
     const originalEvaluators = (currentAssignments[submitterEmail] || []).map(normalizeEmail);
@@ -1077,18 +1089,18 @@ function assignSupplementalEvaluators(submittersNeedingReviews, currentAssignmen
         !normalizedNonResponders.includes(normalizeEmail(evaluator))
     );
 
-    if (availableEvaluators.length < 3) {
+    if (availableEvaluators.length < emptySlots) {
       Logger.log(
-        `Not enough available evaluators for ${submitterDiscord}. Available: ${availableEvaluators.length}, need 3.`
+        `Not enough available evaluators for ${submitterDiscord}. Available: ${availableEvaluators.length}, need ${emptySlots}.`
       );
-      alertAndLog(`Warning: Only ${availableEvaluators.length} evaluators available for ${submitterDiscord}`);
+      alertAndLog(`Warning: Only ${availableEvaluators.length} evaluators available for ${submitterDiscord} (needs ${emptySlots})`);
     }
 
-    // Randomly select 3 evaluators (or as many as available)
+    // Randomly select only the number of evaluators needed (based on empty slots)
     const selectedEvaluators = [];
     const shuffled = availableEvaluators.sort(() => 0.5 - Math.random());
 
-    for (let i = 0; i < Math.min(3, shuffled.length); i++) {
+    for (let i = 0; i < Math.min(emptySlots, shuffled.length); i++) {
       selectedEvaluators.push(shuffled[i]);
     }
 
@@ -1097,8 +1109,9 @@ function assignSupplementalEvaluators(submittersNeedingReviews, currentAssignmen
         submitterEmail,
         submitterDiscord,
         supplementalEvaluators: selectedEvaluators,
+        emptySlotIndices: emptySlotIndices, // Pass through for Monthly Sheet assignment
       });
-      Logger.log(`Assigned ${selectedEvaluators.length} supplemental evaluators to ${submitterDiscord}`);
+      Logger.log(`Assigned ${selectedEvaluators.length} supplemental evaluator(s) to ${submitterDiscord} for slot(s): ${emptySlotIndices.join(', ')}`);
     }
   });
 
@@ -1173,7 +1186,7 @@ function addSupplementalColumnsToReviewLog(supplementalAssignments, supplemental
  * @param {Date} supplementalWindowStart - The start time of the supplemental window
  */
 function sendSupplementalEvaluationRequests(supplementalAssignments, reportingMonth, supplementalWindowStart) {
-  const supplementalDeadline = new Date(supplementalWindowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000);
+  const supplementalDeadline = new Date(supplementalWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES));
   const supplementalDeadlineDate =
     Utilities.formatDate(supplementalDeadline, 'UTC', 'MMMM dd, yyyy HH:mm:ss') + ' UTC';
 
@@ -1211,158 +1224,6 @@ function sendSupplementalEvaluationRequests(supplementalAssignments, reportingMo
   });
 
   Logger.log('Supplemental evaluation requests sent.');
-}
-
-/**
- * Gets all assignments from Review Log including supplemental evaluator columns.
- * @returns {Object} - A map of submitter emails to a list of all evaluator emails (original + supplemental)
- */
-function getAllReviewLogAssignments() {
-  Logger.log('Fetching all submitter-evaluator assignments from Review Log (including supplemental).');
-
-  const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
-    REVIEW_LOG_SHEET_NAME
-  );
-
-  if (!reviewLogSheet) {
-    Logger.log('Error: Review Log sheet not found.');
-    return {};
-  }
-
-  const lastRow = reviewLogSheet.getLastRow();
-  const lastColumn = reviewLogSheet.getLastColumn();
-
-  if (lastRow < 2) {
-    Logger.log('No data found in Review Log sheet.');
-    return {};
-  }
-
-  // Get header row to determine column indices dynamically
-  const headers = reviewLogSheet.getRange(1, 1, 1, lastColumn).getValues()[0];
-  const submitterColIndex = getRequiredColumnIndexByName(reviewLogSheet, 'Submitter');
-
-  // Get all evaluator columns (Reviewer 1, Reviewer 2, Reviewer 3, and any ISO 8601 timestamp-based supplemental columns)
-  const evaluatorColIndices = [];
-  for (let i = 0; i < headers.length; i++) {
-    const header = headers[i];
-    // Match "Reviewer N" or ISO 8601 timestamp format "YYYY-MM-DDTHH:mm:ss±HH:MM"
-    if (
-      header &&
-      (header.toString().startsWith('Reviewer ') || /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(header.toString()))
-    ) {
-      evaluatorColIndices.push(i + 1); // Convert to 1-indexed
-    }
-  }
-
-  if (evaluatorColIndices.length === 0) {
-    Logger.log('Error: No evaluator columns found in Review Log sheet.');
-    return {};
-  }
-
-  // Fetch data for the entire sheet
-  const reviewData = reviewLogSheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
-
-  // Structure the data as { submitter: [evaluators] }
-  const assignments = {};
-  reviewData.forEach((row) => {
-    const submitterEmail = row[submitterColIndex - 1];
-    const evaluators = evaluatorColIndices.map((colIndex) => row[colIndex - 1]).filter((email) => email); // Collect all evaluators' emails
-    if (submitterEmail && evaluators.length > 0) {
-      assignments[submitterEmail] = evaluators;
-    }
-  });
-
-  return assignments;
-}
-
-/**
- * Checks if an evaluator is assigned as a supplemental evaluator for a specific submitter.
- * Returns the assignment information including the window start time parsed from the column header.
- * @param {string} submitterEmail - The submitter's email
- * @param {string} evaluatorEmail - The evaluator's email
- * @returns {Object|null} - Assignment object with windowStart, windowEnd, columnHeader, or null if not found
- */
-function getSupplementalAssignmentForSubmitterAndEvaluator(submitterEmail, evaluatorEmail) {
-  const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
-    REVIEW_LOG_SHEET_NAME
-  );
-
-  if (!reviewLogSheet) {
-    Logger.log('Error: Review Log sheet not found.');
-    return null;
-  }
-
-  const lastRow = reviewLogSheet.getLastRow();
-  const lastColumn = reviewLogSheet.getLastColumn();
-
-  if (lastRow < 2) {
-    Logger.log('No data found in Review Log sheet.');
-    return null;
-  }
-
-  // Get headers
-  const headers = reviewLogSheet.getRange(1, 1, 1, lastColumn).getValues()[0];
-  const submitterColIndex = getRequiredColumnIndexByName(reviewLogSheet, 'Submitter');
-
-  // Find supplemental columns (ISO 8601 timestamp headers like "2024-11-01T14:30:00-08:00")
-  const supplementalColumns = [];
-  for (let i = 0; i < headers.length; i++) {
-    const header = headers[i];
-    if (header && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(header.toString())) {
-      supplementalColumns.push({
-        colIndex: i + 1,
-        timestampStr: header.toString(),
-      });
-    }
-  }
-
-  if (supplementalColumns.length === 0) {
-    Logger.log('No supplemental columns found in Review Log.');
-    return null;
-  }
-
-  // Find the submitter's row
-  const reviewData = reviewLogSheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
-  let submitterRow = null;
-
-  for (let i = 0; i < reviewData.length; i++) {
-    if (normalizeEmail(reviewData[i][submitterColIndex - 1]) === normalizeEmail(submitterEmail)) {
-      submitterRow = i;
-      break;
-    }
-  }
-
-  if (submitterRow === null) {
-    Logger.log(`Submitter ${submitterEmail} not found in Review Log.`);
-    return null;
-  }
-
-  // Check if evaluator is in any supplemental column for this submitter
-  const rowData = reviewData[submitterRow];
-
-  for (const suppCol of supplementalColumns) {
-    const evaluatorInCell = rowData[suppCol.colIndex - 1];
-    if (evaluatorInCell && normalizeEmail(evaluatorInCell) === normalizeEmail(evaluatorEmail)) {
-      // Found the evaluator in a supplemental column
-      // Parse the timestamp from the header to get the window start time
-      const windowStart = new Date(suppCol.timestampStr);
-      const windowEnd = new Date(windowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000);
-
-      Logger.log(
-        `Found supplemental assignment: ${evaluatorEmail} for ${submitterEmail} in column ${suppCol.timestampStr}`
-      );
-      Logger.log(`Supplemental window: ${windowStart} to ${windowEnd}`);
-
-      return {
-        windowStart: windowStart,
-        windowEnd: windowEnd,
-        columnHeader: suppCol.timestampStr,
-      };
-    }
-  }
-
-  Logger.log(`Evaluator ${evaluatorEmail} not found in supplemental columns for ${submitterEmail}.`);
-  return null;
 }
 
 // This function attempts to find the closest match among expected Discord handles (in case of a typo)
@@ -1580,7 +1441,7 @@ function setupEvaluationTriggers(evaluationWindowStart) {
     Logger.log(`Evaluation start time set to: ${evalStartTime}`);
 
     // Calculate evaluation end time
-    const evaluationWindowEnd = new Date(evaluationWindowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000);
+    const evaluationWindowEnd = new Date(evaluationWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES));
     Logger.log(`Evaluation window is from ${evalStartTime} to ${evaluationWindowEnd}`);
 
     // Set up evaluation reminder trigger
@@ -1619,7 +1480,7 @@ function setupEvaluationReminderTrigger(evaluationWindowStart) {
 }
 
 /**
- * Function to reprocess all evaluation forms within the evaluation window
+ * Function to reprocess all evaluation forms within all evaluation windows (original + supplemental)
  */
 function batchProcessEvaluationResponses() {
   try {
@@ -1631,35 +1492,80 @@ function batchProcessEvaluationResponses() {
       return;
     }
 
-    const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
-    Logger.log(`Evaluation window: ${evaluationWindowStart} to ${evaluationWindowEnd}`);
+    // Get all evaluation windows (original + supplemental)
+    const allWindows = getAllEvaluationWindows();
+    Logger.log(`Processing responses from ${allWindows.length} evaluation window(s).`);
 
-    const formResponses = form.getResponses();
-    const filteredResponses = formResponses.filter((response) => {
-      const timestamp = new Date(response.getTimestamp());
-      return timestamp >= evaluationWindowStart && timestamp <= evaluationWindowEnd;
+    // Log all windows for debugging
+    allWindows.forEach((window, index) => {
+      Logger.log(`Window ${index + 1}: ${window.start} to ${window.end}`);
     });
 
-    Logger.log(`Total form responses to process: ${filteredResponses.length}`);
+    const formResponses = form.getResponses();
+    Logger.log(`Total form responses retrieved: ${formResponses.length}`);
+
+    // Filter responses by evaluation windows
+    const filteredResponses = [];
+    let rejectedCount = 0;
+
+    formResponses.forEach((response, index) => {
+      try {
+        const timestamp = response.getTimestamp();
+        const timestampDate = new Date(timestamp);
+
+        // Check if response falls within any evaluation window
+        const isInWindow = allWindows.some((window) => timestampDate >= window.start && timestampDate <= window.end);
+
+        if (isInWindow) {
+          filteredResponses.push(response);
+        } else {
+          rejectedCount++;
+        }
+      } catch (error) {
+        Logger.log(`Error filtering response ${index + 1}: ${error}`);
+        rejectedCount++;
+      }
+    });
+
+    Logger.log(`Total responses INCLUDED: ${filteredResponses.length}`);
+    Logger.log(`Total responses REJECTED: ${rejectedCount}`);
 
     const properties = PropertiesService.getScriptProperties();
     const lastProcessedIndex = parseInt(properties.getProperty('lastProcessedIndex') || '0', 10);
     const batchSize = 50; // Adjust batch size as needed
 
+    Logger.log(`Processing batch: Starting from index ${lastProcessedIndex}, batch size ${batchSize}`);
+
+    let processedCount = 0;
+    let errorCount = 0;
+
     for (let i = lastProcessedIndex; i < filteredResponses.length && i < lastProcessedIndex + batchSize; i++) {
-      const formResponse = filteredResponses[i];
-      const event = { response: formResponse };
-      processEvaluationResponse(event);
+      try {
+        const formResponse = filteredResponses[i];
+        const event = { response: formResponse };
+        processEvaluationResponse(event);
+        processedCount++;
+      } catch (error) {
+        errorCount++;
+        Logger.log(`Error processing response at index ${i}: ${error}`);
+      }
     }
+
+    Logger.log(`Batch processing summary: ${processedCount} responses processed successfully, ${errorCount} errors`);
 
     const newLastProcessedIndex = lastProcessedIndex + batchSize;
     if (newLastProcessedIndex < filteredResponses.length) {
       properties.setProperty('lastProcessedIndex', newLastProcessedIndex);
       ScriptApp.newTrigger('batchProcessEvaluationResponses').timeBased().after(1).create();
       Logger.log(`Processed batch. Next batch will start from index: ${newLastProcessedIndex}`);
+      Logger.log(`Progress: ${newLastProcessedIndex} / ${filteredResponses.length} responses processed`);
     } else {
       properties.deleteProperty('lastProcessedIndex');
       deleteBatchProcessingTriggers();
+      Logger.log('=== Batch Processing Completed ===');
+      Logger.log(`Total responses in all windows: ${filteredResponses.length}`);
+      Logger.log(`Total responses retrieved from form: ${formResponses.length}`);
+      Logger.log(`Total responses rejected (outside windows): ${rejectedCount}`);
       Logger.log('Batch processing of evaluation responses completed.');
     }
   } catch (error) {

@@ -1,3 +1,14 @@
+// ===== Time Conversion Utilities =====
+
+/**
+ * Converts minutes to milliseconds.
+ * @param {number} minutes - The number of minutes to convert
+ * @returns {number} The equivalent milliseconds
+ */
+function minutesToMilliseconds(minutes) {
+  return minutes * 60 * 1000;
+}
+
 // ===== Sheet Access Utilities =====
 // Centralized functions to access commonly used sheets across modules
 
@@ -255,7 +266,7 @@ function getSubmissionWindowTimes() {
     throw new Error('Evaluation window start time not found.');
   }
   const submissionWindowStart = new Date(submissionWindowStartStr);
-  const submissionWindowEnd = new Date(submissionWindowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000);
+  const submissionWindowEnd = new Date(submissionWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES));
   return { submissionWindowStart, submissionWindowEnd };
 }
 
@@ -272,8 +283,89 @@ function getEvaluationWindowTimes() {
     throw new Error('Evaluation window start time not found.');
   }
   const evaluationWindowStart = new Date(evaluationWindowStartStr);
-  const evaluationWindowEnd = new Date(evaluationWindowStart.getTime() + EVALUATION_WINDOW_MINUTES * 60 * 1000);
+  const evaluationWindowEnd = new Date(evaluationWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES));
   return { evaluationWindowStart, evaluationWindowEnd };
+}
+
+/**
+ * Gets all evaluation windows (original + supplemental).
+ * Supplemental windows are identified by timestamp headers in the Review Log sheet.
+ * @returns {Array<Object>} - Array of window objects with {start, end} dates
+ */
+function getAllEvaluationWindows() {
+  const windows = [];
+
+  Logger.log('=== Getting All Evaluation Windows ===');
+
+  // Get the original evaluation window
+  try {
+    const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
+    windows.push({ start: evaluationWindowStart, end: evaluationWindowEnd });
+    Logger.log(`Original evaluation window: ${evaluationWindowStart} to ${evaluationWindowEnd}`);
+  } catch (error) {
+    Logger.log(`Error getting original evaluation window: ${error}`);
+  }
+
+  // Get supplemental windows from Review Log column headers
+  try {
+    const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
+      REVIEW_LOG_SHEET_NAME
+    );
+
+    if (!reviewLogSheet) {
+      Logger.log('Review Log sheet not found. No supplemental windows to check.');
+      return windows;
+    }
+
+    const lastColumn = reviewLogSheet.getLastColumn();
+    const headerRow = reviewLogSheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+
+    // Track supplemental windows found (deduplicate by timestamp)
+    const supplementalTimestamps = new Set();
+
+    // Look for timestamp headers (ISO 8601 format) that indicate supplemental windows
+    headerRow.forEach((header) => {
+      if (!header) {
+        return; // Skip empty headers
+      }
+
+      const headerStr = header.toString();
+
+      if (isSupplementalColumnHeader(headerStr)) {
+        try {
+          const supplementalStart = new Date(headerStr);
+
+          if (isNaN(supplementalStart.getTime())) {
+            Logger.log(`ERROR: Failed to parse supplemental timestamp "${headerStr}"`);
+            return;
+          }
+
+          const timestampKey = supplementalStart.getTime();
+
+          if (supplementalTimestamps.has(timestampKey)) {
+            return; // Duplicate, skip silently
+          }
+
+          supplementalTimestamps.add(timestampKey);
+
+          const supplementalEnd = new Date(supplementalStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES));
+          windows.push({ start: supplementalStart, end: supplementalEnd });
+
+          Logger.log(`Supplemental evaluation window: ${supplementalStart} to ${supplementalEnd}`);
+        } catch (error) {
+          Logger.log(`ERROR parsing supplemental timestamp "${headerStr}": ${error}`);
+        }
+      }
+    });
+
+    Logger.log(`Total supplemental windows found: ${supplementalTimestamps.size}`);
+  } catch (error) {
+    Logger.log(`Error reading supplemental windows from Review Log: ${error}`);
+    Logger.log(`Stack trace: ${error.stack || 'Not available'}`);
+  }
+
+  Logger.log(`=== Total Evaluation Windows: ${windows.length} ===`);
+  return windows;
 }
 
 /**
@@ -363,8 +455,8 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
     return [];
   }
 
-  // Get the evaluation time window from the stored properties
-  const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
+  // Get all evaluation time windows (original + supplemental)
+  const allWindows = getAllEvaluationWindows();
 
   // Dynamically retrieve column indices using headers
   const evalEmailColumnIndex = getRequiredColumnIndexByName(
@@ -373,7 +465,7 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
   );
   const evalTimestampColumnIndex = getRequiredColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
-  // Extract valid responses within the evaluation time window
+  // Extract valid responses within any evaluation time window
   const validEvaluators = evaluationResponsesSheet
     .getRange(2, 1, lastRow - 1, evaluationResponsesSheet.getLastColumn())
     .getValues()
@@ -386,10 +478,13 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
         return false;
       }
 
-      const isWithinWindow = responseTimestamp >= evaluationWindowStart && responseTimestamp <= evaluationWindowEnd;
+      // Check if response falls within any evaluation window (original or supplemental)
+      const isWithinAnyWindow = allWindows.some(
+        (window) => responseTimestamp >= window.start && responseTimestamp <= window.end
+      );
 
-      if (!isWithinWindow) {
-        Logger.log(`Row ${index + 2}: Response outside evaluation time window.`);
+      if (!isWithinAnyWindow) {
+        Logger.log(`Row ${index + 2}: Response outside all evaluation time windows.`);
         return false;
       }
 
@@ -398,17 +493,18 @@ function getValidEvaluationEmails(evaluationResponsesSheet) {
     })
     .map((row) => row[evalEmailColumnIndex - 1]?.trim().toLowerCase()); // Extract evaluator email
 
-  Logger.log(`Valid evaluators (within time window): ${validEvaluators.join(', ')}`);
+  Logger.log(`Valid evaluators (within time windows): ${validEvaluators.join(', ')}`);
   return validEvaluators;
 }
 
 /**
  * Fetches and returns the submitter-evaluator assignments from the Review Log.
+ * Includes both original assignments (Reviewer 1-3) and supplemental assignments (ISO 8601 timestamp columns).
  * Dynamically determines column indices based on header names to avoid hardcoded indices.
  * @returns {Object} - A map of submitter emails to a list of evaluator emails.
  */
 function getReviewLogAssignments() {
-  Logger.log('Fetching submitter-evaluator assignments from Review Log.');
+  Logger.log('Fetching all submitter-evaluator assignments from Review Log (including supplemental).');
 
   const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
     REVIEW_LOG_SHEET_NAME
@@ -430,10 +526,19 @@ function getReviewLogAssignments() {
   // Get header row to determine column indices dynamically
   const headers = reviewLogSheet.getRange(1, 1, 1, lastColumn).getValues()[0];
   const submitterColIndex = getRequiredColumnIndexByName(reviewLogSheet, SUBMITTER_HANDLE_COLUMN_IN_MONTHLY_SCORE);
-  const evaluatorCols = ['Reviewer 1', 'Reviewer 2', 'Reviewer 3'].map((header) => headers.indexOf(header) + 1);
 
-  if (evaluatorCols.some((index) => index === 0)) {
-    Logger.log('Error: Required columns (Submitter or Reviewer columns) not found in Review Log sheet.');
+  // Get all evaluator columns (Reviewer 1, Reviewer 2, Reviewer 3, and any ISO 8601 timestamp-based supplemental columns)
+  const evaluatorColIndices = [];
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i];
+    // Match "Reviewer N" or ISO 8601 timestamp format
+    if (header && (header.toString().startsWith('Reviewer ') || isSupplementalColumnHeader(header))) {
+      evaluatorColIndices.push(i + 1); // Convert to 1-indexed
+    }
+  }
+
+  if (evaluatorColIndices.length === 0) {
+    Logger.log('Error: No evaluator columns found in Review Log sheet.');
     return {};
   }
 
@@ -444,12 +549,103 @@ function getReviewLogAssignments() {
   const assignments = {};
   reviewData.forEach((row) => {
     const submitterEmail = row[submitterColIndex - 1];
-    const evaluators = evaluatorCols.map((colIndex) => row[colIndex - 1]).filter((email) => email); // Collect evaluators' emails
-    if (submitterEmail) {
+    const evaluators = evaluatorColIndices.map((colIndex) => row[colIndex - 1]).filter((email) => email); // Collect all evaluators' emails
+    if (submitterEmail && evaluators.length > 0) {
       assignments[submitterEmail] = evaluators;
     }
   });
+
   return assignments;
+}
+
+/**
+ * Checks if an evaluator is assigned as a supplemental evaluator for a specific submitter.
+ * Returns the assignment information including the window start time parsed from the column header.
+ * @param {string} submitterEmail - The submitter's email
+ * @param {string} evaluatorEmail - The evaluator's email
+ * @returns {Object|null} - Assignment object with windowStart, windowEnd, columnHeader, or null if not found
+ */
+function getSupplementalAssignmentForSubmitterAndEvaluator(submitterEmail, evaluatorEmail) {
+  const reviewLogSheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
+    REVIEW_LOG_SHEET_NAME
+  );
+
+  if (!reviewLogSheet) {
+    Logger.log('Error: Review Log sheet not found.');
+    return null;
+  }
+
+  const lastRow = reviewLogSheet.getLastRow();
+  const lastColumn = reviewLogSheet.getLastColumn();
+
+  if (lastRow < 2) {
+    Logger.log('No data found in Review Log sheet.');
+    return null;
+  }
+
+  // Get headers
+  const headers = reviewLogSheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+  const submitterColIndex = getRequiredColumnIndexByName(reviewLogSheet, SUBMITTER_HANDLE_COLUMN_IN_MONTHLY_SCORE);
+
+  // Find supplemental columns (ISO 8601 timestamp headers)
+  const supplementalColumns = [];
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i];
+    if (isSupplementalColumnHeader(header)) {
+      supplementalColumns.push({
+        colIndex: i + 1,
+        timestampStr: header.toString(),
+      });
+    }
+  }
+
+  if (supplementalColumns.length === 0) {
+    Logger.log('No supplemental columns found in Review Log.');
+    return null;
+  }
+
+  // Find the submitter's row
+  const reviewData = reviewLogSheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
+  let submitterRow = null;
+
+  for (let i = 0; i < reviewData.length; i++) {
+    if (normalizeEmail(reviewData[i][submitterColIndex - 1]) === normalizeEmail(submitterEmail)) {
+      submitterRow = i;
+      break;
+    }
+  }
+
+  if (submitterRow === null) {
+    Logger.log(`Submitter ${submitterEmail} not found in Review Log.`);
+    return null;
+  }
+
+  // Check if evaluator is in any supplemental column for this submitter
+  const rowData = reviewData[submitterRow];
+
+  for (const suppCol of supplementalColumns) {
+    const evaluatorInCell = rowData[suppCol.colIndex - 1];
+    if (evaluatorInCell && normalizeEmail(evaluatorInCell) === normalizeEmail(evaluatorEmail)) {
+      // Found the evaluator in a supplemental column
+      // Parse the timestamp from the header to get the window start time
+      const windowStart = new Date(suppCol.timestampStr);
+      const windowEnd = new Date(windowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES));
+
+      Logger.log(
+        `Found supplemental assignment: ${evaluatorEmail} for ${submitterEmail} in column ${suppCol.timestampStr}`
+      );
+      Logger.log(`Supplemental window: ${windowStart} to ${windowEnd}`);
+
+      return {
+        windowStart: windowStart,
+        windowEnd: windowEnd,
+        columnHeader: suppCol.timestampStr,
+      };
+    }
+  }
+
+  Logger.log(`Evaluator ${evaluatorEmail} not found in supplemental columns for ${submitterEmail}.`);
+  return null;
 }
 
 /**
