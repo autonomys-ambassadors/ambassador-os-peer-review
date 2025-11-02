@@ -797,38 +797,42 @@ function processEvaluationResponse(e) {
     ];
 
     if (isSupplementalEvaluation) {
-      // For supplemental evaluations, find the first available slot where Score-[n] is empty
-      // Only use the first 3 slots (ignore if all 3 are already filled)
-      let filledSlots = 0;
-
+      // For supplemental evaluations, find which Amb-[n] column has this evaluator pre-assigned
+      // and validate they can write to that slot
       for (const { ambCol, scoreCol, remarksCol } of evaluatorColumns) {
+        const ambValue = monthSheet.getRange(row, ambCol).getValue();
         const scoreValue = monthSheet.getRange(row, scoreCol).getValue();
 
-        if (typeof scoreValue === 'number' && !isNaN(scoreValue)) {
-          filledSlots++;
-          continue; // This slot is already filled
+        // Check if this evaluator is assigned to this slot
+        if (ambValue === evaluatorDiscordHandle) {
+          // Validate that we're not overwriting someone else's completed score
+          if (typeof scoreValue === 'number' && !isNaN(scoreValue)) {
+            Logger.log(
+              `Warning: Supplemental evaluator ${evaluatorDiscordHandle} is trying to overwrite an existing score for ${submitterDiscordHandle}. This should not happen. Skipping.`
+            );
+            break;
+          }
+
+          // This is the correct slot for this evaluator - write the evaluation
+          monthSheet.getRange(row, scoreCol).setValue(grade);
+          monthSheet.getRange(row, remarksCol).setValue(remarks);
+
+          // Apply COLOR_LATE_EVALUATION to mark this as a late evaluation
+          monthSheet.getRange(row, ambCol).setBackground(COLOR_LATE_EVALUATION);
+          monthSheet.getRange(row, scoreCol).setBackground(COLOR_LATE_EVALUATION);
+          monthSheet.getRange(row, remarksCol).setBackground(COLOR_LATE_EVALUATION);
+
+          Logger.log(
+            `Supplemental evaluation processed: ${evaluatorDiscordHandle} evaluated ${submitterDiscordHandle}. Grade: ${grade}`
+          );
+          gradeUpdated = true;
+          break;
         }
-
-        // Found an empty slot - fill it with supplemental evaluation
-        monthSheet.getRange(row, ambCol).setValue(evaluatorDiscordHandle);
-        monthSheet.getRange(row, scoreCol).setValue(grade);
-        monthSheet.getRange(row, remarksCol).setValue(remarks);
-
-        // Apply COLOR_LATE_EVALUATION to mark this as a late evaluation
-        monthSheet.getRange(row, ambCol).setBackground(COLOR_LATE_EVALUATION);
-        monthSheet.getRange(row, scoreCol).setBackground(COLOR_LATE_EVALUATION);
-        monthSheet.getRange(row, remarksCol).setBackground(COLOR_LATE_EVALUATION);
-
-        Logger.log(
-          `Supplemental evaluation processed: Filled slot ${filledSlots + 1} for submitter ${submitterDiscordHandle} by evaluator ${evaluatorDiscordHandle}. Grade: ${grade}`
-        );
-        gradeUpdated = true;
-        break;
       }
 
       if (!gradeUpdated) {
         Logger.log(
-          `All 3 evaluation slots are already filled for submitter ${submitterDiscordHandle}. Supplemental evaluation from ${evaluatorDiscordHandle} will be ignored.`
+          `Supplemental evaluator ${evaluatorDiscordHandle} is not assigned to evaluate ${submitterDiscordHandle} in any Amb slot. Response ignored.`
         );
       }
     } else {
@@ -931,6 +935,9 @@ function requestSupplementalEvaluations() {
     // Add supplemental reviewer columns to Review Log with timestamp as header
     addSupplementalColumnsToReviewLog(supplementalAssignments, supplementalWindowStart);
 
+    // Assign supplemental evaluators to Monthly Score sheet in their designated slots
+    assignSupplementalEvaluatorsToMonthlySheet(supplementalAssignments, reportingMonth);
+
     // Send evaluation requests to supplemental evaluators
     sendSupplementalEvaluationRequests(supplementalAssignments, reportingMonth, supplementalWindowStart);
 
@@ -1013,45 +1020,104 @@ function getSubmittersNeedingSupplementalEvaluations(reportingMonth) {
 
 /**
  * Gets the list of evaluators who did not respond during the original evaluation window.
+ * Only checks the original 3 reviewer columns (Reviewer 1, 2, 3), ignoring supplemental assignments.
+ * Validates that evaluators actually evaluated someone they were assigned to.
  * @returns {Array<string>} - Array of evaluator emails who did not respond
  */
 function getNonResponders() {
   try {
-    const assignments = getReviewLogAssignments();
     const { evaluationWindowStart, evaluationWindowEnd } = getEvaluationWindowTimes();
 
-    // Get all evaluators who were assigned
+    // Get all evaluators who were assigned in the ORIGINAL 3 reviewer columns only
+    const registrySpreadsheet = getRegistrySpreadsheet();
+    const reviewLogSheet = registrySpreadsheet.getSheetByName(REVIEW_LOG_SHEET_NAME);
+
+    if (!reviewLogSheet) {
+      Logger.log('Error: Review Log sheet not found.');
+      return [];
+    }
+
+    // Find the column indices
+    const submitterCol = getRequiredColumnIndexByName(reviewLogSheet, 'Submitter');
+    const reviewer1Col = getRequiredColumnIndexByName(reviewLogSheet, 'Reviewer 1');
+    const reviewer2Col = getRequiredColumnIndexByName(reviewLogSheet, 'Reviewer 2');
+    const reviewer3Col = getRequiredColumnIndexByName(reviewLogSheet, 'Reviewer 3');
+
+    const lastRow = reviewLogSheet.getLastRow();
+    if (lastRow < 2) {
+      Logger.log('No assignments in Review Log.');
+      return [];
+    }
+
+    // Build a map of evaluator → assigned submitters
+    // evaluatorAssignments[evaluatorEmail] = [submitterEmail1, submitterEmail2, ...]
+    const evaluatorAssignments = {};
     const allAssignedEvaluators = new Set();
-    Object.values(assignments).forEach((evaluators) => {
-      evaluators.forEach((evaluator) => allAssignedEvaluators.add(normalizeEmail(evaluator)));
+
+    // Get all data from Review Log
+    const reviewLogData = reviewLogSheet.getRange(2, 1, lastRow - 1, reviewLogSheet.getLastColumn()).getValues();
+
+    reviewLogData.forEach((row) => {
+      const submitterEmail = row[submitterCol - 1];
+      const reviewers = [row[reviewer1Col - 1], row[reviewer2Col - 1], row[reviewer3Col - 1]];
+
+      reviewers.forEach((reviewerEmail) => {
+        if (reviewerEmail) {
+          const normalizedReviewer = normalizeEmail(reviewerEmail);
+          allAssignedEvaluators.add(normalizedReviewer);
+
+          if (!evaluatorAssignments[normalizedReviewer]) {
+            evaluatorAssignments[normalizedReviewer] = [];
+          }
+          evaluatorAssignments[normalizedReviewer].push(normalizeEmail(submitterEmail));
+        }
+      });
     });
 
-    // Get evaluators who responded
-    const evaluationResponsesSheet = getEvaluationFormResponseSheet();
-    const lastRow = evaluationResponsesSheet.getLastRow();
+    Logger.log(`Total original assigned evaluators: ${allAssignedEvaluators.size}`);
 
-    if (lastRow < 2) {
+    // Get evaluators who responded AND evaluated someone they were assigned to
+    const evaluationResponsesSheet = getEvaluationResponsesSheet();
+    const lastResponseRow = evaluationResponsesSheet.getLastRow();
+
+    if (lastResponseRow < 2) {
       // No responses at all, all assigned evaluators are non-responders
       return Array.from(allAssignedEvaluators);
     }
 
     const timestampCol = getRequiredColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
     const emailCol = getRequiredColumnIndexByName(evaluationResponsesSheet, EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN);
+    const handleCol = getRequiredColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_EVALUATION_HANDLE_COLUMN);
 
-    const responses = evaluationResponsesSheet.getRange(2, 1, lastRow - 1, evaluationResponsesSheet.getLastColumn()).getValues();
+    const responses = evaluationResponsesSheet.getRange(2, 1, lastResponseRow - 1, evaluationResponsesSheet.getLastColumn()).getValues();
 
     const responders = new Set();
     responses.forEach((row) => {
       const timestamp = new Date(row[timestampCol - 1]);
-      const email = normalizeEmail(row[emailCol - 1]);
+      const evaluatorEmail = normalizeEmail(row[emailCol - 1]);
+      const submitterDiscordHandle = String(row[handleCol - 1]).trim();
 
       // Check if response was within the original evaluation window
-      if (timestamp >= evaluationWindowStart && timestamp <= evaluationWindowEnd && email) {
-        responders.add(email);
+      if (timestamp >= evaluationWindowStart && timestamp <= evaluationWindowEnd && evaluatorEmail && submitterDiscordHandle) {
+        // Look up the submitter's email from their Discord handle
+        const submitterLookup = lookupEmailAndDiscord(submitterDiscordHandle);
+        if (submitterLookup) {
+          const submitterEmail = normalizeEmail(submitterLookup.email);
+
+          // Check if this evaluator was assigned to evaluate this submitter
+          const assignedSubmitters = evaluatorAssignments[evaluatorEmail] || [];
+          if (assignedSubmitters.includes(submitterEmail)) {
+            // Valid response - they evaluated someone they were assigned to
+            responders.add(evaluatorEmail);
+            Logger.log(`Valid response: ${evaluatorEmail} evaluated ${submitterDiscordHandle} (assigned)`);
+          } else {
+            Logger.log(`Invalid response: ${evaluatorEmail} evaluated ${submitterDiscordHandle} (NOT assigned - ignored)`);
+          }
+        }
       }
     });
 
-    // Non-responders are those assigned but didn't respond
+    // Non-responders are those assigned but didn't respond (or responded to wrong person)
     const nonResponders = Array.from(allAssignedEvaluators).filter((evaluator) => !responders.has(evaluator));
 
     Logger.log(`Non-responders: ${nonResponders.join(', ')}`);
@@ -1121,6 +1187,7 @@ function assignSupplementalEvaluators(submittersNeedingReviews, currentAssignmen
 /**
  * Adds supplemental reviewer columns to the Review Log with ISO 8601 timestamp as the header.
  * The timestamp in the header is used to calculate the evaluation window on-demand.
+ * Adds only the number of columns needed based on the maximum number of evaluators assigned to any submitter.
  * @param {Array<Object>} supplementalAssignments - Supplemental assignments to add
  * @param {Date} supplementalWindowStart - The start time of the supplemental window
  */
@@ -1143,10 +1210,14 @@ function addSupplementalColumnsToReviewLog(supplementalAssignments, supplemental
     "yyyy-MM-dd'T'HH:mm:ssXXX"
   );
 
-  // Add 3 new columns for this supplemental round with the same timestamp
+  // Calculate the maximum number of supplemental evaluators assigned to any single submitter
+  const maxEvaluatorsNeeded = Math.max(...supplementalAssignments.map(a => a.supplementalEvaluators.length));
+  Logger.log(`Adding ${maxEvaluatorsNeeded} supplemental column(s) to Review Log.`);
+
+  // Add columns for this supplemental round with the same timestamp
   const newColumnStart = lastColumn + 1;
 
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < maxEvaluatorsNeeded; i++) {
     const colIndex = newColumnStart + i;
     reviewLogSheet.getRange(1, colIndex).setValue(timestampHeader);
   }
@@ -1172,11 +1243,87 @@ function addSupplementalColumnsToReviewLog(supplementalAssignments, supplemental
       supplementalEvaluators.forEach((evaluator, index) => {
         reviewLogSheet.getRange(submitterRow, newColumnStart + index).setValue(evaluator);
       });
-      Logger.log(`Added supplemental evaluators to Review Log for ${submitterEmail}`);
+      Logger.log(`Added ${supplementalEvaluators.length} supplemental evaluator(s) to Review Log for ${submitterEmail}`);
     }
   });
 
   Logger.log('Supplemental columns added to Review Log.');
+}
+
+/**
+ * Assigns supplemental evaluators to their designated slots in the Monthly Score sheet.
+ * Maps evaluators to specific Amb-[n] columns based on which slots are empty.
+ * Preserves existing scores from original evaluators who responded.
+ * @param {Array<Object>} supplementalAssignments - Supplemental assignments with emptySlotIndices
+ * @param {Object} reportingMonth - The reporting month object
+ */
+function assignSupplementalEvaluatorsToMonthlySheet(supplementalAssignments, reportingMonth) {
+  try {
+    Logger.log('Assigning supplemental evaluators to Monthly Score sheet.');
+
+    const scoresSpreadsheet = getScoresSpreadsheet();
+    const monthSheet = scoresSpreadsheet.getSheetByName(reportingMonth.monthName);
+
+    if (!monthSheet) {
+      Logger.log(`Month sheet ${reportingMonth.monthName} not found.`);
+      return;
+    }
+
+    // Get column indices
+    const submitterCol = getRequiredColumnIndexByName(monthSheet, 'Submitter');
+    const amb1Col = getRequiredColumnIndexByName(monthSheet, 'Amb-1');
+    const amb2Col = getRequiredColumnIndexByName(monthSheet, 'Amb-2');
+    const amb3Col = getRequiredColumnIndexByName(monthSheet, 'Amb-3');
+
+    const ambColumns = [amb1Col, amb2Col, amb3Col];
+
+    supplementalAssignments.forEach((assignment) => {
+      const { submitterEmail, submitterDiscord, supplementalEvaluators, emptySlotIndices } = assignment;
+
+      // Find the row for this submitter
+      const lastRow = monthSheet.getLastRow();
+      const submitterData = monthSheet.getRange(2, submitterCol, lastRow - 1, 1).getValues();
+
+      let submitterRow = null;
+      for (let i = 0; i < submitterData.length; i++) {
+        if (submitterData[i][0] && submitterData[i][0].toLowerCase() === submitterDiscord.toLowerCase()) {
+          submitterRow = i + 2; // Offset for header row
+          break;
+        }
+      }
+
+      if (!submitterRow) {
+        Logger.log(`Submitter ${submitterDiscord} not found in month sheet.`);
+        return;
+      }
+
+      // Map supplemental evaluators to their specific empty slots
+      supplementalEvaluators.forEach((evaluatorEmail, index) => {
+        if (index >= emptySlotIndices.length) {
+          Logger.log(`Warning: More evaluators than empty slots for ${submitterDiscord}`);
+          return;
+        }
+
+        const slotNumber = emptySlotIndices[index]; // 1, 2, or 3
+        const ambColIndex = ambColumns[slotNumber - 1]; // Convert to 0-based index
+
+        // Get evaluator's Discord handle
+        const evaluatorDiscordHandle = lookupEmailAndDiscord(evaluatorEmail)?.discordHandle;
+        if (!evaluatorDiscordHandle) {
+          Logger.log(`Discord handle not found for evaluator: ${evaluatorEmail}`);
+          return;
+        }
+
+        // Write evaluator Discord handle to the Amb-[n] column
+        monthSheet.getRange(submitterRow, ambColIndex).setValue(evaluatorDiscordHandle);
+        Logger.log(`Assigned ${evaluatorDiscordHandle} to ${submitterDiscord} in Amb-${slotNumber} (column ${ambColIndex})`);
+      });
+    });
+
+    Logger.log('Supplemental evaluators assigned to Monthly Score sheet.');
+  } catch (error) {
+    Logger.log(`Error in assignSupplementalEvaluatorsToMonthlySheet: ${error}`);
+  }
 }
 
 /**
