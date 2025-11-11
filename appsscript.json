@@ -8,5 +8,8 @@
     "https://www.googleapis.com/auth/forms",
     "https://www.googleapis.com/auth/script.scriptapp",
     "https://www.googleapis.com/auth/script.container.ui"
-  ]
+  ],
+  "executionApi": {
+    "access": "MYSELF"
+  }
 }

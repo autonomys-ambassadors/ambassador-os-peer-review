@@ -13,6 +13,7 @@ function setJonathanVariables() {
   AMBASSADORS_SCORES_SPREADSHEET_ID = '1ZzU1egqRtQCvCH8flvLUr9gmVyIyYH2AejGaEH5gvc8'; // "Ambassadors' Scores"
   AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1EQRSjcvODXQpHzK2g4XNd6imCTsx2m7vTwe-HeNNjjM'; // "Ambassador Submission Responses"
   EVALUATION_RESPONSES_SPREADSHEET_ID = '12S_qu-Uiq0BupN_Z6lVHJ76YaVM5NG0JQY_IC-gFWmg'; // "Ambassador Evaluations' Responses"
+  ANONYMOUS_SCORES_SPREADSHEET_ID = '1JBQRzpqC6dv4iiP1TJdpRkGeVHCX9P-HXNuxnC2OSqI'; // Your anonymous scores spreadsheet ID
 
   // Google Forms
   SUBMISSION_FORM_ID = '1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE'; // ID for Submission form
@@ -51,8 +52,14 @@ Please add links to your contributions during the month`;
   SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points Last 6 Months';
   SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';
   SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
-  GRADE_SUBMITTER_COLUMN = 'Submitter';
+  SUBMITTER_HANDLE_COLUMN_IN_MONTHLY_SCORE = 'Submitter';
   GRADE_FINAL_SCORE_COLUMN = 'Final Score';
+  GRADE_EVAL_1_SCORE_COLUMN = 'Score-1';
+  GRADE_EVAL_1_REMARKS_COLUMN = 'Remarks-1';
+  GRADE_EVAL_2_SCORE_COLUMN = 'Score-2';
+  GRADE_EVAL_2_REMARKS_COLUMN = 'Remarks-2';
+  GRADE_EVAL_3_SCORE_COLUMN = 'Score-3';
+  GRADE_EVAL_3_REMARKS_COLUMN = 'Remarks-3';
   CRT_SELECTION_DATE_COLUMN = 'Selection Date';
   SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
   SCORE_CRT_REFERRAL_HISTORY_COLUMN = 'CRT Referral History';
@@ -86,5 +93,4 @@ Please add links to your contributions during the month`;
   COLOR_MISSED_EVALUATION = '#d9d9d9';
   COLOR_EXPELLED = '#d36a6a';
   COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
-  //COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
 }

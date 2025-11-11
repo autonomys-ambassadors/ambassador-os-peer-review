@@ -19,6 +19,7 @@ function setYourNameVariables() {
   AMBASSADORS_SCORES_SPREADSHEET_ID = 'your-scores-spreadsheet-id';
   AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = 'your-submissions-spreadsheet-id';
   EVALUATION_RESPONSES_SPREADSHEET_ID = 'your-evaluation-responses-spreadsheet-id';
+  ANONYMOUS_SCORES_SPREADSHEET_ID = 'your-anonymous-scores-spreadsheet-id';
   FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Adjust sheet name as needed
   EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Adjust sheet name as needed
 
@@ -57,8 +58,14 @@ Please add links to your contributions during the month`;
   SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points';
   SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';
   SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
-  GRADE_SUBMITTER_COLUMN = 'Submitter';
+  SUBMITTER_HANDLE_COLUMN_IN_MONTHLY_SCORE = 'Submitter';
   GRADE_FINAL_SCORE_COLUMN = 'Final Score';
+  GRADE_EVAL_1_SCORE_COLUMN = 'Score-1';
+  GRADE_EVAL_1_REMARKS_COLUMN = 'Remarks-1';
+  GRADE_EVAL_2_SCORE_COLUMN = 'Score-2';
+  GRADE_EVAL_2_REMARKS_COLUMN = 'Remarks-2';
+  GRADE_EVAL_3_SCORE_COLUMN = 'Score-3';
+  GRADE_EVAL_3_REMARKS_COLUMN = 'Remarks-3';
   CRT_SELECTION_DATE_COLUMN = 'Selection Date';
   SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
   SCORE_CRT_REFERRAL_HISTORY_COLUMN = 'CRT Referral History';
