@@ -1211,7 +1211,7 @@ function addSupplementalColumnsToReviewLog(supplementalAssignments, supplemental
   );
 
   // Calculate the maximum number of supplemental evaluators assigned to any single submitter
-  const maxEvaluatorsNeeded = Math.max(...supplementalAssignments.map(a => a.supplementalEvaluators.length));
+  const maxEvaluatorsNeeded = Math.max(0, ...supplementalAssignments.map(a => a.supplementalEvaluators.length));
   Logger.log(`Adding ${maxEvaluatorsNeeded} supplemental column(s) to Review Log.`);
 
   // Add columns for this supplemental round with the same timestamp
