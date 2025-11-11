@@ -176,7 +176,10 @@ function copyScoresToOverallSheet(finalScores, overallScoreSheet, monthColumnInd
     .flat();
 
   finalScores.forEach(({ handle, score }) => {
-    const rowIndex = overallHandles.findIndex((overallHandle) => overallHandle === handle) + 2;
+    const rowIndex =
+      overallHandles.findIndex(
+        (overallHandle) => normalizeDiscordHandle(overallHandle) === normalizeDiscordHandle(handle)
+      ) + 2;
     if (rowIndex > 1 && score !== '') {
       overallScoreSheet.getRange(rowIndex, monthColumnIndex).setValue(score);
       Logger.log(`Copied score for handle ${handle} to row ${rowIndex} in Overall score sheet.`);
@@ -347,7 +350,7 @@ function initializePenaltyCalculationData() {
     .filter((row) => isActiveAmbassador(row, registryEmailColumn, registryStatusColumn))
     .map((row) => ({
       email: normalizeEmail(row[registryEmailColumn]),
-      discordHandle: row[registryDiscordColumn]?.trim().toLowerCase(),
+      discordHandle: normalizeDiscordHandle(row[registryDiscordColumn]),
     }));
 
   Logger.log(`Filtered ambassadors: ${ambassadorData.length} valid rows`);
@@ -793,7 +796,8 @@ function findRegistryRowByDiscordHandle(registrySheet, discordHandle, registryDi
     .getRange(COMPLIANCE_FIRST_DATA_ROW, registryDiscordHandleColIndex, registrySheet.getLastRow() - 1, 1)
     .getValues();
 
-  const rowIndex = registryData.findIndex((regRow) => regRow[0] === discordHandle);
+  const normalizedDiscordHandle = normalizeDiscordHandle(discordHandle);
+  const rowIndex = registryData.findIndex((regRow) => normalizeDiscordHandle(regRow[0]) === normalizedDiscordHandle);
   return rowIndex >= 0 ? rowIndex + 2 : 0; // +2 to adjust for headers and 0-based index
 }
 
@@ -1260,7 +1264,11 @@ function collectAnonymousScoreData(monthName, submissionWindowStart, submissionW
       let contributionDetails = '';
       if (submitterEmail) {
         try {
-          contributionDetails = getContributionDetailsByEmail(submitterEmail, submissionWindowStart, submissionWindowEnd);
+          contributionDetails = getContributionDetailsByEmail(
+            submitterEmail,
+            submissionWindowStart,
+            submissionWindowEnd
+          );
           // Remove HTML tags for cleaner display in spreadsheet
           contributionDetails = stripHtmlTags(contributionDetails);
         } catch (error) {

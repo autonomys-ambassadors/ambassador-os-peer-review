@@ -234,6 +234,20 @@ function normalizeEmail(email) {
   return trimmedEmail;
 }
 
+/**
+ * Normalizes a Discord handle to a consistent format.
+ * - Converts to lowercase.
+ * - Trims whitespace.
+ * @param {string} discordHandle - The Discord handle to normalize.
+ * @returns {string} The normalized Discord handle, or empty string if input is invalid.
+ */
+function normalizeDiscordHandle(discordHandle) {
+  if (!discordHandle || typeof discordHandle !== 'string') {
+    return '';
+  }
+  return discordHandle.trim().toLowerCase();
+}
+
 //     Submission/Evaluation WINDOW TIME SET/GET
 
 // Save the submission window start time (in PST)
@@ -946,7 +960,8 @@ function findRowByDiscordHandle(discordHandle) {
     .getValues()
     .flat(); // Assuming Discord handle is in the first column
 
-  const rowIndex = handlesColumn.findIndex((handle) => handle === discordHandle);
+  const normalizedDiscordHandle = normalizeDiscordHandle(discordHandle);
+  const rowIndex = handlesColumn.findIndex((handle) => normalizeDiscordHandle(handle) === normalizedDiscordHandle);
 
   // Since findIndex returns 0-based index, we add 2 to get the actual row in the sheet (1-based index, plus header row).
   return rowIndex !== -1 ? rowIndex + 2 : null;
@@ -1227,11 +1242,11 @@ function lookupEmailAndDiscord(identifier) {
   const emailCol = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN) - 1;
   const discordCol = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN) - 1;
   const registryData = registrySheet.getDataRange().getValues();
-  identifier = (identifier || '').toString().trim().toLowerCase();
+  const normalizedIdentifier = normalizeEmail(identifier) || normalizeDiscordHandle(identifier);
   for (const row of registryData) {
-    const email = (row[emailCol] || '').toString().trim().toLowerCase();
-    const discordHandle = (row[discordCol] || '').toString().trim().toLowerCase();
-    if (email === identifier || discordHandle === identifier) {
+    const email = normalizeEmail(row[emailCol]);
+    const discordHandle = normalizeDiscordHandle(row[discordCol]);
+    if (email === normalizedIdentifier || discordHandle === normalizedIdentifier) {
       return { email, discordHandle };
     }
   }

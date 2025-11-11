@@ -351,7 +351,9 @@ function sendEvaluationRequests(reportingMonth) {
 
     // Calculate evaluation window deadline date
     const evaluationWindowStart = new Date();
-    const evaluationDeadline = new Date(evaluationWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES));
+    const evaluationDeadline = new Date(
+      evaluationWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES)
+    );
     const evaluationDeadlineDate = Utilities.formatDate(evaluationDeadline, 'UTC', 'MMMM dd, yyyy HH:mm:ss') + ' UTC';
     try {
       logRequest('Evaluation', reportingMonth.month, reportingMonth.year, evaluationWindowStart, evaluationDeadline);
@@ -430,7 +432,9 @@ function getContributionDetailsByEmail(email, submissionWindowStart = null, subm
       }
     }
     if (!submissionWindowEnd) {
-      submissionWindowEnd = new Date(submissionWindowStart.getTime() + minutesToMilliseconds(SUBMISSION_WINDOW_MINUTES));
+      submissionWindowEnd = new Date(
+        submissionWindowStart.getTime() + minutesToMilliseconds(SUBMISSION_WINDOW_MINUTES)
+      );
     }
     Logger.log(`Submission window: ${submissionWindowStart} to ${submissionWindowEnd}`);
 
@@ -763,7 +767,10 @@ function processEvaluationResponse(e) {
       .getValues();
     let row = null;
     for (let i = 0; i < submitterRows.length; i++) {
-      if (submitterRows[i][0] && submitterRows[i][0].toLowerCase() === submitterDiscordHandle.toLowerCase()) {
+      if (
+        submitterRows[i][0] &&
+        normalizeDiscordHandle(submitterRows[i][0]) === normalizeDiscordHandle(submitterDiscordHandle)
+      ) {
         row = i + 2; // Offset for header row
         break;
       }
@@ -804,7 +811,7 @@ function processEvaluationResponse(e) {
         const scoreValue = monthSheet.getRange(row, scoreCol).getValue();
 
         // Check if this evaluator is assigned to this slot
-        if (ambValue === evaluatorDiscordHandle) {
+        if (normalizeDiscordHandle(ambValue) === normalizeDiscordHandle(evaluatorDiscordHandle)) {
           // Validate that we're not overwriting someone else's completed score
           if (typeof scoreValue === 'number' && !isNaN(scoreValue)) {
             Logger.log(
@@ -839,7 +846,7 @@ function processEvaluationResponse(e) {
       // For regular evaluations, match evaluator to their assigned column
       for (const { ambCol, scoreCol, remarksCol } of evaluatorColumns) {
         const cellValue = monthSheet.getRange(row, ambCol).getValue();
-        if (cellValue === evaluatorDiscordHandle) {
+        if (normalizeDiscordHandle(cellValue) === normalizeDiscordHandle(evaluatorDiscordHandle)) {
           monthSheet.getRange(row, scoreCol).setValue(grade);
           monthSheet.getRange(row, remarksCol).setValue(remarks);
           Logger.log(
@@ -894,7 +901,11 @@ function requestSupplementalEvaluations() {
 
     // Confirm with user
     const confirmationMessage = `This will request supplemental evaluations for ${reportingMonth.monthName}. Continue?`;
-    const userConfirmed = promptAndLog('Confirm Supplemental Evaluation Request', confirmationMessage, ButtonSet.YES_NO);
+    const userConfirmed = promptAndLog(
+      'Confirm Supplemental Evaluation Request',
+      confirmationMessage,
+      ButtonSet.YES_NO
+    );
 
     if (userConfirmed !== ButtonResponse.YES) {
       Logger.log('User cancelled supplemental evaluation request.');
@@ -941,7 +952,9 @@ function requestSupplementalEvaluations() {
     // Send evaluation requests to supplemental evaluators
     sendSupplementalEvaluationRequests(supplementalAssignments, reportingMonth, supplementalWindowStart);
 
-    alertAndLog(`Supplemental evaluation requests sent successfully for ${supplementalAssignments.length} submitter(s).`);
+    alertAndLog(
+      `Supplemental evaluation requests sent successfully for ${supplementalAssignments.length} submitter(s).`
+    );
     Logger.log('requestSupplementalEvaluations completed.');
   } catch (error) {
     alertAndLog(`Error in requestSupplementalEvaluations: ${error.message}`);
@@ -1010,7 +1023,9 @@ function getSubmittersNeedingSupplementalEvaluations(reportingMonth) {
           emptySlots: emptySlotIndices.length,
           emptySlotIndices: emptySlotIndices, // Array like [1, 3] if slots 1 and 3 are empty
         });
-        Logger.log(`Submitter ${submitterDiscord} has ${reviewCount} reviews, needs ${emptySlotIndices.length} supplemental evaluation(s) in slot(s): ${emptySlotIndices.join(', ')}`);
+        Logger.log(
+          `Submitter ${submitterDiscord} has ${reviewCount} reviews, needs ${emptySlotIndices.length} supplemental evaluation(s) in slot(s): ${emptySlotIndices.join(', ')}`
+        );
       }
     }
   }
@@ -1089,7 +1104,9 @@ function getNonResponders() {
     const emailCol = getRequiredColumnIndexByName(evaluationResponsesSheet, EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN);
     const handleCol = getRequiredColumnIndexByName(evaluationResponsesSheet, GOOGLE_FORM_EVALUATION_HANDLE_COLUMN);
 
-    const responses = evaluationResponsesSheet.getRange(2, 1, lastResponseRow - 1, evaluationResponsesSheet.getLastColumn()).getValues();
+    const responses = evaluationResponsesSheet
+      .getRange(2, 1, lastResponseRow - 1, evaluationResponsesSheet.getLastColumn())
+      .getValues();
 
     const responders = new Set();
     responses.forEach((row) => {
@@ -1098,7 +1115,12 @@ function getNonResponders() {
       const submitterDiscordHandle = String(row[handleCol - 1]).trim();
 
       // Check if response was within the original evaluation window
-      if (timestamp >= evaluationWindowStart && timestamp <= evaluationWindowEnd && evaluatorEmail && submitterDiscordHandle) {
+      if (
+        timestamp >= evaluationWindowStart &&
+        timestamp <= evaluationWindowEnd &&
+        evaluatorEmail &&
+        submitterDiscordHandle
+      ) {
         // Look up the submitter's email from their Discord handle
         const submitterLookup = lookupEmailAndDiscord(submitterDiscordHandle);
         if (submitterLookup) {
@@ -1111,7 +1133,9 @@ function getNonResponders() {
             responders.add(evaluatorEmail);
             Logger.log(`Valid response: ${evaluatorEmail} evaluated ${submitterDiscordHandle} (assigned)`);
           } else {
-            Logger.log(`Invalid response: ${evaluatorEmail} evaluated ${submitterDiscordHandle} (NOT assigned - ignored)`);
+            Logger.log(
+              `Invalid response: ${evaluatorEmail} evaluated ${submitterDiscordHandle} (NOT assigned - ignored)`
+            );
           }
         }
       }
@@ -1159,7 +1183,9 @@ function assignSupplementalEvaluators(submittersNeedingReviews, currentAssignmen
       Logger.log(
         `Not enough available evaluators for ${submitterDiscord}. Available: ${availableEvaluators.length}, need ${emptySlots}.`
       );
-      alertAndLog(`Warning: Only ${availableEvaluators.length} evaluators available for ${submitterDiscord} (needs ${emptySlots})`);
+      alertAndLog(
+        `Warning: Only ${availableEvaluators.length} evaluators available for ${submitterDiscord} (needs ${emptySlots})`
+      );
     }
 
     // Randomly select only the number of evaluators needed (based on empty slots)
@@ -1177,7 +1203,9 @@ function assignSupplementalEvaluators(submittersNeedingReviews, currentAssignmen
         supplementalEvaluators: selectedEvaluators,
         emptySlotIndices: emptySlotIndices, // Pass through for Monthly Sheet assignment
       });
-      Logger.log(`Assigned ${selectedEvaluators.length} supplemental evaluator(s) to ${submitterDiscord} for slot(s): ${emptySlotIndices.join(', ')}`);
+      Logger.log(
+        `Assigned ${selectedEvaluators.length} supplemental evaluator(s) to ${submitterDiscord} for slot(s): ${emptySlotIndices.join(', ')}`
+      );
     }
   });
 
@@ -1211,7 +1239,7 @@ function addSupplementalColumnsToReviewLog(supplementalAssignments, supplemental
   );
 
   // Calculate the maximum number of supplemental evaluators assigned to any single submitter
-  const maxEvaluatorsNeeded = Math.max(0, ...supplementalAssignments.map(a => a.supplementalEvaluators.length));
+  const maxEvaluatorsNeeded = Math.max(0, ...supplementalAssignments.map((a) => a.supplementalEvaluators.length));
   Logger.log(`Adding ${maxEvaluatorsNeeded} supplemental column(s) to Review Log.`);
 
   // Add columns for this supplemental round with the same timestamp
@@ -1243,7 +1271,9 @@ function addSupplementalColumnsToReviewLog(supplementalAssignments, supplemental
       supplementalEvaluators.forEach((evaluator, index) => {
         reviewLogSheet.getRange(submitterRow, newColumnStart + index).setValue(evaluator);
       });
-      Logger.log(`Added ${supplementalEvaluators.length} supplemental evaluator(s) to Review Log for ${submitterEmail}`);
+      Logger.log(
+        `Added ${supplementalEvaluators.length} supplemental evaluator(s) to Review Log for ${submitterEmail}`
+      );
     }
   });
 
@@ -1286,7 +1316,10 @@ function assignSupplementalEvaluatorsToMonthlySheet(supplementalAssignments, rep
 
       let submitterRow = null;
       for (let i = 0; i < submitterData.length; i++) {
-        if (submitterData[i][0] && submitterData[i][0].toLowerCase() === submitterDiscord.toLowerCase()) {
+        if (
+          submitterData[i][0] &&
+          normalizeDiscordHandle(submitterData[i][0]) === normalizeDiscordHandle(submitterDiscord)
+        ) {
           submitterRow = i + 2; // Offset for header row
           break;
         }
@@ -1316,7 +1349,9 @@ function assignSupplementalEvaluatorsToMonthlySheet(supplementalAssignments, rep
 
         // Write evaluator Discord handle to the Amb-[n] column
         monthSheet.getRange(submitterRow, ambColIndex).setValue(evaluatorDiscordHandle);
-        Logger.log(`Assigned ${evaluatorDiscordHandle} to ${submitterDiscord} in Amb-${slotNumber} (column ${ambColIndex})`);
+        Logger.log(
+          `Assigned ${evaluatorDiscordHandle} to ${submitterDiscord} in Amb-${slotNumber} (column ${ambColIndex})`
+        );
       });
     });
 
@@ -1333,9 +1368,10 @@ function assignSupplementalEvaluatorsToMonthlySheet(supplementalAssignments, rep
  * @param {Date} supplementalWindowStart - The start time of the supplemental window
  */
 function sendSupplementalEvaluationRequests(supplementalAssignments, reportingMonth, supplementalWindowStart) {
-  const supplementalDeadline = new Date(supplementalWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES));
-  const supplementalDeadlineDate =
-    Utilities.formatDate(supplementalDeadline, 'UTC', 'MMMM dd, yyyy HH:mm:ss') + ' UTC';
+  const supplementalDeadline = new Date(
+    supplementalWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES)
+  );
+  const supplementalDeadlineDate = Utilities.formatDate(supplementalDeadline, 'UTC', 'MMMM dd, yyyy HH:mm:ss') + ' UTC';
 
   supplementalAssignments.forEach((assignment) => {
     const { submitterEmail, submitterDiscord, supplementalEvaluators } = assignment;
@@ -1382,11 +1418,11 @@ function sendSupplementalEvaluationRequests(supplementalAssignments, reportingMo
  * @return {string|null} - The best-matching handle or null if no match is found.
  */
 function bruteforceDiscordHandle(providedHandle, expectedHandles) {
-  providedHandle = providedHandle.toLowerCase();
+  providedHandle = normalizeDiscordHandle(providedHandle);
 
   // Step 1: Check for an exact match
   for (let handle of expectedHandles) {
-    if (providedHandle === handle.toLowerCase()) {
+    if (providedHandle === normalizeDiscordHandle(handle)) {
       return handle;
     }
   }
@@ -1396,7 +1432,7 @@ function bruteforceDiscordHandle(providedHandle, expectedHandles) {
   let foundSingleCharDifference = false;
 
   for (let handle of expectedHandles) {
-    if (isSingleCharDifference(providedHandle, handle.toLowerCase())) {
+    if (isSingleCharDifference(providedHandle, normalizeDiscordHandle(handle))) {
       bestMatch = handle;
       foundSingleCharDifference = true;
       break;
@@ -1517,7 +1553,6 @@ function sendReminderEmailsToUniqueEvaluators(nonRespondents) {
     const registryEmailColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN);
     const registryDiscordColIndex = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
 
-
     nonRespondents.forEach((evaluatorEmail) => {
       // Skip ambassadors who are not eligible (marked as 'Expelled' or not found)
       if (!eligibleEmails.map(normalizeEmail).includes(normalizeEmail(evaluatorEmail))) {
@@ -1588,7 +1623,9 @@ function setupEvaluationTriggers(evaluationWindowStart) {
     Logger.log(`Evaluation start time set to: ${evalStartTime}`);
 
     // Calculate evaluation end time
-    const evaluationWindowEnd = new Date(evaluationWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES));
+    const evaluationWindowEnd = new Date(
+      evaluationWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES)
+    );
     Logger.log(`Evaluation window is from ${evalStartTime} to ${evaluationWindowEnd}`);
 
     // Set up evaluation reminder trigger
