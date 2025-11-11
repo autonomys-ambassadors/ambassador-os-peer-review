@@ -266,7 +266,9 @@ function getSubmissionWindowTimes() {
     throw new Error('Evaluation window start time not found.');
   }
   const submissionWindowStart = new Date(submissionWindowStartStr);
-  const submissionWindowEnd = new Date(submissionWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES));
+  const submissionWindowEnd = new Date(
+    submissionWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES)
+  );
   return { submissionWindowStart, submissionWindowEnd };
 }
 
@@ -283,7 +285,9 @@ function getEvaluationWindowTimes() {
     throw new Error('Evaluation window start time not found.');
   }
   const evaluationWindowStart = new Date(evaluationWindowStartStr);
-  const evaluationWindowEnd = new Date(evaluationWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES));
+  const evaluationWindowEnd = new Date(
+    evaluationWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES)
+  );
   return { evaluationWindowStart, evaluationWindowEnd };
 }
 
@@ -348,7 +352,9 @@ function getAllEvaluationWindows() {
 
           supplementalTimestamps.add(timestampKey);
 
-          const supplementalEnd = new Date(supplementalStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES));
+          const supplementalEnd = new Date(
+            supplementalStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES)
+          );
           windows.push({ start: supplementalStart, end: supplementalEnd });
 
           Logger.log(`Supplemental evaluation window: ${supplementalStart} to ${supplementalEnd}`);
@@ -525,7 +531,7 @@ function getReviewLogAssignments() {
 
   // Get header row to determine column indices dynamically
   const headers = reviewLogSheet.getRange(1, 1, 1, lastColumn).getValues()[0];
-  const submitterColIndex = getRequiredColumnIndexByName(reviewLogSheet, SUBMITTER_HANDLE_COLUMN_IN_MONTHLY_SCORE);
+  const submitterColIndex = getRequiredColumnIndexByName(reviewLogSheet, SUBMITTER_HANDLE_COLUMN_IN_REVIEW_LOG);
 
   // Get all evaluator columns (Reviewer 1, Reviewer 2, Reviewer 3, and any ISO 8601 timestamp-based supplemental columns)
   const evaluatorColIndices = [];
@@ -585,7 +591,7 @@ function getSupplementalAssignmentForSubmitterAndEvaluator(submitterEmail, evalu
 
   // Get headers
   const headers = reviewLogSheet.getRange(1, 1, 1, lastColumn).getValues()[0];
-  const submitterColIndex = getRequiredColumnIndexByName(reviewLogSheet, SUBMITTER_HANDLE_COLUMN_IN_MONTHLY_SCORE);
+  const submitterColIndex = getRequiredColumnIndexByName(reviewLogSheet, SUBMITTER_HANDLE_COLUMN_IN_REVIEW_LOG);
 
   // Find supplemental columns (ISO 8601 timestamp headers)
   const supplementalColumns = [];
