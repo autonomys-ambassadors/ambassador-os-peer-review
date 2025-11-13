@@ -36,6 +36,7 @@ function onOpen() {
   ui.createMenu('Ambassador Program')
     .addItem('Request Submissions', 'requestMonthlySubmissions') // Request Submissions
     .addItem('Request Evaluations', 'requestEvaluationsModule') // Request Evaluations
+    .addItem('Request Supplemental Evaluations', 'requestSupplementalEvaluations') // Request Supplemental Evaluations
     .addItem('Compliance Audit', 'runComplianceAudit') // Process Scores and Penalties
     .addItem('Notify Upcoming Peer Review', 'notifyUpcomingPeerReview') // Peer Review notifications
     .addItem('Select CRT members', 'selectCRTMembers') // CRT

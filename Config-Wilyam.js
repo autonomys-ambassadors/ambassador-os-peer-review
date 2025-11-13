@@ -55,6 +55,7 @@ Please add links your contributions during the month `;
   SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';
   SCORE_MAX_6M_PP_COLUMN = 'Max 6-Month PP';
   SUBMITTER_HANDLE_COLUMN_IN_MONTHLY_SCORE = 'Submitter';
+  SUBMITTER_HANDLE_COLUMN_IN_REVIEW_LOG = 'Submitter';
   GRADE_FINAL_SCORE_COLUMN = 'Final Score';
   GRADE_EVAL_1_SCORE_COLUMN = 'Score-1';
   GRADE_EVAL_1_REMARKS_COLUMN = 'Remarks-1';
@@ -91,7 +92,6 @@ Please add links your contributions during the month `;
   COLOR_MISSED_EVALUATION = '#d9d9d9';
   COLOR_EXPELLED = '#d36a6a';
   COLOR_MISSED_SUBM_AND_EVAL = '#ea9999';
-
 
   //COLOR_OLD_MISSED_SUBMISSION = '#ead1dc';
 

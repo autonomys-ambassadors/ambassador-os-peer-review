@@ -102,7 +102,7 @@ function requestSubmissionsModule(month, year) {
 
   // Calculate the exact deadline date based on submission window
   const submissionWindowStart = new Date();
-  const submissionDeadline = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000); // Convert minutes to milliseconds
+  const submissionDeadline = new Date(submissionWindowStart.getTime() + minutesToMilliseconds(SUBMISSION_WINDOW_MINUTES));
   const submissionDeadlineDate = Utilities.formatDate(submissionDeadline, 'UTC', 'MMMM dd, yyyy HH:mm:ss') + ' UTC';
 
   eligibleEmails.forEach((row) => {
@@ -188,7 +188,7 @@ function checkNonRespondents() {
 
   // Calculate submission window start and end times
   const submissionWindowStart = new Date(submissionWindowStartStr);
-  const submissionWindowEnd = new Date(submissionWindowStart.getTime() + SUBMISSION_WINDOW_MINUTES * 60 * 1000);
+  const submissionWindowEnd = new Date(submissionWindowStart.getTime() + minutesToMilliseconds(SUBMISSION_WINDOW_MINUTES));
 
   // Open Registry and Form Responses sheets
   const registrySheet = getRegistrySheet();

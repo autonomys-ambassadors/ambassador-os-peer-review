@@ -138,3 +138,23 @@ const PrimaryTeamResponsibilities = {
       Develop transparent systems and processes to implement the Bylaws,<br>
       Administer processes and evaluate adherence to Ambassador Rights and Obligations`,
 };
+
+// ===== Pattern Constants =====
+
+/**
+ * ISO 8601 timestamp pattern used to identify supplemental evaluation window columns.
+ * Format: YYYY-MM-DDTHH:mm:ss±HH:MM (e.g., "2024-11-01T14:30:00-08:00")
+ * This pattern is used in Review Log column headers to mark supplemental evaluation windows.
+ * All supplemental column headers are created with this full format including timezone offset.
+ */
+const ISO_8601_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/;
+
+/**
+ * Tests if a string matches the ISO 8601 timestamp pattern for supplemental columns.
+ * @param {string} str - The string to test
+ * @returns {boolean} - True if the string matches the pattern
+ */
+function isSupplementalColumnHeader(str) {
+  if (!str) return false;
+  return ISO_8601_TIMESTAMP_PATTERN.test(str.toString());
+}
