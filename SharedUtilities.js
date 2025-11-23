@@ -39,6 +39,14 @@ function getCRTSheet() {
 }
 
 /**
+ * Gets the CRT Log sheet from the Ambassador Registry spreadsheet.
+ * @returns {Sheet} The CRT Log sheet
+ */
+function getCRTLogSheet() {
+  return SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(CRT_LOG_SHEET_NAME);
+}
+
+/**
  * Gets the Ambassadors Scores spreadsheet.
  * @returns {Spreadsheet} The Ambassadors Scores spreadsheet
  */
@@ -699,6 +707,60 @@ function getEligibleAmbassadorsEmails() {
   } catch (error) {
     Logger.log(`Error in getEligibleAmbassadorsEmails: ${error}`);
     return [];
+  }
+}
+
+/**
+ * Checks if an ambassador has an unresolved CRT complaint.
+ * An unresolved complaint is one where the Resolution Date column is empty.
+ * @param {string} email - The ambassador's email address to check
+ * @returns {boolean} True if the ambassador has an unresolved CRT complaint, false otherwise
+ */
+function hasUnresolvedCRTComplaint(email) {
+  try {
+    const crtLogSheet = getCRTLogSheet();
+    if (!crtLogSheet) {
+      Logger.log('CRT Log sheet not found.');
+      return false;
+    }
+
+    // Get column indices
+    const emailColIndex = getColumnIndexByName(crtLogSheet, CRT_LOG_EMAIL_COLUMN);
+    const resolutionDateColIndex = getColumnIndexByName(crtLogSheet, CRT_LOG_RESOLUTION_DATE_COLUMN);
+
+    // If columns don't exist, return false
+    if (emailColIndex === -1 || resolutionDateColIndex === -1) {
+      Logger.log('CRT Log sheet missing required columns.');
+      return false;
+    }
+
+    // Get all data (skip header row)
+    const lastRow = crtLogSheet.getLastRow();
+    if (lastRow < 2) {
+      // No data rows
+      return false;
+    }
+
+    const crtLogData = crtLogSheet.getRange(2, 1, lastRow - 1, crtLogSheet.getLastColumn()).getValues();
+
+    // Normalize the email we're searching for
+    const normalizedSearchEmail = normalizeEmail(email);
+
+    // Check if any row has matching email and empty resolution date
+    for (let i = 0; i < crtLogData.length; i++) {
+      const rowEmail = normalizeEmail(crtLogData[i][emailColIndex - 1]);
+      const resolutionDate = crtLogData[i][resolutionDateColIndex - 1];
+
+      if (rowEmail === normalizedSearchEmail && (!resolutionDate || resolutionDate === '')) {
+        Logger.log(`Unresolved CRT complaint found for ${email}`);
+        return true;
+      }
+    }
+
+    return false;
+  } catch (error) {
+    Logger.log(`Error in hasUnresolvedCRTComplaint for ${email}: ${error}`);
+    return false; // On error, don't block the ambassador
   }
 }
 

@@ -1136,6 +1136,34 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
     Logger.log(
       `Sent inadequate contribution notification to ${ambassadorEmail} (${ambassadorDiscord})${monthsInfo}, CC: ${SPONSOR_EMAIL}`
     );
+
+    // Log the referral to the CRT Log sheet
+    try {
+      const crtLogSheet = getCRTLogSheet();
+      if (crtLogSheet) {
+        const emailColIndex = getColumnIndexByName(crtLogSheet, CRT_LOG_EMAIL_COLUMN);
+        const discordColIndex = getColumnIndexByName(crtLogSheet, CRT_LOG_DISCORD_HANDLE_COLUMN);
+        const referralDateColIndex = getColumnIndexByName(crtLogSheet, CRT_LOG_REFERRAL_DATE_COLUMN);
+
+        if (emailColIndex !== -1 && discordColIndex !== -1 && referralDateColIndex !== -1) {
+          const referralDate = Utilities.formatDate(new Date(), getProjectTimeZone(), 'yyyy-MM-dd');
+          const lastRow = crtLogSheet.getLastRow();
+
+          // Append new row with referral data
+          crtLogSheet.getRange(lastRow + 1, emailColIndex).setValue(ambassadorEmail);
+          crtLogSheet.getRange(lastRow + 1, discordColIndex).setValue(ambassadorDiscord);
+          crtLogSheet.getRange(lastRow + 1, referralDateColIndex).setValue(referralDate);
+
+          Logger.log(`Added CRT referral to CRT Log for ${ambassadorEmail} on ${referralDate}`);
+        } else {
+          Logger.log('CRT Log sheet missing required columns. Skipping CRT Log entry.');
+        }
+      } else {
+        Logger.log('CRT Log sheet not found. Skipping CRT Log entry.');
+      }
+    } catch (logError) {
+      Logger.log(`Error logging to CRT Log sheet: ${logError}`);
+    }
   } catch (e) {
     Logger.log('Error in referInadequateContributionToCRT: ' + e);
   }
