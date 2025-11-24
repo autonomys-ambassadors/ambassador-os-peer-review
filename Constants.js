@@ -139,6 +139,20 @@ const PrimaryTeamResponsibilities = {
       Administer processes and evaluate adherence to Ambassador Rights and Obligations`,
 };
 
+// ===== Notion Team Mapping =====
+
+/**
+ * Maps Notion team names to Google Sheet team names.
+ * Used during Notion sync to ensure consistent team naming in the registry.
+ */
+const NOTION_TO_SHEET_TEAM_MAPPING = {
+  Governance: 'governance',
+  'Onboarding & Growth': 'onboarding',
+  'Education & Content': 'content',
+  'Support & Engineering': 'support',
+  Engagement: 'engagement',
+};
+
 // ===== Pattern Constants =====
 
 /**

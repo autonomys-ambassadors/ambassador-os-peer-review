@@ -1,14 +1,26 @@
 function syncRegistryColumnsToOverallScore() {
   const expectedRegistryHeaders = [
+    'Number (Unique ID)',
     'Ambassador Id',
     'Ambassador Email Address',
     'Ambassador Discord Handle',
     'Primary Team',
+    'Secondary Team',
     'Ambassador Status',
+    'Start Date',
   ];
 
   try {
     Logger.log('Starting synchronization of columns between "Registry" and "Overall score".');
+
+    // Sync with Notion FIRST before any other processing
+    try {
+      syncRegistryWithNotion();
+      Logger.log('Notion sync completed successfully.');
+    } catch (error) {
+      alertAndLog(`CRITICAL: Notion sync failed - stopping process: ${error.message}`);
+      throw error;
+    }
 
     // Opening Registry and Overall score sheets
     const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(
