@@ -1,13 +1,13 @@
 function syncRegistryColumnsToOverallScore() {
   const expectedRegistryHeaders = [
-    'Number (Unique ID)',
-    'Ambassador Id',
-    'Ambassador Email Address',
-    'Ambassador Discord Handle',
-    'Primary Team',
-    'Secondary Team',
-    'Ambassador Status',
-    'Start Date',
+    NOTION_NUMBER_COLUMN,
+    AMBASSADOR_ID_COLUMN,
+    AMBASSADOR_EMAIL_COLUMN,
+    AMBASSADOR_DISCORD_HANDLE_COLUMN,
+    AMBASSADOR_PRIMARY_TEAM_COLUMN,
+    REGISTRY_SECONDARY_TEAM_COLUMN,
+    AMBASSADOR_STATUS_COLUMN,
+    REGISTRY_START_DATE_COLUMN,
   ];
 
   try {
