@@ -145,7 +145,6 @@ function parseNotionResponse(response) {
       const props = page.properties;
 
       const ambassador = {
-        notionId: page.id,
         number: getNotionPropertyValue(props[NOTION_NUMBER_COLUMN], 'number'),
         email: getNotionPropertyValue(props[NOTION_EMAIL_COLUMN], 'email'),
         discord: getNotionPropertyValue(props[NOTION_DISCORD_COLUMN], 'rich_text'),
@@ -278,12 +277,12 @@ function syncAmbassadorFromNotion(notionRecord, registrySheet, columnIndices, ro
   let wasUpdated = false;
   const discordHandle = notionRecord.discord || 'Unknown';
 
-  // Update Notion ID if column exists
-  if (columnIndices.notionId > 0) {
+  // Update Notion ID (Number from Notion) if column exists
+  if (columnIndices.notionId > 0 && notionRecord.number) {
     const currentNotionId = registrySheet.getRange(rowIndex, columnIndices.notionId).getValue();
-    if (currentNotionId !== notionRecord.notionId) {
-      registrySheet.getRange(rowIndex, columnIndices.notionId).setValue(notionRecord.notionId);
-      Logger.log(`Updated Notion ID for ${discordHandle}: ${currentNotionId} → ${notionRecord.notionId}`);
+    if (String(currentNotionId) !== String(notionRecord.number)) {
+      registrySheet.getRange(rowIndex, columnIndices.notionId).setValue(notionRecord.number);
+      Logger.log(`Updated Notion ID for ${discordHandle}: ${currentNotionId} → ${notionRecord.number}`);
       wasUpdated = true;
     }
   }
@@ -408,9 +407,9 @@ function addNewAmbassadorRow(notionRecord, registrySheet, columnIndices) {
   const mappedPrimaryTeam = mapNotionTeamToSheet(notionRecord.primaryTeam);
   const mappedSecondaryTeam = mapNotionTeamToSheet(notionRecord.secondaryTeam);
 
-  // Set Notion ID if column exists
-  if (columnIndices.notionId > 0) {
-    registrySheet.getRange(newRowIndex, columnIndices.notionId).setValue(notionRecord.notionId);
+  // Set Notion ID (Number from Notion) if column exists
+  if (columnIndices.notionId > 0 && notionRecord.number) {
+    registrySheet.getRange(newRowIndex, columnIndices.notionId).setValue(notionRecord.number);
   }
 
   // Set Number (Unique ID) - generate from email if not provided
