@@ -46,7 +46,7 @@ function syncRegistryWithNotion() {
         // Find matching row in registry
         const rowIndex = findMatchingRegistryRow(notionRecord, registryData, columnIndices);
 
-        if (status === 'Inactive') {
+        if (status === AMBASSADOR_STATUS_INACTIVE) {
           // Handle inactive ambassadors (mark as expelled if not already)
           const wasExpelled = handleInactiveAmbassador(notionRecord, registrySheet, columnIndices, rowIndex);
           if (wasExpelled) expelledCount++;
@@ -312,7 +312,7 @@ function syncAmbassadorFromNotion(notionRecord, registrySheet, columnIndices, ro
   const mappedPrimaryTeam = mapNotionTeamToSheet(notionRecord.primaryTeam);
   if (mappedPrimaryTeam) {
     const currentPrimaryTeam = registrySheet.getRange(rowIndex, columnIndices.primaryTeam).getValue();
-    if (currentPrimaryTeam !== mappedPrimaryTeam && currentPrimaryTeam !== 'expelled') {
+    if (currentPrimaryTeam !== mappedPrimaryTeam && currentPrimaryTeam !== TEAM_VALUE_EXPELLED) {
       registrySheet.getRange(rowIndex, columnIndices.primaryTeam).setValue(mappedPrimaryTeam);
       Logger.log(`Updated Primary Team for ${discordHandle}: ${currentPrimaryTeam} → ${mappedPrimaryTeam}`);
       wasUpdated = true;
@@ -371,9 +371,9 @@ function handleInactiveAmbassador(notionRecord, registrySheet, columnIndices, ro
   // Check current primary team
   const currentPrimaryTeam = registrySheet.getRange(rowIndex, columnIndices.primaryTeam).getValue();
 
-  if (currentPrimaryTeam !== 'expelled') {
+  if (currentPrimaryTeam !== TEAM_VALUE_EXPELLED) {
     // Mark as expelled
-    registrySheet.getRange(rowIndex, columnIndices.primaryTeam).setValue('expelled');
+    registrySheet.getRange(rowIndex, columnIndices.primaryTeam).setValue(TEAM_VALUE_EXPELLED);
 
     // Append to status column
     const currentStatus = registrySheet.getRange(rowIndex, columnIndices.status).getValue() || '';
@@ -424,7 +424,7 @@ function addNewAmbassadorRow(notionRecord, registrySheet, columnIndices) {
   registrySheet.getRange(newRowIndex, columnIndices.discord).setValue(notionRecord.discord || '');
 
   // Set Status
-  registrySheet.getRange(newRowIndex, columnIndices.status).setValue('Active');
+  registrySheet.getRange(newRowIndex, columnIndices.status).setValue(AMBASSADOR_STATUS_ACTIVE);
 
   // Set Primary Team (or empty string if null)
   registrySheet.getRange(newRowIndex, columnIndices.primaryTeam).setValue(mappedPrimaryTeam || '');

@@ -139,6 +139,16 @@ const PrimaryTeamResponsibilities = {
       Administer processes and evaluate adherence to Ambassador Rights and Obligations`,
 };
 
+// ===== Ambassador Status Values =====
+
+/**
+ * Standard status values used in the Registry sheet.
+ * These values are used to track ambassador lifecycle and eligibility.
+ */
+const AMBASSADOR_STATUS_ACTIVE = 'Active';
+const AMBASSADOR_STATUS_INACTIVE = 'Inactive';
+const TEAM_VALUE_EXPELLED = 'expelled';
+
 // ===== Notion Team Mapping =====
 
 /**
