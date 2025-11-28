@@ -202,15 +202,7 @@ function getNotionPropertyValue(property, type) {
 function mapNotionTeamToSheet(notionTeam) {
   if (!notionTeam) return '';
 
-  const mapping = {
-    Governance: 'governance',
-    'Onboarding & Growth': 'onboarding',
-    'Education & Content': 'content',
-    'Support & Engineering': 'support',
-    Engagement: 'engagement',
-  };
-
-  return mapping[notionTeam] || notionTeam;
+  return NOTION_TO_SHEET_TEAM_MAPPING[notionTeam] || notionTeam;
 }
 
 /**
@@ -248,7 +240,10 @@ function findMatchingRegistryRow(notionRecord, registryData, columnIndices) {
     const row = registryData[i];
 
     // Try match by Number (Unique ID)
-    if (notionRecord.number && row[columnIndices.number - 1] == notionRecord.number) {
+    if (
+      notionRecord.number &&
+      String(row[columnIndices.number - 1]) === String(notionRecord.number)
+    ) {
       Logger.log(`Matched by Number: ${notionRecord.number} at row ${i + 1}`);
       return i + 1;
     }
