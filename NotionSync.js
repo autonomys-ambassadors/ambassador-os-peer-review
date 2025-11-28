@@ -42,14 +42,30 @@ function syncRegistryWithNotion() {
       try {
         const discordHandle = notionRecord.discord || 'Unknown';
         const status = notionRecord.status;
+        const number = notionRecord.number;
 
         // Find matching row in registry
         const rowIndex = findMatchingRegistryRow(notionRecord, registryData, columnIndices);
 
-        if (status === AMBASSADOR_STATUS_INACTIVE) {
-          // Handle inactive ambassadors (mark as expelled if not already)
-          const wasExpelled = handleInactiveAmbassador(notionRecord, registrySheet, columnIndices, rowIndex);
-          if (wasExpelled) expelledCount++;
+        // Check if status is Inactive (case-insensitive)
+        const isInactive = status && status.toLowerCase() === AMBASSADOR_STATUS_INACTIVE.toLowerCase();
+
+        if (isInactive) {
+          // Handle inactive ambassadors
+          Logger.log(`Processing inactive ambassador: ${discordHandle} (status: ${status})`);
+          
+          if (rowIndex === -1) {
+            // Don't add new inactive ambassadors
+            Logger.log(`Inactive ambassador not in registry, skipping: ${discordHandle}`);
+          } else {
+            // Update their data first (Notion ID, email, etc.)
+            const wasUpdated = syncAmbassadorFromNotion(notionRecord, registrySheet, columnIndices, rowIndex);
+            if (wasUpdated) updatedCount++;
+            
+            // Then mark as expelled if not already
+            const wasExpelled = handleInactiveAmbassador(notionRecord, registrySheet, columnIndices, rowIndex);
+            if (wasExpelled) expelledCount++;
+          }
         } else {
           // Sync active ambassadors
           if (rowIndex === -1) {
@@ -164,15 +180,17 @@ function parseNotionResponse(response) {
     return ambassadors;
   }
 
-  response.results.forEach((page) => {
+  response.results.forEach((page, index) => {
     try {
       const props = page.properties;
 
+
+
       const ambassador = {
-        number: getNotionPropertyValue(props[NOTION_NUMBER_COLUMN], 'number'),
+        number: getNotionPropertyValue(props[NOTION_NUMBER_COLUMN], 'title'),
         email: getNotionPropertyValue(props[NOTION_EMAIL_COLUMN], 'email'),
         discord: getNotionPropertyValue(props[NOTION_DISCORD_COLUMN], 'rich_text'),
-        status: getNotionPropertyValue(props[NOTION_STATUS_COLUMN], 'select'),
+        status: getNotionPropertyValue(props[NOTION_STATUS_COLUMN], 'status'),
         primaryTeam: getNotionPropertyValue(props[NOTION_PRIMARY_TEAM_COLUMN], 'select'),
         secondaryTeam: getNotionPropertyValue(props[NOTION_SECONDARY_TEAM_COLUMN], 'select'),
         startDate: getNotionPropertyValue(props[NOTION_START_DATE_COLUMN], 'date'),
@@ -190,7 +208,7 @@ function parseNotionResponse(response) {
 /**
  * Extracts value from Notion property based on its type.
  * @param {Object} property - Notion property object
- * @param {string} type - Property type (number, email, rich_text, select, date)
+ * @param {string} type - Property type (number, email, rich_text, select, status, title, date)
  * @returns {*} Extracted value or null
  */
 function getNotionPropertyValue(property, type) {
@@ -206,6 +224,10 @@ function getNotionPropertyValue(property, type) {
         return property.rich_text && property.rich_text[0] ? property.rich_text[0].plain_text : null;
       case 'select':
         return property.select ? property.select.name : null;
+      case 'status':
+        return property.status ? property.status.name : null;
+      case 'title':
+        return property.title && property.title[0] ? property.title[0].plain_text : null;
       case 'date':
         return property.date ? property.date.start : null;
       default:
