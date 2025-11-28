@@ -93,35 +93,59 @@ function getNotionApiKey() {
 
 /**
  * Fetches all ambassador records from Notion database.
+ * Handles pagination to retrieve all records beyond the 100-item limit.
  * @param {string} apiKey - Notion API key
  * @returns {Array} Array of ambassador objects
  */
 function fetchNotionAmbassadors(apiKey) {
   const url = `https://api.notion.com/v1/databases/${NOTION_DATABASE_ID}/query`;
-
-  const options = {
-    method: 'post',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Notion-Version': '2022-06-28',
-      'Content-Type': 'application/json',
-    },
-    payload: JSON.stringify({
-      page_size: 100,
-    }),
-    muteHttpExceptions: true,
-  };
+  let allAmbassadors = [];
+  let hasMore = true;
+  let startCursor = undefined;
 
   try {
-    const response = UrlFetchApp.fetch(url, options);
-    const statusCode = response.getResponseCode();
+    while (hasMore) {
+      const payload = {
+        page_size: 100,
+      };
 
-    if (statusCode !== 200) {
-      throw new Error(`Notion API returned status ${statusCode}: ${response.getContentText()}`);
+      // Add cursor for pagination if we have one
+      if (startCursor) {
+        payload.start_cursor = startCursor;
+      }
+
+      const options = {
+        method: 'post',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Notion-Version': '2022-06-28',
+          'Content-Type': 'application/json',
+        },
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true,
+      };
+
+      const response = UrlFetchApp.fetch(url, options);
+      const statusCode = response.getResponseCode();
+
+      if (statusCode !== 200) {
+        throw new Error(`Notion API returned status ${statusCode}: ${response.getContentText()}`);
+      }
+
+      const data = JSON.parse(response.getContentText());
+      const ambassadors = parseNotionResponse(data);
+      allAmbassadors = allAmbassadors.concat(ambassadors);
+
+      // Check if there are more pages
+      hasMore = data.has_more;
+      startCursor = data.next_cursor;
+
+      if (hasMore) {
+        Logger.log(`Fetched ${allAmbassadors.length} ambassadors so far, fetching more...`);
+      }
     }
 
-    const data = JSON.parse(response.getContentText());
-    return parseNotionResponse(data);
+    return allAmbassadors;
   } catch (error) {
     throw new Error(`Failed to fetch from Notion API: ${error.message}`);
   }
