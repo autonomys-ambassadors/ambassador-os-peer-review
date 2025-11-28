@@ -293,38 +293,45 @@ function syncAmbassadorFromNotion(notionRecord, registrySheet, columnIndices, ro
     }
   }
 
-  // Update Email
-  const currentEmail = registrySheet.getRange(rowIndex, columnIndices.email).getValue();
-  if (normalizeEmail(currentEmail) !== normalizeEmail(notionRecord.email)) {
-    registrySheet.getRange(rowIndex, columnIndices.email).setValue(notionRecord.email);
-    Logger.log(`Updated Email for ${discordHandle}: ${currentEmail} → ${notionRecord.email}`);
-    wasUpdated = true;
+  // Update Email (only if not null)
+  if (notionRecord.email) {
+    const currentEmail = registrySheet.getRange(rowIndex, columnIndices.email).getValue();
+    if (normalizeEmail(currentEmail) !== normalizeEmail(notionRecord.email)) {
+      registrySheet.getRange(rowIndex, columnIndices.email).setValue(notionRecord.email);
+      Logger.log(`Updated Email for ${discordHandle}: ${currentEmail} → ${notionRecord.email}`);
+      wasUpdated = true;
+    }
   }
 
-  // Update Discord Handle
-  const currentDiscord = registrySheet.getRange(rowIndex, columnIndices.discord).getValue();
-  if (normalizeDiscordHandle(currentDiscord) !== normalizeDiscordHandle(notionRecord.discord)) {
-    registrySheet.getRange(rowIndex, columnIndices.discord).setValue(notionRecord.discord);
-    Logger.log(`Updated Discord Handle for ${discordHandle}: ${currentDiscord} → ${notionRecord.discord}`);
-    wasUpdated = true;
+  // Update Discord Handle (only if not null)
+  if (notionRecord.discord) {
+    const currentDiscord = registrySheet.getRange(rowIndex, columnIndices.discord).getValue();
+    if (normalizeDiscordHandle(currentDiscord) !== normalizeDiscordHandle(notionRecord.discord)) {
+      registrySheet.getRange(rowIndex, columnIndices.discord).setValue(notionRecord.discord);
+      Logger.log(`Updated Discord Handle for ${discordHandle}: ${currentDiscord} → ${notionRecord.discord}`);
+      wasUpdated = true;
+    }
   }
 
-  // Update Primary Team (with mapping)
+  // Update Primary Team (with mapping, only if not empty)
   const mappedPrimaryTeam = mapNotionTeamToSheet(notionRecord.primaryTeam);
-  const currentPrimaryTeam = registrySheet.getRange(rowIndex, columnIndices.primaryTeam).getValue();
-  if (currentPrimaryTeam !== mappedPrimaryTeam && currentPrimaryTeam !== 'expelled') {
-    registrySheet.getRange(rowIndex, columnIndices.primaryTeam).setValue(mappedPrimaryTeam);
-    Logger.log(`Updated Primary Team for ${discordHandle}: ${currentPrimaryTeam} → ${mappedPrimaryTeam}`);
-    wasUpdated = true;
+  if (mappedPrimaryTeam) {
+    const currentPrimaryTeam = registrySheet.getRange(rowIndex, columnIndices.primaryTeam).getValue();
+    if (currentPrimaryTeam !== mappedPrimaryTeam && currentPrimaryTeam !== 'expelled') {
+      registrySheet.getRange(rowIndex, columnIndices.primaryTeam).setValue(mappedPrimaryTeam);
+      Logger.log(`Updated Primary Team for ${discordHandle}: ${currentPrimaryTeam} → ${mappedPrimaryTeam}`);
+      wasUpdated = true;
+    }
   }
 
   // Update Secondary Team if column exists (with mapping)
   if (columnIndices.secondaryTeam > 0) {
     const mappedSecondaryTeam = mapNotionTeamToSheet(notionRecord.secondaryTeam);
     const currentSecondaryTeam = registrySheet.getRange(rowIndex, columnIndices.secondaryTeam).getValue();
+    // Allow empty string to clear the secondary team
     if (currentSecondaryTeam !== mappedSecondaryTeam) {
-      registrySheet.getRange(rowIndex, columnIndices.secondaryTeam).setValue(mappedSecondaryTeam);
-      Logger.log(`Updated Secondary Team for ${discordHandle}: ${currentSecondaryTeam} → ${mappedSecondaryTeam}`);
+      registrySheet.getRange(rowIndex, columnIndices.secondaryTeam).setValue(mappedSecondaryTeam || '');
+      Logger.log(`Updated Secondary Team for ${discordHandle}: ${currentSecondaryTeam} → ${mappedSecondaryTeam || '(empty)'}`);
       wasUpdated = true;
     }
   }
@@ -332,12 +339,16 @@ function syncAmbassadorFromNotion(notionRecord, registrySheet, columnIndices, ro
   // Update Start Date if column exists
   if (columnIndices.startDate > 0 && notionRecord.startDate) {
     const currentStartDate = registrySheet.getRange(rowIndex, columnIndices.startDate).getValue();
-    const notionStartDateStr = notionRecord.startDate.toString();
-    const currentStartDateStr = currentStartDate ? currentStartDate.toString() : '';
+    
+    // Normalize both dates to YYYY-MM-DD format for comparison
+    const notionDateStr = notionRecord.startDate; // Already in YYYY-MM-DD format from Notion
+    const currentDateStr = currentStartDate 
+      ? Utilities.formatDate(new Date(currentStartDate), getProjectTimeZone(), 'yyyy-MM-dd')
+      : '';
 
-    if (currentStartDateStr !== notionStartDateStr) {
+    if (currentDateStr !== notionDateStr) {
       registrySheet.getRange(rowIndex, columnIndices.startDate).setValue(notionRecord.startDate);
-      Logger.log(`Updated Start Date for ${discordHandle}: ${currentStartDateStr} → ${notionStartDateStr}`);
+      Logger.log(`Updated Start Date for ${discordHandle}: ${currentDateStr} → ${notionDateStr}`);
       wasUpdated = true;
     }
   }
@@ -393,6 +404,11 @@ function addNewAmbassadorRow(notionRecord, registrySheet, columnIndices) {
   const newRowIndex = registrySheet.getLastRow() + 1;
   const discordHandle = notionRecord.discord || 'Unknown';
 
+  // Validate required fields
+  if (!notionRecord.email && !notionRecord.number) {
+    throw new Error('Cannot add ambassador without email or number');
+  }
+
   // Map team names
   const mappedPrimaryTeam = mapNotionTeamToSheet(notionRecord.primaryTeam);
   const mappedSecondaryTeam = mapNotionTeamToSheet(notionRecord.secondaryTeam);
@@ -406,21 +422,21 @@ function addNewAmbassadorRow(notionRecord, registrySheet, columnIndices) {
   const ambassadorId = notionRecord.number || generateMD5Hash(notionRecord.email);
   registrySheet.getRange(newRowIndex, columnIndices.number).setValue(ambassadorId);
 
-  // Set Email
-  registrySheet.getRange(newRowIndex, columnIndices.email).setValue(notionRecord.email);
+  // Set Email (or empty string if null)
+  registrySheet.getRange(newRowIndex, columnIndices.email).setValue(notionRecord.email || '');
 
-  // Set Discord Handle
-  registrySheet.getRange(newRowIndex, columnIndices.discord).setValue(notionRecord.discord);
+  // Set Discord Handle (or empty string if null)
+  registrySheet.getRange(newRowIndex, columnIndices.discord).setValue(notionRecord.discord || '');
 
   // Set Status
   registrySheet.getRange(newRowIndex, columnIndices.status).setValue('Active');
 
-  // Set Primary Team
-  registrySheet.getRange(newRowIndex, columnIndices.primaryTeam).setValue(mappedPrimaryTeam);
+  // Set Primary Team (or empty string if null)
+  registrySheet.getRange(newRowIndex, columnIndices.primaryTeam).setValue(mappedPrimaryTeam || '');
 
   // Set Secondary Team if column exists
   if (columnIndices.secondaryTeam > 0) {
-    registrySheet.getRange(newRowIndex, columnIndices.secondaryTeam).setValue(mappedSecondaryTeam);
+    registrySheet.getRange(newRowIndex, columnIndices.secondaryTeam).setValue(mappedSecondaryTeam || '');
   }
 
   // Set Start Date if column exists
@@ -429,6 +445,6 @@ function addNewAmbassadorRow(notionRecord, registrySheet, columnIndices) {
   }
 
   Logger.log(
-    `Added new ambassador at row ${newRowIndex}: ${discordHandle} (${notionRecord.email}) - Team: ${mappedPrimaryTeam}`
+    `Added new ambassador at row ${newRowIndex}: ${discordHandle} (${notionRecord.email || 'no email'}) - Team: ${mappedPrimaryTeam || 'no team'}`
   );
 }
