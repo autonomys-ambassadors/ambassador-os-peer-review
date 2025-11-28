@@ -79,6 +79,21 @@ Please add links to your contributions during the month`;
   REQUEST_LOG_START_TIME_COLUMN = 'Request Date Time';
   REQUEST_LOG_END_TIME_COLUMN = 'Window End Date Time';
 
+  // Notion Configuration
+  NOTION_DATABASE_ID = '1f289b830b398029b2c7f516fbb19e5c'; // Notion database ID
+  NOTION_NUMBER_COLUMN = 'Number (Unique ID)';
+  NOTION_EMAIL_COLUMN = 'Email';
+  NOTION_DISCORD_COLUMN = 'Discord Handle';
+  NOTION_STATUS_COLUMN = 'Status';
+  NOTION_PRIMARY_TEAM_COLUMN = 'Team (Guild)';
+  NOTION_SECONDARY_TEAM_COLUMN = 'Secondary Team (Guild)';
+  NOTION_START_DATE_COLUMN = 'Start Date';
+
+  // New Registry Sheet Columns
+  REGISTRY_NOTION_ID_COLUMN = 'Notion Id';
+  REGISTRY_SECONDARY_TEAM_COLUMN = 'Secondary Team';
+  REGISTRY_START_DATE_COLUMN = 'Start Date';
+
   // Sponsor Email (for notifications when ambassadors are expelled)
   SPONSOR_EMAIL = 'community@autonomys.xyz'; // Sponsor's email
 

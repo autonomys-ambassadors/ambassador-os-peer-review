@@ -78,6 +78,21 @@ Please add links to your contributions during the month`;
   REQUEST_LOG_START_TIME_COLUMN = 'Request Date Time';
   REQUEST_LOG_END_TIME_COLUMN = 'Window End Date Time';
 
+  // Notion Configuration
+  NOTION_DATABASE_ID = 'your-notion-database-id'; // Replace with your Notion database ID
+  NOTION_NUMBER_COLUMN = 'Number (Unique ID)';
+  NOTION_EMAIL_COLUMN = 'Email';
+  NOTION_DISCORD_COLUMN = 'Discord Handle';
+  NOTION_STATUS_COLUMN = 'Status';
+  NOTION_PRIMARY_TEAM_COLUMN = 'Team (Guild)';
+  NOTION_SECONDARY_TEAM_COLUMN = 'Secondary Team (Guild)';
+  NOTION_START_DATE_COLUMN = 'Start Date';
+
+  // New Registry Sheet Columns
+  REGISTRY_NOTION_ID_COLUMN = 'Notion Id';
+  REGISTRY_SECONDARY_TEAM_COLUMN = 'Secondary Team';
+  REGISTRY_START_DATE_COLUMN = 'Start Date';
+
   // Testing timing - Use shorter windows for accelerated testing
   SUBMISSION_WINDOW_MINUTES = 15; // How long submission window stays open
   SUBMISSION_WINDOW_REMINDER_MINUTES = 5; // When to send reminders after submission requests
