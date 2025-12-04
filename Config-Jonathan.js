@@ -9,7 +9,8 @@ function setJonathanVariables() {
 
   // Specify your testing sheets/forms/etc. here:
   // Spreadsheets:
-  AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1iBcGsrD8MSmFK4NoIR-Vo3RWbZ5ZVfhguBW9JqmZFcc'; // "Ambassador Registry"
+  //AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1iBcGsrD8MSmFK4NoIR-Vo3RWbZ5ZVfhguBW9JqmZFcc'; // "Ambassador Registry"
+  AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1chU6d6K7aEADdNCgnFsV_DIHb5AfaGcY8iE0Sa_PP0c'; // "Ambassador Registry - Testing Notion Sync"
   AMBASSADORS_SCORES_SPREADSHEET_ID = '1ZzU1egqRtQCvCH8flvLUr9gmVyIyYH2AejGaEH5gvc8'; // "Ambassadors' Scores"
   AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1EQRSjcvODXQpHzK2g4XNd6imCTsx2m7vTwe-HeNNjjM'; // "Ambassador Submission Responses"
   EVALUATION_RESPONSES_SPREADSHEET_ID = '12S_qu-Uiq0BupN_Z6lVHJ76YaVM5NG0JQY_IC-gFWmg'; // "Ambassador Evaluations' Responses"
@@ -71,6 +72,21 @@ Please add links to your contributions during the month`;
   REQUEST_LOG_YEAR_COLUMN = 'Year';
   REQUEST_LOG_START_TIME_COLUMN = 'Request Date Time';
   REQUEST_LOG_END_TIME_COLUMN = 'Window End Date Time';
+
+  // Notion Configuration
+  NOTION_DATABASE_ID = '1f289b83-0b39-8029-b2c7-f516fbb19e5c'; // Notion database ID
+  NOTION_NUMBER_COLUMN = 'Number (Unique ID)';
+  NOTION_EMAIL_COLUMN = 'Email';
+  NOTION_DISCORD_COLUMN = 'Discord Handle';
+  NOTION_STATUS_COLUMN = 'Status';
+  NOTION_PRIMARY_TEAM_COLUMN = 'Team (Guild)';
+  NOTION_SECONDARY_TEAM_COLUMN = 'Secondary Team (Guild)';
+  NOTION_START_DATE_COLUMN = 'Start Date';
+
+  // New Registry Sheet Columns
+  REGISTRY_NOTION_ID_COLUMN = 'Notion Id';
+  REGISTRY_SECONDARY_TEAM_COLUMN = 'Secondary Team';
+  REGISTRY_START_DATE_COLUMN = 'Start Date';
 
   // Triggers and Delays for testing - use much shorter windows for accelerated testing schedules
   //SUBMISSION_WINDOW_MINUTES = 20;
