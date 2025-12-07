@@ -1,6 +1,6 @@
 function syncRegistryColumnsToOverallScore() {
   const expectedRegistryHeaders = [
-    NOTION_NUMBER_COLUMN,
+    REGISTRY_NOTION_ID_COLUMN,
     AMBASSADOR_ID_COLUMN,
     AMBASSADOR_EMAIL_COLUMN,
     AMBASSADOR_DISCORD_HANDLE_COLUMN,
