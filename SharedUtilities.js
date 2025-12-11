@@ -395,7 +395,7 @@ function getAllEvaluationWindows() {
  * @param {Sheet} submissionSheet - The sheet containing submissions.
  * @returns {Array} - A list of unique valid submission emails within the submission time window.
  */
-function getValidSubmissionEmails(submissionSheet) {
+function getValidSubmissionEmails(submissionSheet, submissionWindowStart = null, submissionWindowEnd = null) {
   Logger.log('Extracting valid submission emails.');
 
   const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
@@ -416,7 +416,12 @@ function getValidSubmissionEmails(submissionSheet) {
     return [];
   }
 
-  const { submissionWindowStart, submissionWindowEnd } = getSubmissionWindowTimes();
+  // Only get from script properties if dates not provided
+  if (!submissionWindowStart || !submissionWindowEnd) {
+    const windowTimes = getSubmissionWindowTimes();
+    submissionWindowStart = windowTimes.submissionWindowStart;
+    submissionWindowEnd = windowTimes.submissionWindowEnd;
+  }
   const submitterEmailColumnIndex = getRequiredColumnIndexByName(submissionSheet, SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN);
   const submitterTimestampColumnIndex = getRequiredColumnIndexByName(submissionSheet, GOOGLE_FORM_TIMESTAMP_COLUMN);
 
@@ -1127,6 +1132,57 @@ function logRequest(type, month, year, requestDateTime, windowEndDateTime) {
   ]);
 
   Logger.log(`Logged ${type} request for ${month} ${year} in "Request Log" sheet.`);
+}
+
+/**
+ * Gets a specific request from the Request Log by type, month, and year.
+ * @param {string} type - Request type ('Submission' or 'Evaluation')
+ * @param {string} month - Month name (e.g., 'October')
+ * @param {string} year - Year as string (e.g., '2024')
+ * @returns {Object|null} Request object with month, year, requestDateTime, windowEndDateTime or null if not found
+ */
+function getRequestByTypeMonthAndYear(type, month, year) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID);
+    const requestLogSheet = spreadsheet.getSheetByName('Request Log');
+    if (!requestLogSheet) return null;
+
+    const lastRow = requestLogSheet.getLastRow();
+    if (lastRow < 2) return null;
+
+    const typeColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_REQUEST_TYPE_COLUMN);
+    const monthColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_MONTH_COLUMN);
+    const yearColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_YEAR_COLUMN);
+    const startTimeColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_START_TIME_COLUMN);
+    const endTimeColIndex = getRequiredColumnIndexByName(requestLogSheet, REQUEST_LOG_END_TIME_COLUMN);
+
+    const data = requestLogSheet.getRange(2, 1, lastRow - 1, requestLogSheet.getLastColumn()).getValues();
+
+    for (const row of data) {
+      const rowType = row[typeColIndex - 1];
+      const rowMonth = row[monthColIndex - 1];
+      const rowYear = row[yearColIndex - 1].toString();
+
+      if (rowType === type && rowMonth === month && rowYear === year) {
+        const matchedRequest = {
+          month: rowMonth,
+          year: rowYear,
+          requestDateTime: new Date(row[startTimeColIndex - 1]),
+          windowEndDateTime: new Date(row[endTimeColIndex - 1]),
+        };
+        Logger.log(
+          `Found ${type} request for ${month} ${year}: window ${matchedRequest.requestDateTime} to ${matchedRequest.windowEndDateTime}`
+        );
+        return matchedRequest;
+      }
+    }
+
+    Logger.log(`No ${type} request found for ${month} ${year} in Request Log.`);
+    return null;
+  } catch (error) {
+    Logger.log(`Error in getRequestByTypeMonthAndYear: ${error.message}`);
+    return null;
+  }
 }
 
 /**

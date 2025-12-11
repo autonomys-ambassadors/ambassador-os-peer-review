@@ -313,6 +313,17 @@ function initializePenaltyCalculationData() {
   }
   const currentReportingMonth = reportingMonth.firstDayDate;
 
+  // Get submission request matching the reporting month
+  const submissionRequest = getRequestByTypeMonthAndYear('Submission', reportingMonth.month, reportingMonth.year);
+  if (!submissionRequest) {
+    const errorMsg = `Error: No submission request found for ${reportingMonth.month} ${reportingMonth.year}`;
+    Logger.log(errorMsg);
+    throw new Error(errorMsg);
+  }
+  Logger.log(
+    `Using Submission request for ${submissionRequest.month} ${submissionRequest.year} (window: ${submissionRequest.requestDateTime} to ${submissionRequest.windowEndDateTime})`
+  );
+
   // Get headers and indices
   const headersRange = overallScoresSheet
     .getRange(COMPLIANCE_HEADER_ROW, 1, 1, overallScoresSheet.getLastColumn())
@@ -329,8 +340,12 @@ function initializePenaltyCalculationData() {
   }
   Logger.log(`Current reporting month column index: ${currentMonthColIndex}`);
 
-  // Get valid submitters and evaluators
-  const validSubmitters = getValidSubmissionEmails(submissionsSheet);
+  // Get valid submitters and evaluators (pass submission window dates)
+  const validSubmitters = getValidSubmissionEmails(
+    submissionsSheet,
+    submissionRequest.requestDateTime,
+    submissionRequest.windowEndDateTime
+  );
   const validEvaluators = getValidEvaluationEmails(evaluationResponsesSheet);
   Logger.log(`Valid submitters: ${validSubmitters.join(', ')}`);
   Logger.log(`Valid evaluators: ${validEvaluators.join(', ')}`);
@@ -1167,17 +1182,17 @@ function publishAnonymousScoresToGoogleSheet() {
     const monthName = Utilities.formatDate(currentMonthDate, spreadsheetTimeZone, 'MMMM yyyy');
 
     // Get submission window times for the reporting month from Request Log
-    const submissionRequest = getLatestRequestByType('Submission');
+    // Use the specific month/year that matches the reporting month, not the latest request
+    const submissionRequest = getRequestByTypeMonthAndYear('Submission', reportingMonth.month, reportingMonth.year);
     if (!submissionRequest) {
-      throw new Error('Could not find Submission request in Request Log.');
-    }
-
-    // Verify submission request matches reporting month
-    if (submissionRequest.month !== reportingMonth.month || submissionRequest.year !== reportingMonth.year) {
-      Logger.log(
-        `Warning: Submission request (${submissionRequest.month} ${submissionRequest.year}) does not match reporting month (${reportingMonth.month} ${reportingMonth.year})`
+      throw new Error(
+        `Could not find Submission request for ${reportingMonth.month} ${reportingMonth.year} in Request Log.`
       );
     }
+
+    Logger.log(
+      `Using Submission request for ${submissionRequest.month} ${submissionRequest.year} to match reporting month (${reportingMonth.month} ${reportingMonth.year})`
+    );
 
     const submissionWindowStart = submissionRequest.requestDateTime;
     const submissionWindowEnd = submissionRequest.windowEndDateTime;
