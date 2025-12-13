@@ -32,6 +32,7 @@ function setJonathanVariables() {
   REVIEW_LOG_SHEET_NAME = 'Review Log';
   CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
   OVERALL_SCORE_SHEET_NAME = 'Overall Score'; // Overall score sheet in Ambassadors' Scores
+  CRT_LOG_SHEET_NAME = 'CRT Log'; // CRT Log sheet for tracking conflict resolution referrals
 
   // Columns
   AMBASSADOR_ID_COLUMN = 'Ambassador Id';
@@ -65,6 +66,13 @@ Please add links to your contributions during the month`;
   CRT_SELECTION_DATE_COLUMN = 'Selection Date';
   SCORE_INADEQUATE_CONTRIBUTION_COLUMN = 'Inadequate Contribution Count';
   SCORE_CRT_REFERRAL_HISTORY_COLUMN = 'CRT Referral History';
+
+  // CRT Log columns
+  CRT_LOG_EMAIL_COLUMN = 'Email Address';
+  CRT_LOG_DISCORD_HANDLE_COLUMN = 'Discord Handle';
+  CRT_LOG_REFERRAL_DATE_COLUMN = 'Referral Date';
+  CRT_LOG_RESOLUTION_DATE_COLUMN = 'Resolution Date';
+  CRT_LOG_RESOLUTION_COLUMN = 'Resolution';
 
   // Request Log columns
   REQUEST_LOG_REQUEST_TYPE_COLUMN = 'Type';
