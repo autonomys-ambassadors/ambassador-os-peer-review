@@ -398,17 +398,8 @@ function getAllEvaluationWindows() {
 function getValidSubmissionEmails(submissionSheet, submissionWindowStart = null, submissionWindowEnd = null) {
   Logger.log('Extracting valid submission emails.');
 
-  const registrySheet = SpreadsheetApp.openById(AMBASSADOR_REGISTRY_SPREADSHEET_ID).getSheetByName(REGISTRY_SHEET_NAME);
-  const registryEmails = registrySheet
-    .getRange(
-      2,
-      getRequiredColumnIndexByName(registrySheet, AMBASSADOR_EMAIL_COLUMN),
-      registrySheet.getLastRow() - 1,
-      1
-    )
-    .getValues()
-    .flat()
-    .map((email) => email.trim().toLowerCase());
+  // Get only eligible (non-expelled) ambassadors from registry
+  const registryEmails = getEligibleAmbassadorsEmails().map((email) => normalizeEmail(email));
 
   const lastRow = submissionSheet.getLastRow();
   if (lastRow < 2) {
