@@ -179,9 +179,19 @@ function generateReviewMatrix() {
 
     // Get eligible evaluators from the Registry
     const allEvaluators = getEligibleAmbassadorsEmails();
-    Logger.log(`Eligible evaluators: ${JSON.stringify(allEvaluators)}`);
+    Logger.log(`Eligible evaluators (before CRT filter): ${JSON.stringify(allEvaluators)}`);
 
-    const { assignments, countHasNoEvaluator } = attemptSingleAssignment(validSubmitters, allEvaluators);
+    // Filter out ambassadors with unresolved CRT complaints
+    const evaluatorsWithoutCRTComplaints = allEvaluators.filter((email) => {
+      const hasComplaint = hasUnresolvedCRTComplaint(email);
+      if (hasComplaint) {
+        Logger.log(`Excluding ${email} from evaluation assignments due to unresolved CRT complaint`);
+      }
+      return !hasComplaint;
+    });
+    Logger.log(`Eligible evaluators (after CRT filter): ${JSON.stringify(evaluatorsWithoutCRTComplaints)}`);
+
+    const { assignments, countHasNoEvaluator } = attemptSingleAssignment(validSubmitters, evaluatorsWithoutCRTComplaints);
 
     if (!assignments || assignments.length === 0) {
       alertAndLog(`Failed to generate assignments.`);
