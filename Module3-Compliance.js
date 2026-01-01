@@ -1070,26 +1070,43 @@ function updateCRTReferralHistory(overallScoresSheet, rowIndex, historyColIndex,
  * @param {number} inadequateContributionCount - Number of inadequate contributions
  */
 function smartCRTReferralCheck(overallScoresSheet, rowIndex, recentMonths, discordHandle, inadequateContributionCount) {
+  Logger.log(
+    `${discordHandle}: Inadequate contribution count = ${inadequateContributionCount}, threshold = ${MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER}`
+  );
+
   // Only proceed if threshold is met
   if (inadequateContributionCount < MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER) {
+    Logger.log(
+      `${discordHandle}: Below threshold (${inadequateContributionCount} < ${MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER}). No CRT referral needed.`
+    );
     return;
   }
+
+  Logger.log(`${discordHandle}: Threshold met! Checking for new inadequate months...`);
 
   // Get CRT referral history column
   const crtHistoryColIndex = getRequiredColumnIndexByName(overallScoresSheet, SCORE_CRT_REFERRAL_HISTORY_COLUMN);
   const currentHistoryString = overallScoresSheet.getRange(rowIndex, crtHistoryColIndex).getValue() || '';
   const referralHistory = parseCRTReferralHistory(currentHistoryString);
 
+  Logger.log(`${discordHandle}: Referral history: ${currentHistoryString || '(empty)'}`);
+
   // Get current inadequate contribution months
   const currentInadequateMonths = getInadequateContributionMonths(overallScoresSheet, rowIndex, recentMonths);
+
+  Logger.log(`${discordHandle}: Current inadequate months: ${currentInadequateMonths.join(', ') || '(none)'}`);
 
   // Find new inadequate months that haven't been referred before
   const newInadequateMonths = getNewInadequateMonths(currentInadequateMonths, referralHistory);
 
+  Logger.log(`${discordHandle}: New inadequate months not yet referred: ${newInadequateMonths.join(', ') || '(none)'}`);
+
   // Only refer if there are new inadequate months
   if (newInadequateMonths.length > 0) {
     Logger.log(
-      `${discordHandle}: Found ${newInadequateMonths.length} new inadequate months: ${newInadequateMonths.join(', ')}`
+      `${discordHandle}: REFERRING TO CRT for ${
+        newInadequateMonths.length
+      } new inadequate months: ${newInadequateMonths.join(', ')}`
     );
 
     // Update referral history
@@ -1099,7 +1116,9 @@ function smartCRTReferralCheck(overallScoresSheet, rowIndex, recentMonths, disco
     referInadequateContributionToCRT(discordHandle, inadequateContributionCount, newInadequateMonths);
   } else {
     Logger.log(
-      `${discordHandle}: All inadequate months (${currentInadequateMonths.join(', ')}) have already been referred to CRT. Skipping referral.`
+      `${discordHandle}: All inadequate months (${currentInadequateMonths.join(
+        ', '
+      )}) have already been referred to CRT. Skipping referral.`
     );
   }
 }
@@ -1112,6 +1131,8 @@ function smartCRTReferralCheck(overallScoresSheet, rowIndex, recentMonths, disco
  * @param {Array} newInadequateMonths - Optional array of new inadequate months being referred
  */
 function referInadequateContributionToCRT(discordHandle, inadequateContributionCount, newInadequateMonths = []) {
+  Logger.log(`Starting referral process for ${discordHandle}`);
+
   try {
     // Get ambassador's email and discord handle using utility
     const accused = lookupEmailAndDiscord(discordHandle);
@@ -1125,6 +1146,8 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
       return;
     }
 
+    Logger.log(`Ambassador details - Email: ${ambassadorEmail}, Discord: ${ambassadorDiscord}`);
+
     // Get the current reporting month name and calculate deadline
     const currentMonthName = getCurrentReportingMonthName();
     const deadlineDate = getBusinessDaysFromToday(COMPLIANCE_BUSINESS_DAYS_DEADLINE);
@@ -1137,7 +1160,9 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
 
     // If specific months are provided, add them to the email
     if (newInadequateMonths && newInadequateMonths.length > 0) {
-      const monthDetails = `\n\nSpecifically, this referral is for inadequate contributions in: ${newInadequateMonths.join(', ')}`;
+      const monthDetails = `\n\nSpecifically, this referral is for inadequate contributions in: ${newInadequateMonths.join(
+        ', '
+      )}`;
       emailBody += monthDetails;
     }
 
@@ -1153,12 +1178,19 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
     );
 
     // Log the referral to the CRT Log sheet
+    Logger.log(`Attempting to log referral to CRT Log sheet...`);
     try {
       const crtLogSheet = getCRTLogSheet();
       if (crtLogSheet) {
+        Logger.log(`CRT Log sheet found: ${crtLogSheet.getName()}`);
+
         const emailColIndex = getColumnIndexByName(crtLogSheet, CRT_LOG_EMAIL_COLUMN);
         const discordColIndex = getColumnIndexByName(crtLogSheet, CRT_LOG_DISCORD_HANDLE_COLUMN);
         const referralDateColIndex = getColumnIndexByName(crtLogSheet, CRT_LOG_REFERRAL_DATE_COLUMN);
+
+        Logger.log(
+          `Column indices - Email: ${emailColIndex}, Discord: ${discordColIndex}, Referral Date: ${referralDateColIndex}`
+        );
 
         if (emailColIndex !== -1 && discordColIndex !== -1 && referralDateColIndex !== -1) {
           const referralDate = Utilities.formatDate(new Date(), getProjectTimeZone(), 'yyyy-MM-dd');
@@ -1171,7 +1203,11 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
 
           Logger.log(`Added CRT referral to CRT Log for ${ambassadorEmail} on ${referralDate}`);
         } else {
-          Logger.log('CRT Log sheet missing required columns. Skipping CRT Log entry.');
+          const missingColumns = [];
+          if (emailColIndex === -1) missingColumns.push(`"${CRT_LOG_EMAIL_COLUMN}"`);
+          if (discordColIndex === -1) missingColumns.push(`"${CRT_LOG_DISCORD_HANDLE_COLUMN}"`);
+          if (referralDateColIndex === -1) missingColumns.push(`"${CRT_LOG_REFERRAL_DATE_COLUMN}"`);
+          Logger.log(`CRT Log sheet missing required columns: ${missingColumns.join(', ')}. Skipping CRT Log entry.`);
         }
       } else {
         Logger.log('CRT Log sheet not found. Skipping CRT Log entry.');
