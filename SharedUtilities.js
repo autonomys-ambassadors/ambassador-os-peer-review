@@ -440,7 +440,7 @@ function getValidSubmissionEmails(submissionSheet, submissionWindowStart = null,
     .getValues()
     .filter((row, index) => {
       const submissionTimestamp = new Date(row[submitterTimestampColumnIndex - 1]);
-      const submitterEmail = row[submitterEmailColumnIndex - 1]?.trim().toLowerCase();
+      const submitterEmail = normalizeEmail(row[submitterEmailColumnIndex - 1]);
 
       if (!submissionTimestamp || !submitterEmail) {
         Logger.log(`Row ${index + 2}: Missing timestamp or email.`);
@@ -465,7 +465,7 @@ function getValidSubmissionEmails(submissionSheet, submissionWindowStart = null,
 
       return true;
     })
-    .map((row) => row[submitterEmailColumnIndex - 1]?.trim().toLowerCase());
+    .map((row) => normalizeEmail(row[submitterEmailColumnIndex - 1]));
 
   // Remove duplicates
   const uniqueValidSubmitters = [...new Set(validSubmitters)];
@@ -705,7 +705,7 @@ function getEligibleAmbassadorsEmails() {
       .filter((row) =>
         isActiveAmbassador(row, registryAmbassadorEmailColumnIndex - 1, registryAmbassadorStatusColumnIndex - 1)
       ) // Exclude those marked as expelled
-      .map((row) => row[registryAmbassadorEmailColumnIndex - 1]); // Extract emails
+      .map((row) => normalizeEmail(row[registryAmbassadorEmailColumnIndex - 1])); // Extract and normalize emails
 
     Logger.log(`Eligible emails (excluding 'Expelled'): ${JSON.stringify(eligibleEmails)}`);
     return eligibleEmails;
