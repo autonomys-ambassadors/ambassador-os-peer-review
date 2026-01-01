@@ -1187,9 +1187,10 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
         const emailColIndex = getColumnIndexByName(crtLogSheet, CRT_LOG_EMAIL_COLUMN);
         const discordColIndex = getColumnIndexByName(crtLogSheet, CRT_LOG_DISCORD_HANDLE_COLUMN);
         const referralDateColIndex = getColumnIndexByName(crtLogSheet, CRT_LOG_REFERRAL_DATE_COLUMN);
+        const reasonColIndex = getColumnIndexByName(crtLogSheet, CRT_LOG_REASON_COLUMN);
 
         Logger.log(
-          `Column indices - Email: ${emailColIndex}, Discord: ${discordColIndex}, Referral Date: ${referralDateColIndex}`
+          `Column indices - Email: ${emailColIndex}, Discord: ${discordColIndex}, Referral Date: ${referralDateColIndex}, Reason: ${reasonColIndex}`
         );
 
         if (emailColIndex !== -1 && discordColIndex !== -1 && referralDateColIndex !== -1) {
@@ -1200,6 +1201,13 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
           crtLogSheet.getRange(lastRow + 1, emailColIndex).setValue(ambassadorEmail);
           crtLogSheet.getRange(lastRow + 1, discordColIndex).setValue(ambassadorDiscord);
           crtLogSheet.getRange(lastRow + 1, referralDateColIndex).setValue(referralDate);
+          
+          // Add reason with inadequate months if available
+          if (reasonColIndex !== -1 && newInadequateMonths && newInadequateMonths.length > 0) {
+            const reason = `Inadequate contributions for: ${newInadequateMonths.join(', ')}`;
+            crtLogSheet.getRange(lastRow + 1, reasonColIndex).setValue(reason);
+            Logger.log(`Added reason: ${reason}`);
+          }
 
           Logger.log(`Added CRT referral to CRT Log for ${ambassadorEmail} on ${referralDate}`);
         } else {

@@ -72,6 +72,7 @@ Please add links your contributions during the month `;
   CRT_LOG_EMAIL_COLUMN = 'Email Address';
   CRT_LOG_DISCORD_HANDLE_COLUMN = 'Discord Handle';
   CRT_LOG_REFERRAL_DATE_COLUMN = 'Referral Date';
+  CRT_LOG_REASON_COLUMN = 'Reason';
   CRT_LOG_RESOLUTION_DATE_COLUMN = 'Resolution Date';
   CRT_LOG_RESOLUTION_COLUMN = 'Resolution';
 
