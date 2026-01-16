@@ -153,14 +153,13 @@ function updateEvaluationFormQuestions(primaryTeam) {
 }
 
 /**
- * Generates the review matrix by assigning evaluators to submitters multiple times
- * and chooses the attempt with the fewest "Has No Evaluator" results.
- * If an attempt finds a perfect solution (0 "Has No Evaluator"), it stops early and uses that result.
+ * Generates the review matrix by assigning evaluators to submitters using multi-pass approach.
+ * Uses Fisher-Yates shuffle for fair distribution and over-schedules if needed (up to 5 assignments per evaluator).
  * Filters out invalid submitters (e.g., those with emails not in Registry or empty rows).
  */
 function generateReviewMatrix() {
   try {
-    Logger.log('Starting generateReviewMatrix with multiple attempts.');
+    Logger.log('Starting generateReviewMatrix with multi-pass assignment algorithm.');
 
     // Access the Registry and Submission Form Sheets
     const registrySpreadsheet = getRegistrySpreadsheet();
@@ -191,23 +190,20 @@ function generateReviewMatrix() {
     });
     Logger.log(`Eligible evaluators (after CRT filter): ${JSON.stringify(evaluatorsWithoutCRTComplaints)}`);
 
-    const { assignments, countHasNoEvaluator } = attemptSingleAssignment(validSubmitters, evaluatorsWithoutCRTComplaints);
+    // Use multi-pass assignment algorithm
+    const { assignments, evaluatorCounts } = assignEvaluatorsWithMultiPass(
+      validSubmitters,
+      evaluatorsWithoutCRTComplaints
+    );
 
     if (!assignments || assignments.length === 0) {
       alertAndLog(`Failed to generate assignments.`);
-      throw new Error('Failed to generate assignements. Notify developers.');
+      throw new Error('Failed to generate assignments. Notify developers.');
     }
 
-    Logger.log(`Assignment attempt resulted in ${countHasNoEvaluator} "Has No Evaluator".`);
-
-    // Write the best assignments to the Review Log
-    if (countHasNoEvaluator === 0) {
-      writeAssignmentsToReviewLog(assignments);
-      Logger.log(`Final assignments chosen with ${countHasNoEvaluator} "Has No Evaluator".`);
-    } else {
-      alertAndLog('Failed to generate valid assignments after one attempt.');
-      throw new Error('Failed to generate valid assignments after one attempt. Notify Developers.');
-    }
+    // Write the assignments to the Review Log
+    writeAssignmentsToReviewLog(assignments);
+    Logger.log('Assignments successfully written to Review Log.');
   } catch (error) {
     alertAndLog(`Error in generateReviewMatrix: ${error.message}`);
     throw new Error('Failed to generate review matrix. Notify developers.');
@@ -215,49 +211,161 @@ function generateReviewMatrix() {
 }
 
 /**
- * Attempts to assign evaluators to submitters in a single attempt.
- * Filters out invalid or empty data during the process.
+ * Assigns evaluators to submitters using multi-pass approach with even distribution.
+ * Starts with max 3 assignments per evaluator, then 4, then 5 if needed.
+ * Logs warnings and distribution stats when over-scheduling beyond 3 is required.
  * @param {Array} validSubmitters - Array of valid submitters.
  * @param {Array} allEvaluators - Array of eligible evaluators.
- * @returns {Object} - Contains assignments and count of "Has No Evaluator".
+ * @returns {Object} - Contains final assignments and evaluatorCounts.
  */
-function attemptSingleAssignment(validSubmitters, allEvaluators) {
-  Logger.log('Starting single attempt to assign evaluators.');
+function assignEvaluatorsWithMultiPass(validSubmitters, allEvaluators) {
+  Logger.log('Starting multi-pass evaluator assignment algorithm.');
+  Logger.log(`Total submitters: ${validSubmitters.length}, Total evaluators: ${allEvaluators.length}`);
 
-  const assignments = [];
-  const evaluatorPool = [...allEvaluators, ...allEvaluators, ...allEvaluators]; // Triplicate evaluator pool for flexibility
-  const evaluatorCounts = {}; // Track evaluator usage
-  let countHasNoEvaluator = 0;
+  let assignments = [];
+  let evaluatorCounts = {};
+  let submittersMissingEvaluators = [...validSubmitters];
 
-  validSubmitters.forEach((submitter) => {
-    const reviewers = [];
-    for (let i = 0; i < 3; i++) {
-      const availableEvaluators = evaluatorPool.filter(
+  const maxAssignmentLimits = [3, 4, 5];
+
+  for (let passIndex = 0; passIndex < maxAssignmentLimits.length; passIndex++) {
+    const maxAssignments = maxAssignmentLimits[passIndex];
+    const passNumber = passIndex + 1;
+
+    if (passIndex > 0) {
+      Logger.log(
+        `WARNING: ${submittersMissingEvaluators.length} submitters still need evaluators. Starting pass ${passNumber} with max ${maxAssignments} assignments per evaluator.`
+      );
+    }
+
+    const result = attemptSingleAssignment(
+      submittersMissingEvaluators,
+      allEvaluators,
+      maxAssignments,
+      evaluatorCounts,
+      assignments
+    );
+    assignments = result.assignments;
+    evaluatorCounts = result.evaluatorCounts;
+    submittersMissingEvaluators = result.submittersMissingEvaluators;
+
+    if (submittersMissingEvaluators.length === 0) {
+      Logger.log(`All assignments completed in pass ${passNumber} (${maxAssignments} assignments per evaluator max).`);
+      logAssignmentDistribution(evaluatorCounts);
+      return { assignments, evaluatorCounts };
+    }
+  }
+
+  // If we still have missing assignments after all passes, fail with actionable error
+  alertAndLog(
+    `CRITICAL ERROR: Unable to assign all evaluators even with ${maxAssignmentLimits[maxAssignmentLimits.length - 1]} assignments per evaluator. ${submittersMissingEvaluators.length} submitters still missing evaluators. The evaluator pool is too constrained. Consider reviewing CRT complaints or expanding the ambassador pool.`
+  );
+  throw new Error(
+    `Failed to complete all assignments within the ${maxAssignmentLimits[maxAssignmentLimits.length - 1]} assignment per evaluator cap. Notify developers.`
+  );
+}
+
+/**
+ * Logs the distribution of evaluator assignments for monitoring fairness.
+ * @param {Object} evaluatorCounts - Map of evaluator email to assignment count.
+ */
+function logAssignmentDistribution(evaluatorCounts) {
+  const distribution = { 3: 0, 4: 0, 5: 0 };
+  let totalExtraAssignments = 0;
+
+  Object.values(evaluatorCounts).forEach((count) => {
+    if (count >= 3 && count <= 5) {
+      distribution[count]++;
+    }
+    if (count > 3) {
+      totalExtraAssignments += count - 3;
+    }
+  });
+
+  Logger.log('===== Assignment Distribution Summary =====');
+  Logger.log(`Evaluators with 3 assignments: ${distribution[3]}`);
+  Logger.log(`Evaluators with 4 assignments: ${distribution[4]}`);
+  Logger.log(`Evaluators with 5 assignments: ${distribution[5]}`);
+  Logger.log(`Total extra assignments beyond 3: ${totalExtraAssignments}`);
+  Logger.log('==========================================');
+}
+
+/**
+ * Attempts to assign evaluators to submitters in a single pass with a specified max assignments limit.
+ * Uses greedy algorithm that prioritizes evaluators with fewest assignments for fair distribution.
+ * @param {Array} validSubmitters - Array of valid submitters.
+ * @param {Array} allEvaluators - Array of eligible evaluators.
+ * @param {number} maxAssignmentsPerEvaluator - Maximum number of assignments allowed per evaluator.
+ * @param {Object} existingEvaluatorCounts - Existing evaluator usage counts from previous passes.
+ * @param {Array} existingAssignments - Existing partial assignments from previous passes.
+ * @returns {Object} - Contains assignments, evaluatorCounts, and submittersMissingEvaluators.
+ */
+function attemptSingleAssignment(
+  validSubmitters,
+  allEvaluators,
+  maxAssignmentsPerEvaluator,
+  existingEvaluatorCounts = {},
+  existingAssignments = []
+) {
+  Logger.log(`Starting assignment pass with max ${maxAssignmentsPerEvaluator} assignments per evaluator.`);
+
+  const assignments = existingAssignments.length > 0 ? [...existingAssignments] : [];
+  const evaluatorCounts = { ...existingEvaluatorCounts };
+  const submittersMissingEvaluators = [];
+
+  Logger.log(`Starting with ${allEvaluators.length} total evaluators available for this pass.`);
+
+  // Shuffle submitters to avoid bias in processing order
+  const shuffledSubmitters = shuffleArray(validSubmitters);
+
+  shuffledSubmitters.forEach((submitter) => {
+    // Find existing assignment for this submitter or create new one
+    let assignment = assignments.find((a) => a.submitter === submitter);
+    if (!assignment) {
+      assignment = { submitter, reviewers: [] };
+      assignments.push(assignment);
+    }
+
+    const reviewers = assignment.reviewers;
+    const neededReviewers = 3 - reviewers.filter((r) => r !== 'Has No Evaluator').length;
+
+    for (let i = 0; i < neededReviewers; i++) {
+      // Get available evaluators for this submitter
+      const availableEvaluators = allEvaluators.filter(
         (evaluator) =>
           evaluator !== submitter && // Exclude self-evaluation
-          (evaluatorCounts[evaluator] || 0) < 3 && // Limit evaluators to 3 assignments
+          (evaluatorCounts[evaluator] || 0) < maxAssignmentsPerEvaluator && // Respect max threshold
           !reviewers.includes(evaluator) // Avoid duplicate evaluators for the same submitter
       );
 
       if (availableEvaluators.length === 0) {
-        reviewers.push('Has No Evaluator');
-        countHasNoEvaluator++;
-        alertAndLog(`No available evaluators for submitter ${submitter} in round ${i + 1}.`);
-        throw new Error('No available evaluators found. Notify developers.');
+        // No evaluators available in this pass for this submitter
+        if (!submittersMissingEvaluators.includes(submitter)) {
+          submittersMissingEvaluators.push(submitter);
+        }
+        break; // Move to next submitter, will try again in next pass
       }
 
-      const randomIndex = Math.floor(Math.random() * availableEvaluators.length);
-      const selectedEvaluator = availableEvaluators[randomIndex];
+      // Find the minimum assignment count among available evaluators (greedy fair distribution)
+      const minAssignments = Math.min(...availableEvaluators.map((e) => evaluatorCounts[e] || 0));
+
+      // Filter to only evaluators with the minimum assignment count
+      const leastLoadedEvaluators = availableEvaluators.filter((e) => (evaluatorCounts[e] || 0) === minAssignments);
+
+      // Randomly select from the least loaded evaluators
+      const randomIndex = Math.floor(Math.random() * leastLoadedEvaluators.length);
+      const selectedEvaluator = leastLoadedEvaluators[randomIndex];
 
       reviewers.push(selectedEvaluator);
       evaluatorCounts[selectedEvaluator] = (evaluatorCounts[selectedEvaluator] || 0) + 1;
-      Logger.log(`Assigned evaluator ${selectedEvaluator} to submitter ${submitter} in round ${i + 1}.`);
+      Logger.log(
+        `Assigned evaluator ${selectedEvaluator} to submitter ${submitter} (evaluator now has ${evaluatorCounts[selectedEvaluator]} assignments)`
+      );
     }
-    assignments.push({ submitter, reviewers });
   });
 
-  Logger.log(`Single attempt completed. "Has No Evaluator" count: ${countHasNoEvaluator}`);
-  return { assignments, countHasNoEvaluator };
+  Logger.log(`Pass completed. Submitters still missing evaluators: ${submittersMissingEvaluators.length}`);
+  return { assignments, evaluatorCounts, submittersMissingEvaluators };
 }
 
 /**

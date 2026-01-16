@@ -6,7 +6,9 @@ function setJonathanVariables() {
   TESTING = true;
   SEND_EMAIL = true;
   TESTER_EMAIL = 'ambassadoros+tester@jkw.fm'; // Jonathan's email for testing redirects
+  SPONSOR_EMAIL = 'ambassadoros+tester@jkw.fm'; // Sponsor's email
 
+  /* TESTING VALUES
   // Specify your testing sheets/forms/etc. here:
   // Spreadsheets:
   //AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1iBcGsrD8MSmFK4NoIR-Vo3RWbZ5ZVfhguBW9JqmZFcc'; // "Ambassador Registry"
@@ -19,6 +21,17 @@ function setJonathanVariables() {
   // Google Forms
   SUBMISSION_FORM_ID = '1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE'; // ID for Submission form
   EVALUATION_FORM_ID = '1WKQ1acvwVVXJOtYRZgiX-4YXOUgnwwlquL3c5l494ew'; // ID for Evaluation form
+*/
+
+  /* SPECIFICALLY FOR TESTING WITH PRODUCTION DATA */
+  AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1YtE-b7088aV3zi0eyFaGMyA7Nvo3bf9dnl0xzH3BTdA'; //"Ambassador Registry", also where the app is run from
+  AMBASSADORS_SCORES_SPREADSHEET_ID = '1cjhrqgc84HdS59eQJPsiNIPKbusHtp2j7dN55u-mKdc'; // "Ambassadors Scores"
+  AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1EQRSjcvODXQpHzK2g4XNd6imCTsx2m7vTwe-HeNNjjM'; // "Ambassador Submission Responses"
+  EVALUATION_RESPONSES_SPREADSHEET_ID = '12S_qu-Uiq0BupN_Z6lVHJ76YaVM5NG0JQY_IC-gFWmg'; // "Ambassador Evaluations' Responses"
+  ANONYMOUS_SCORES_SPREADSHEET_ID = '1JBQRzpqC6dv4iiP1TJdpRkGeVHCX9P-HXNuxnC2OSqI'; // Your anonymous scores spreadsheet ID
+  SUBMISSION_FORM_ID = '1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE'; // ID for Submission form
+  EVALUATION_FORM_ID = '1WKQ1acvwVVXJOtYRZgiX-4YXOUgnwwlquL3c5l494ew'; // ID for Evaluation form
+
   SUBMISSION_FORM_URL = 'https://forms.gle/jU6u22fycgQjQ3z68'; // Submission Form URL for mailing
   EVALUATION_FORM_URL = 'https://forms.gle/MfRt9G8WdvhgVRca6'; // Evaluation Form URL for mailing
   FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Explicit name for 'Form Responses' sheet
@@ -83,7 +96,7 @@ Please add links to your contributions during the month`;
   REQUEST_LOG_END_TIME_COLUMN = 'Window End Date Time';
 
   // Notion Configuration
-  NOTION_DATABASE_ID = '1f289b83-0b39-8029-b2c7-f516fbb19e5c'; // Notion database ID
+  NOTION_DATABASE_ID = '1f289b830b398029b2c7f516fbb19e5c'; // Notion database ID
   NOTION_NUMBER_COLUMN = 'Number (Unique ID)';
   NOTION_EMAIL_COLUMN = 'Email';
   NOTION_DISCORD_COLUMN = 'Discord Handle';
