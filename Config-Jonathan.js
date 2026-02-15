@@ -27,13 +27,14 @@ function setJonathanVariables() {
   AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1YtE-b7088aV3zi0eyFaGMyA7Nvo3bf9dnl0xzH3BTdA'; //"Ambassador Registry", also where the app is run from
   AMBASSADORS_SCORES_SPREADSHEET_ID = '1cjhrqgc84HdS59eQJPsiNIPKbusHtp2j7dN55u-mKdc'; // "Ambassadors Scores"
   AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1EQRSjcvODXQpHzK2g4XNd6imCTsx2m7vTwe-HeNNjjM'; // "Ambassador Submission Responses"
-  EVALUATION_RESPONSES_SPREADSHEET_ID = '12S_qu-Uiq0BupN_Z6lVHJ76YaVM5NG0JQY_IC-gFWmg'; // "Ambassador Evaluations' Responses"
+  EVALUATION_RESPONSES_SPREADSHEET_ID = '1xwdEyF4mlQEbFeW8hyD581la0nvbYNh3lYEscYgohwQ'; // "Test Evaluation Form Responses"
   ANONYMOUS_SCORES_SPREADSHEET_ID = '1JBQRzpqC6dv4iiP1TJdpRkGeVHCX9P-HXNuxnC2OSqI'; // Your anonymous scores spreadsheet ID
   SUBMISSION_FORM_ID = '1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE'; // ID for Submission form
-  EVALUATION_FORM_ID = '1WKQ1acvwVVXJOtYRZgiX-4YXOUgnwwlquL3c5l494ew'; // ID for Evaluation form
+  EVALUATION_FORM_ID = '1duZeyhd-8x7SbRVl22YCwQ1d_YcNkDCAKQqvpfBKAnRrk9hQ'; // ID for test Adequate/Inadequate Evaluation form
 
   SUBMISSION_FORM_URL = 'https://forms.gle/jU6u22fycgQjQ3z68'; // Submission Form URL for mailing
-  EVALUATION_FORM_URL = 'https://forms.gle/MfRt9G8WdvhgVRca6'; // Evaluation Form URL for mailing
+  EVALUATION_FORM_URL =
+    'https://docs.google.com/forms/d/e/1FAIpQLSduZeyhd-8x7SbRVl22YCwQ1d_YcNkDCAKQqvpfBKAnRrk9hQ/viewform'; // Test Adequate-Inadequate Evaluation Form URL
   FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Explicit name for 'Form Responses' sheet
   EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Evaluation Form responses sheet
 
@@ -44,7 +45,7 @@ function setJonathanVariables() {
   REGISTRY_SHEET_NAME = 'Registry';
   REVIEW_LOG_SHEET_NAME = 'Review Log';
   CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
-  OVERALL_SCORE_SHEET_NAME = 'Overall Score'; // Overall score sheet in Ambassadors' Scores
+  OVERALL_SCORE_SHEET_NAME = 'Copy of Overall Score'; // Pre-scored test data with Adequate/Inadequate/No Value
   CRT_LOG_SHEET_NAME = 'CRT Log'; // CRT Log sheet for tracking conflict resolution referrals
 
   // Columns
@@ -62,7 +63,7 @@ Please add text to your contributions during the month`;
   GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
 Please add links to your contributions during the month`;
   GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating? (Not your own D-Handle)'; //values must match google form questions
-  GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5.';
+  GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please score the ambassadors contributions for the relevant month.';
   GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks (required)';
   SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points Last 6 Months';
   SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';
@@ -123,7 +124,13 @@ Please add links to your contributions during the month`;
   // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
   MAX_PENALTY_POINTS_TO_EXPEL = 3;
   MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
-  INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 3.0;
+  INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 2.0;
+
+  // Score Labels and Values
+  SCORE_ADEQUATE_LABEL = 'Adequate';
+  SCORE_INADEQUATE_LABEL = 'Inadequate';
+  SCORE_ADEQUATE_VALUE = 3.0;
+  SCORE_INADEQUATE_VALUE = 1.0;
 
   /** Reinitialize color variables to ensure consistency in color-based logic.
    * The color hex string must be in lowercase!

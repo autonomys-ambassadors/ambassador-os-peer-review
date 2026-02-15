@@ -116,6 +116,12 @@ var MAX_PENALTY_POINTS_TO_EXPEL; // Penalty Points threshold - if >= this number
 var MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER;
 var INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD;
 
+// Score Labels and Values (Adequate/Inadequate scoring system)
+var SCORE_ADEQUATE_LABEL; // Text label for adequate published scores
+var SCORE_INADEQUATE_LABEL; // Text label for inadequate published scores
+var SCORE_ADEQUATE_VALUE; // Numeric value assigned for adequate evaluations
+var SCORE_INADEQUATE_VALUE; // Numeric value assigned for inadequate evaluations
+
 // Color Configuration (The color hex string must be in lowercase!)
 var COLOR_MISSED_SUBMISSION;
 var COLOR_MISSED_EVALUATION;

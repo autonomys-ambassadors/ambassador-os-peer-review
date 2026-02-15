@@ -54,7 +54,7 @@ Please add text to your contributions during the month`;
   GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
 Please add links to your contributions during the month`;
   GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating?';
-  GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5';
+  GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please score the ambassadors contributions for the relevant month.';
   GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks';
   SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points';
   SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';
@@ -111,7 +111,13 @@ Please add links to your contributions during the month`;
   // Thresholds for testing
   MAX_PENALTY_POINTS_TO_EXPEL = 3; // Penalty points threshold for expulsion
   MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2; // Inadequate contributions before CRT referral
-  INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 3.0; // Score threshold for inadequate contribution
+  INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 2.0; // Score threshold for inadequate contribution
+
+  // Score Labels and Values
+  SCORE_ADEQUATE_LABEL = 'Adequate';
+  SCORE_INADEQUATE_LABEL = 'Inadequate';
+  SCORE_ADEQUATE_VALUE = 3.0;
+  SCORE_INADEQUATE_VALUE = 1.0;
 
   // Color codes for cell backgrounds (must be lowercase hex)
   COLOR_MISSED_SUBMISSION = '#ead1dc';

@@ -55,7 +55,7 @@ Please add text to your contributions during the month`;
   GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
 Please add links to your contributions during the month`;
   GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating? (Not your own D-Handle)'; //values must match google form questions
-  GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5.';
+  GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please score the ambassadors contributions for the relevant month.';
   GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks (required)';
   SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points Last 6 Months';
   SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';
@@ -109,7 +109,13 @@ Please add links to your contributions during the month`;
   // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
   MAX_PENALTY_POINTS_TO_EXPEL = 3;
   MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
-  INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 3.0;
+  INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 2.0;
+
+  // Score Labels and Values
+  SCORE_ADEQUATE_LABEL = 'Adequate';
+  SCORE_INADEQUATE_LABEL = 'Inadequate';
+  SCORE_ADEQUATE_VALUE = 3.0;
+  SCORE_INADEQUATE_VALUE = 1.0;
 
   /** Reinitialize color variables to ensure consistency in color-based logic.
    * The color hex string must be in lowercase!
