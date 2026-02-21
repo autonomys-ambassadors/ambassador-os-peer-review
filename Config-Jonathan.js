@@ -6,37 +6,21 @@ function setJonathanVariables() {
   TESTING = true;
   SEND_EMAIL = true;
   TESTER_EMAIL = 'ambassadoros+tester@jkw.fm'; // Jonathan's email for testing redirects
-  SPONSOR_EMAIL = 'ambassadoros+tester@jkw.fm'; // Sponsor's email
-
-  /* TESTING VALUES
-  // Specify your testing sheets/forms/etc. here:
-  // Spreadsheets:
-  //AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1iBcGsrD8MSmFK4NoIR-Vo3RWbZ5ZVfhguBW9JqmZFcc'; // "Ambassador Registry"
-  AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1chU6d6K7aEADdNCgnFsV_DIHb5AfaGcY8iE0Sa_PP0c'; // "Ambassador Registry - Testing Notion Sync"
-  AMBASSADORS_SCORES_SPREADSHEET_ID = '1ZzU1egqRtQCvCH8flvLUr9gmVyIyYH2AejGaEH5gvc8'; // "Ambassadors' Scores"
-  AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1EQRSjcvODXQpHzK2g4XNd6imCTsx2m7vTwe-HeNNjjM'; // "Ambassador Submission Responses"
-  EVALUATION_RESPONSES_SPREADSHEET_ID = '12S_qu-Uiq0BupN_Z6lVHJ76YaVM5NG0JQY_IC-gFWmg'; // "Ambassador Evaluations' Responses"
-  ANONYMOUS_SCORES_SPREADSHEET_ID = '1JBQRzpqC6dv4iiP1TJdpRkGeVHCX9P-HXNuxnC2OSqI'; // Your anonymous scores spreadsheet ID
-
-  // Google Forms
-  SUBMISSION_FORM_ID = '1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE'; // ID for Submission form
-  EVALUATION_FORM_ID = '1WKQ1acvwVVXJOtYRZgiX-4YXOUgnwwlquL3c5l494ew'; // ID for Evaluation form
-*/
+  SPONSOR_EMAIL = 'ambassadoros+tester+sponsor@jkw.fm'; // Sponsor's email
 
   /* SPECIFICALLY FOR TESTING WITH PRODUCTION DATA */
-  AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1YtE-b7088aV3zi0eyFaGMyA7Nvo3bf9dnl0xzH3BTdA'; //"Ambassador Registry", also where the app is run from
-  AMBASSADORS_SCORES_SPREADSHEET_ID = '1cjhrqgc84HdS59eQJPsiNIPKbusHtp2j7dN55u-mKdc'; // "Ambassadors Scores"
-  AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1EQRSjcvODXQpHzK2g4XNd6imCTsx2m7vTwe-HeNNjjM'; // "Ambassador Submission Responses"
-  EVALUATION_RESPONSES_SPREADSHEET_ID = '1xwdEyF4mlQEbFeW8hyD581la0nvbYNh3lYEscYgohwQ'; // "Test Evaluation Form Responses"
-  ANONYMOUS_SCORES_SPREADSHEET_ID = '1JBQRzpqC6dv4iiP1TJdpRkGeVHCX9P-HXNuxnC2OSqI'; // Your anonymous scores spreadsheet ID
-  SUBMISSION_FORM_ID = '1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE'; // ID for Submission form
-  EVALUATION_FORM_ID = '1duZeyhd-8x7SbRVl22YCwQ1d_YcNkDCAKQqvpfBKAnRrk9hQ'; // ID for test Adequate/Inadequate Evaluation form
+  AMBASSADOR_REGISTRY_SPREADSHEET_ID = '1vBBZaNPlcvWwoaLOGtFlirntvRMgtSdfViDZvJ-wCJ4'; //"Ambassador Registry", also where the app is run from
+  AMBASSADORS_SCORES_SPREADSHEET_ID = '1vAY6GWO9bU2xyiO_-a-qt5AjGYpm86zyi1CqEWJuGXM'; // "Ambassadors Scores"
+  AMBASSADORS_SUBMISSIONS_SPREADSHEET_ID = '1lVUaCGCCbfD3l9e8MEfQVBKaljm7A5aKX7RJAsUrWfA'; // "Ambassador Submission Responses"
+  EVALUATION_RESPONSES_SPREADSHEET_ID = '1lVUaCGCCbfD3l9e8MEfQVBKaljm7A5aKX7RJAsUrWfA'; // "Test Evaluation Form Responses"
+  ANONYMOUS_SCORES_SPREADSHEET_ID = '1znTe1E0gXpxHfK3GcL1ToIReo6nwfG_cwaqk7AdKzHQ'; // Your anonymous scores spreadsheet ID
+  SUBMISSION_FORM_ID = '13oDRgD2qjryfhv992ZS99zCTOHPXBxsqKAXijupHbfE'; // ID for Submission form
+  EVALUATION_FORM_ID = '1EPrKCrg7NXfEje3Ps3aBZ3S_qs9oy3dZl6SbnF3Ek4U'; // ID for test Adequate/Inadequate Evaluation form
 
-  SUBMISSION_FORM_URL = 'https://forms.gle/jU6u22fycgQjQ3z68'; // Submission Form URL for mailing
-  EVALUATION_FORM_URL =
-    'https://docs.google.com/forms/d/e/1FAIpQLSduZeyhd-8x7SbRVl22YCwQ1d_YcNkDCAKQqvpfBKAnRrk9hQ/viewform'; // Test Adequate-Inadequate Evaluation Form URL
-  FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Explicit name for 'Form Responses' sheet
-  EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Evaluation Form responses sheet
+  SUBMISSION_FORM_URL = 'https://forms.gle/SkeQnXAT95XtDGa19'; // Submission Form URL for mailing
+  EVALUATION_FORM_URL = 'https://forms.gle/WEk1ca1sfeMqycDc8'; // Test Adequate-Inadequate Evaluation Form URL
+  FORM_RESPONSES_SHEET_NAME = 'Form Responses 3'; // Explicit name for 'Form Responses' sheet
+  EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 4'; // Evaluation Form responses sheet
 
   // Sponsor Email (for notifications when ambassadors are expelled)
   SPONSOR_EMAIL = 'ambassadoros+sponsor@jkw.fm'; // Sponsor's email
@@ -45,7 +29,7 @@ function setJonathanVariables() {
   REGISTRY_SHEET_NAME = 'Registry';
   REVIEW_LOG_SHEET_NAME = 'Review Log';
   CONFLICT_RESOLUTION_TEAM_SHEET_NAME = 'Conflict Resolution Team';
-  OVERALL_SCORE_SHEET_NAME = 'Copy of Overall Score'; // Pre-scored test data with Adequate/Inadequate/No Value
+  OVERALL_SCORE_SHEET_NAME = 'Overall Score'; // Pre-scored test data with Adequate/Inadequate/No Value
   CRT_LOG_SHEET_NAME = 'CRT Log'; // CRT Log sheet for tracking conflict resolution referrals
 
   // Columns
@@ -55,14 +39,14 @@ function setJonathanVariables() {
   AMBASSADOR_STATUS_COLUMN = 'Ambassador Status';
   AMBASSADOR_PRIMARY_TEAM_COLUMN = 'Primary Team';
   GOOGLE_FORM_TIMESTAMP_COLUMN = 'Timestamp';
-  SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email Address';
-  EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email Address';
+  SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email';
+  EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email';
   GOOGLE_FORM_REAL_EMAIL_COLUMN = 'Email Address';
   GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = `Dear Ambassador,
 Please add text to your contributions during the month`;
   GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
 Please add links to your contributions during the month`;
-  GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating? (Not your own D-Handle)'; //values must match google form questions
+  GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating?'; //values must match google form questions
   GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please score the ambassadors contributions for the relevant month.';
   GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks (required)';
   SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points Last 6 Months';
