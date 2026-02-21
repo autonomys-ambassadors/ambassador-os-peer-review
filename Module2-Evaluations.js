@@ -28,10 +28,6 @@ function requestEvaluationsModule() {
   // Step 3: Sending evaluation requests
   sendEvaluationRequests(reportingMonth);
 
-  // Set Evaluation Window Start Time
-  setEvaluationWindowStart(evaluationWindowStart); // Save the evaluation window start time
-  Logger.log(`Evaluation window start time set to: ${evaluationWindowStart}`);
-
   // Step 4: Filling out the Discord handle evaluators in the month sheet
   populateMonthSheetWithEvaluators(reportingMonth);
 
@@ -1722,20 +1718,17 @@ function setupEvaluationResponseTrigger() {
   }
 }
 
-// Sets up all triggers needed for evaluation process and logs evaluation start time
+// Sets up all triggers needed for evaluation process
 function setupEvaluationTriggers(evaluationWindowStart) {
   try {
     const timeZone = getProjectTimeZone(); // Get project time zone
-
-    // Save evaluation start time
-    const evalStartTime = Utilities.formatDate(evaluationWindowStart, timeZone, 'yyyy-MM-dd HH:mm:ss z');
-    PropertiesService.getScriptProperties().setProperty('evaluationWindowStart', evalStartTime);
-    Logger.log(`Evaluation start time set to: ${evalStartTime}`);
 
     // Calculate evaluation end time
     const evaluationWindowEnd = new Date(
       evaluationWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES)
     );
+
+    const evalStartTime = Utilities.formatDate(evaluationWindowStart, timeZone, 'yyyy-MM-dd HH:mm:ss z');
     Logger.log(`Evaluation window is from ${evalStartTime} to ${evaluationWindowEnd}`);
 
     // Set up evaluation reminder trigger
