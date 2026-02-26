@@ -22,9 +22,6 @@ function setJonathanVariables() {
   FORM_RESPONSES_SHEET_NAME = 'Form Responses 3'; // Explicit name for 'Form Responses' sheet
   EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 4'; // Evaluation Form responses sheet
 
-  // Sponsor Email (for notifications when ambassadors are expelled)
-  SPONSOR_EMAIL = 'ambassadoros+sponsor@jkw.fm'; // Sponsor's email
-
   // Sheet names
   REGISTRY_SHEET_NAME = 'Registry';
   REVIEW_LOG_SHEET_NAME = 'Review Log';

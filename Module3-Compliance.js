@@ -4,7 +4,7 @@
 const COMPLIANCE_PERIOD_MONTHS = 6; // Number of months to consider for penalty calculations
 const COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION = 1; // Penalty points for missed submission
 const COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION = 1; // Penalty points for missed evaluation
-const COMPLIANCE_PENALTY_POINT_MISSED_BOTH = 1; // Penalty points for missing both submission and evaluation (per bylaws: counts as 1 violation)
+const COMPLIANCE_PENALTY_POINT_MISSED_BOTH = 1; // Penalty points for missing both submission and evaluation (changed from 2 to 1 per bylaws vote 20251201: counts as 1 violation)
 const COMPLIANCE_BUSINESS_DAYS_DEADLINE = 3; // Business days for CRT complaint deadline
 const COMPLIANCE_HEADER_ROW = 1; // Row index for headers
 const COMPLIANCE_FIRST_DATA_ROW = 2; // Row index for first data row
