@@ -272,60 +272,40 @@ function normalizeDiscordHandle(discordHandle) {
   return discordHandle.trim().toLowerCase();
 }
 
-//     Submission/Evaluation WINDOW TIME SET/GET
-
-// Save the submission window start time (in PST)
-function setSubmissionWindowStart(time) {
-  const formattedTime = Utilities.formatDate(time, getProjectTimeZone(), "yyyy-MM-dd'T'HH:mm:ssXXX"); // Format with timezone offset
-  PropertiesService.getScriptProperties().setProperty('submissionWindowStart', formattedTime); // Save the formatted time
-  Logger.log(`Submission window start time saved: ${formattedTime}`);
-}
+//     Submission/Evaluation WINDOW TIME GET
 
 function getSubmissionWindowStart() {
   Logger.log('Getting submission window start time.');
-  const scriptProperties = PropertiesService.getScriptProperties();
-  const startDateStr = scriptProperties.getProperty('submissionWindowStart');
+  const latestSubmission = getLatestRequestByType('Submission');
 
-  if (!startDateStr) {
-    Logger.log('Submission window start date not found!');
+  if (!latestSubmission) {
+    Logger.log('Submission window start date not found in Request Log!');
     return null;
   }
 
-  // date parsing without time zone shifts
-  const startDate = new Date(startDateStr);
+  const startDate = latestSubmission.requestDateTime;
   const timeZone = getProjectTimeZone();
   Logger.log(`Submission window start at: ${Utilities.formatDate(startDate, timeZone, 'yyyy-MM-dd HH:mm:ss z')}`);
   return startDate;
 }
 
 function getSubmissionWindowTimes() {
-  const submissionWindowStartStr = PropertiesService.getScriptProperties().getProperty('submissionWindowStart');
-  if (!submissionWindowStartStr) {
-    throw new Error('Evaluation window start time not found.');
+  const latestSubmission = getLatestRequestByType('Submission');
+  if (!latestSubmission) {
+    throw new Error('Submission window start time not found in Request Log.');
   }
-  const submissionWindowStart = new Date(submissionWindowStartStr);
-  const submissionWindowEnd = new Date(
-    submissionWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES)
-  );
+  const submissionWindowStart = latestSubmission.requestDateTime;
+  const submissionWindowEnd = latestSubmission.windowEndDateTime;
   return { submissionWindowStart, submissionWindowEnd };
 }
 
-// Save the evaluation window start time (in PST)
-function setEvaluationWindowStart(time) {
-  const formattedTime = Utilities.formatDate(time, getProjectTimeZone(), "yyyy-MM-dd'T'HH:mm:ssXXX"); // Format with timezone offset
-  PropertiesService.getScriptProperties().setProperty('evaluationWindowStart', formattedTime); // Save the formatted time
-  Logger.log(`Evaluation window start time saved: ${formattedTime}`);
-}
-
 function getEvaluationWindowTimes() {
-  const evaluationWindowStartStr = PropertiesService.getScriptProperties().getProperty('evaluationWindowStart');
-  if (!evaluationWindowStartStr) {
-    throw new Error('Evaluation window start time not found.');
+  const latestEvaluation = getLatestRequestByType('Evaluation');
+  if (!latestEvaluation) {
+    throw new Error('Evaluation window start time not found in Request Log.');
   }
-  const evaluationWindowStart = new Date(evaluationWindowStartStr);
-  const evaluationWindowEnd = new Date(
-    evaluationWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES)
-  );
+  const evaluationWindowStart = latestEvaluation.requestDateTime;
+  const evaluationWindowEnd = latestEvaluation.windowEndDateTime;
   return { evaluationWindowStart, evaluationWindowEnd };
 }
 
@@ -826,15 +806,13 @@ function getPreviousMonthDate() {
  */
 function getFirstDayOfReportingMonth() {
   try {
-    const scriptProperties = PropertiesService.getScriptProperties();
-    const submissionWindowStart = scriptProperties.getProperty('submissionWindowStart');
+    const latestSubmission = getLatestRequestByType('Submission');
 
-    if (!submissionWindowStart) {
-      throw new Error('submissionWindowStart is not defined in Script Properties.');
+    if (!latestSubmission) {
+      throw new Error('submissionWindowStart is not defined in Request Log.');
     }
 
-    // Parsing the stored date string as a Date object in local time (not UTC)
-    const startDate = new Date(submissionWindowStart);
+    const startDate = latestSubmission.requestDateTime;
     if (isNaN(startDate)) {
       throw new Error('Invalid date format in submissionWindowStart.');
     }

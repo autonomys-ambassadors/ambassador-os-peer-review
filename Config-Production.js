@@ -18,8 +18,8 @@ function setNewProductionVariables() {
   // Provide the Id and submission URL for the submission and evaluation google forms:
   SUBMISSION_FORM_ID = '1mBTic1KtJRaXB93YDRTFMRta6gLIcAQglHh2LWwN8XE'; // ID for Submission form
   EVALUATION_FORM_ID = '1WKQ1acvwVVXJOtYRZgiX-4YXOUgnwwlquL3c5l494ew'; // ID for Evaluation form
-  SUBMISSION_FORM_URL = 'https://forms.gle/jU6u22fycgQjQ3z68'; // Submission Form URL for mailing
-  EVALUATION_FORM_URL = 'https://forms.gle/MfRt9G8WdvhgVRca6'; // Evaluation Form URL for mailing
+  SUBMISSION_FORM_URL = 'https://forms.gle/HmPfn1EEYQDsLadd9'; // Submission Form URL for mailing
+  EVALUATION_FORM_URL = 'https://forms.gle/7kb4s7qmm5kXnFY87'; // Evaluation Form URL for mailing
   FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Explicit name for 'Form Responses' sheet
   EVAL_FORM_RESPONSES_SHEET_NAME = 'Form Responses 1'; // Evaluation Form responses sheet
 
@@ -48,14 +48,14 @@ function setNewProductionVariables() {
   AMBASSADOR_PRIMARY_TEAM_COLUMN = 'Primary Team';
   GOOGLE_FORM_TIMESTAMP_COLUMN = 'Timestamp';
   SUBM_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email Address';
-  EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email Address';
+  EVAL_FORM_USER_PROVIDED_EMAIL_COLUMN = 'Email';
   GOOGLE_FORM_REAL_EMAIL_COLUMN = 'Email Address';
   GOOGLE_FORM_CONTRIBUTION_DETAILS_COLUMN = `Dear Ambassador,
 Please add text to your contributions during the month`;
   GOOGLE_FORM_CONTRIBUTION_LINKS_COLUMN = `Dear Ambassador,
 Please add links to your contributions during the month`;
   GOOGLE_FORM_EVALUATION_HANDLE_COLUMN = 'Discord handle of the ambassador you are evaluating? (Not your own D-Handle)'; //values must match google form questions
-  GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please assign a grade on a scale of 0 to 5.';
+  GOOGLE_FORM_EVALUATION_GRADE_COLUMN = 'Please score the ambassadors contributions for the relevant month.';
   GOOGLE_FORM_EVALUATION_REMARKS_COLUMN = 'Remarks (required)';
   SCORE_PENALTY_POINTS_COLUMN = 'Penalty Points Last 6 Months';
   SCORE_AVERAGE_SCORE_COLUMN = 'Average Score';
@@ -109,7 +109,13 @@ Please add links to your contributions during the month`;
   // Penalty Points threshold - if > or = this number for the past 6 months, ambassador will be expelled
   MAX_PENALTY_POINTS_TO_EXPEL = 3;
   MAX_INADEQUATE_CONTRIBUTION_COUNT_TO_REFER = 2;
-  INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 3.0;
+  INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD = 2.0;
+
+  // Score Labels and Values
+  SCORE_ADEQUATE_LABEL = 'Adequate';
+  SCORE_INADEQUATE_LABEL = 'Inadequate';
+  SCORE_ADEQUATE_VALUE = 3.0;
+  SCORE_INADEQUATE_VALUE = 1.0;
 
   /** Reinitialize color variables to ensure consistency in color-based logic.
    * The color hex string must be in lowercase!

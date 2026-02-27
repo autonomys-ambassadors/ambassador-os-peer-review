@@ -25,15 +25,8 @@ function requestEvaluationsModule() {
   // Step 2: Generating the review matrix (submitters and evaluators)
   generateReviewMatrix();
 
-  // Step 2.5: Update evaluation form questions
-  updateEvaluationFormQuestions();
-
   // Step 3: Sending evaluation requests
   sendEvaluationRequests(reportingMonth);
-
-  // Set Evaluation Window Start Time
-  setEvaluationWindowStart(evaluationWindowStart); // Save the evaluation window start time
-  Logger.log(`Evaluation window start time set to: ${evaluationWindowStart}`);
 
   // Step 4: Filling out the Discord handle evaluators in the month sheet
   populateMonthSheetWithEvaluators(reportingMonth);
@@ -138,18 +131,6 @@ function createMonthSheetAndOverallColumn(reportingMonth) {
   } catch (error) {
     Logger.log(`Error in createMonthSheetAndOverallColumn: ${error}`);
   }
-}
-
-function updateEvaluationFormQuestions(primaryTeam) {
-  const form = FormApp.openById(EVALUATION_FORM_ID);
-  const items = form.getItems();
-  items.forEach((item) => {
-    if (item.getTitle().includes('Please assign a grade')) {
-      item.setHelpText(
-        `Please consider the ambassador's contributions in relation to their primary team when making your assessment.`
-      );
-    }
-  });
 }
 
 /**
@@ -766,8 +747,14 @@ function processEvaluationResponse(e) {
       } else if (question === GOOGLE_FORM_EVALUATION_HANDLE_COLUMN) {
         submitterDiscordHandle = String(answer).trim();
       } else if (question === GOOGLE_FORM_EVALUATION_GRADE_COLUMN) {
-        const gradeMatch = String(answer).match(/\d+/);
-        if (gradeMatch) grade = parseFloat(gradeMatch[0]);
+        const answerStr = String(answer).trim().toLowerCase();
+        if (answerStr.includes('inadequate')) {
+          grade = SCORE_INADEQUATE_VALUE;
+        } else if (answerStr.includes('adequate')) {
+          grade = SCORE_ADEQUATE_VALUE;
+        } else {
+          Logger.log(`Warning: Unrecognized grade value: ${answer}`);
+        }
       } else if (question === GOOGLE_FORM_EVALUATION_REMARKS_COLUMN) {
         remarks = answer;
       }
@@ -984,16 +971,17 @@ function processEvaluationResponse(e) {
 
     // Retrieve grades from Score-1, Score-2, and Score-3 columns (ignoring Remarks columns)
     const gradesRange = [
-      monthSheet.getRange(row, 2).getValue(), // Score-1
-      monthSheet.getRange(row, 5).getValue(), // Score-2
-      monthSheet.getRange(row, 8).getValue(), // Score-3
+      monthSheet.getRange(row, score1Col).getValue(),
+      monthSheet.getRange(row, score2Col).getValue(),
+      monthSheet.getRange(row, score3Col).getValue(),
     ];
-    // Counts grades from 0 to 5, excluding empty (NaN)
+    // Counts valid numeric grades, excluding empty (NaN)
     const validGrades = gradesRange.filter((value) => typeof value === 'number' && !isNaN(value));
 
     if (validGrades.length > 0) {
       const finalScore = validGrades.reduce((sum, grade) => sum + grade, 0) / validGrades.length;
-      monthSheet.getRange(row, 11).setValue(finalScore);
+      const finalScoreCol = getRequiredColumnIndexByName(monthSheet, GRADE_FINAL_SCORE_COLUMN);
+      monthSheet.getRange(row, finalScoreCol).setValue(finalScore);
       Logger.log(`Final score updated for submitter ${submitterDiscordHandle}: ${finalScore}`);
     }
   } catch (error) {
@@ -1730,20 +1718,17 @@ function setupEvaluationResponseTrigger() {
   }
 }
 
-// Sets up all triggers needed for evaluation process and logs evaluation start time
+// Sets up all triggers needed for evaluation process
 function setupEvaluationTriggers(evaluationWindowStart) {
   try {
     const timeZone = getProjectTimeZone(); // Get project time zone
-
-    // Save evaluation start time
-    const evalStartTime = Utilities.formatDate(evaluationWindowStart, timeZone, 'yyyy-MM-dd HH:mm:ss z');
-    PropertiesService.getScriptProperties().setProperty('evaluationWindowStart', evalStartTime);
-    Logger.log(`Evaluation start time set to: ${evalStartTime}`);
 
     // Calculate evaluation end time
     const evaluationWindowEnd = new Date(
       evaluationWindowStart.getTime() + minutesToMilliseconds(EVALUATION_WINDOW_MINUTES)
     );
+
+    const evalStartTime = Utilities.formatDate(evaluationWindowStart, timeZone, 'yyyy-MM-dd HH:mm:ss z');
     Logger.log(`Evaluation window is from ${evalStartTime} to ${evaluationWindowEnd}`);
 
     // Set up evaluation reminder trigger

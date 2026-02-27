@@ -98,14 +98,14 @@ Dear Ambassador, you have been relieved of the obligation to evaluate your colle
 const CRT_INADEQUATE_CONTRIBUTION_EMAIL_TEMPLATE = `
 To: CRT Members and accused Ambassador and Sponsor,<br><br>
 Ambassador {discordHandle} is being referred to the CRT due to Inadequate Contribution as defined in the bylaws in Article 2.<br>
-{discordHandle} has scored below {inadequateContributionScoreThreshold} a total of {inadequateContributionCount} times in the last 6 evaluation months.<br>
+{discordHandle} has received a Published Score of Inadequate a total of {inadequateContributionCount} times in the last 6 evaluation months.<br>
 {crtNote}
 `;
 
 // Inadequate Contribution Notification Email Template (sent directly to ambassador)
 const INADEQUATE_CONTRIBUTION_NOTIFICATION_EMAIL_TEMPLATE = `
 Hello Ambassador,<br><br>
-I write to inform you that the AmbassadorOS process has lodged a formal case to the Conflict Resolution Team based on {monthName} DELIVERABLES triggering Inadequate Contribution. You have scored below 3 in more than 2 of the last 6 months.<br><br>
+I write to inform you that the AmbassadorOS process has lodged a complaint with the Conflict Resolution Team based on {monthName} DELIVERABLES triggering Inadequate Contribution. You have received a Published Score of Inadequate for 2 or more months of the last 6 months.<br><br>
 Peer ambassadors noticing deceptive or low-quality contributions often feel disappointed by the lack of fairness and accountability expected in the Ambassador Program.<br><br>
 I look forward to your response within 3 business days ({deadlineDate}).<br><br>
 Thank you for your attention to this matter.<br><br>
@@ -147,6 +147,7 @@ const PrimaryTeamResponsibilities = {
  */
 const AMBASSADOR_STATUS_ACTIVE = 'Active';
 const AMBASSADOR_STATUS_INACTIVE = 'Inactive';
+const AMBASSADOR_STATUS_INADEQUATE_CONTRIBUTION = 'Inadequate Contribution';
 const TEAM_VALUE_EXPELLED = 'expelled';
 
 // ===== Notion Team Mapping =====

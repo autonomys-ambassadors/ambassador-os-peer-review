@@ -1,7 +1,7 @@
 // (( Configuration System ))
 // Configuration selection - set this to the name of your configuration:
 // 'Production' for live environment, or any tester name like 'Jonathan', 'Wilyam', etc.
-const CONFIG_NAME = 'Jonathan'; // Available: 'Production', 'Jonathan', 'Wilyam' - add more in Config-[Name].js files
+const CONFIG_NAME = 'Production'; // Available: 'Production', 'Jonathan', 'Wilyam' - add more in Config-[Name].js files
 
 // Note: All configuration variables are declared in Config-Initialize.js
 // Their values are set by the configuration functions in Config-[Name].js files

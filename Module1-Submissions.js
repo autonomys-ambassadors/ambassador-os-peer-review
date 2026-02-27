@@ -134,8 +134,6 @@ function requestSubmissionsModule(month, year) {
     sendEmailNotification(email, '☑️Request for Submission', message);
   });
 
-  // Save the submission window start time in Los Angeles time zone format
-  setSubmissionWindowStart(submissionWindowStart);
   // Log the request in the "Request Log" sheet
   try {
     logRequest('Submission', month, year, submissionWindowStart, submissionDeadline);
@@ -179,16 +177,16 @@ function setupSubmissionReminderTrigger(submissionStartTime) {
 function checkNonRespondents() {
   Logger.log('Checking for non-respondents.');
 
-  // Retrieve submission window start time
-  const submissionWindowStartStr = PropertiesService.getScriptProperties().getProperty('submissionWindowStart');
-  if (!submissionWindowStartStr) {
-    Logger.log('Submission window start time not found.');
+  // Retrieve submission window times from Request Log
+  const latestSubmission = getLatestRequestByType('Submission');
+  if (!latestSubmission) {
+    Logger.log('Submission window start time not found in Request Log.');
     return;
   }
 
-  // Calculate submission window start and end times
-  const submissionWindowStart = new Date(submissionWindowStartStr);
-  const submissionWindowEnd = new Date(submissionWindowStart.getTime() + minutesToMilliseconds(SUBMISSION_WINDOW_MINUTES));
+  // Get submission window start and end times from Request Log
+  const submissionWindowStart = latestSubmission.requestDateTime;
+  const submissionWindowEnd = latestSubmission.windowEndDateTime;
 
   // Open Registry and Form Responses sheets
   const registrySheet = getRegistrySheet();

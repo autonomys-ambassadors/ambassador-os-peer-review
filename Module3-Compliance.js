@@ -4,7 +4,7 @@
 const COMPLIANCE_PERIOD_MONTHS = 6; // Number of months to consider for penalty calculations
 const COMPLIANCE_PENALTY_POINT_MISSED_SUBMISSION = 1; // Penalty points for missed submission
 const COMPLIANCE_PENALTY_POINT_MISSED_EVALUATION = 1; // Penalty points for missed evaluation
-const COMPLIANCE_PENALTY_POINT_MISSED_BOTH = 2; // Penalty points for missing both submission and evaluation
+const COMPLIANCE_PENALTY_POINT_MISSED_BOTH = 1; // Penalty points for missing both submission and evaluation (changed from 2 to 1 per bylaws vote 20251201: counts as 1 violation)
 const COMPLIANCE_BUSINESS_DAYS_DEADLINE = 3; // Business days for CRT complaint deadline
 const COMPLIANCE_HEADER_ROW = 1; // Row index for headers
 const COMPLIANCE_FIRST_DATA_ROW = 2; // Row index for first data row
@@ -181,8 +181,15 @@ function copyScoresToOverallSheet(finalScores, overallScoreSheet, monthColumnInd
         (overallHandle) => normalizeDiscordHandle(overallHandle) === normalizeDiscordHandle(handle)
       ) + 2;
     if (rowIndex > 1 && score !== '') {
-      overallScoreSheet.getRange(rowIndex, monthColumnIndex).setValue(score);
-      Logger.log(`Copied score for handle ${handle} to row ${rowIndex} in Overall score sheet.`);
+      let publishedScore = score;
+      if (typeof score === 'number' && !isNaN(score)) {
+        publishedScore =
+          score >= INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD ? SCORE_ADEQUATE_LABEL : SCORE_INADEQUATE_LABEL;
+      }
+      overallScoreSheet.getRange(rowIndex, monthColumnIndex).setValue(publishedScore);
+      Logger.log(
+        `Copied score for handle ${handle} to row ${rowIndex} in Overall score sheet (published as: ${publishedScore}).`
+      );
     }
   });
 }
@@ -1177,6 +1184,36 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
       `Sent inadequate contribution notification to ${ambassadorEmail} (${ambassadorDiscord})${monthsInfo}, CC: ${SPONSOR_EMAIL}`
     );
 
+    // Update ambassador status to "Inadequate Contribution" in the Registry
+    try {
+      const registrySheet = getRegistrySheet();
+      const registryDiscordCol = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_DISCORD_HANDLE_COLUMN);
+      const registryStatusCol = getRequiredColumnIndexByName(registrySheet, AMBASSADOR_STATUS_COLUMN);
+      const registryData = registrySheet.getRange(2, registryDiscordCol, registrySheet.getLastRow() - 1, 1).getValues();
+      const rowIdx = registryData.findIndex(
+        (r) => normalizeDiscordHandle(r[0]) === normalizeDiscordHandle(ambassadorDiscord)
+      );
+      if (rowIdx >= 0) {
+        const currentStatus = registrySheet.getRange(rowIdx + 2, registryStatusCol).getValue();
+        if (!currentStatus.includes(AMBASSADOR_STATUS_INADEQUATE_CONTRIBUTION)) {
+          registrySheet
+            .getRange(rowIdx + 2, registryStatusCol)
+            .setValue(`${currentStatus} | ${AMBASSADOR_STATUS_INADEQUATE_CONTRIBUTION}`);
+          Logger.log(
+            `Updated status for ${ambassadorDiscord} to: ${currentStatus} | ${AMBASSADOR_STATUS_INADEQUATE_CONTRIBUTION}`
+          );
+        } else {
+          Logger.log(
+            `Status for ${ambassadorDiscord} already includes "${AMBASSADOR_STATUS_INADEQUATE_CONTRIBUTION}". No update needed.`
+          );
+        }
+      } else {
+        Logger.log(`Could not find ${ambassadorDiscord} in Registry to update status.`);
+      }
+    } catch (statusError) {
+      Logger.log(`Error updating ambassador status for ${ambassadorDiscord}: ${statusError}`);
+    }
+
     // Log the referral to the CRT Log sheet
     Logger.log(`Attempting to log referral to CRT Log sheet...`);
     try {
@@ -1201,7 +1238,7 @@ function referInadequateContributionToCRT(discordHandle, inadequateContributionC
           crtLogSheet.getRange(lastRow + 1, emailColIndex).setValue(ambassadorEmail);
           crtLogSheet.getRange(lastRow + 1, discordColIndex).setValue(ambassadorDiscord);
           crtLogSheet.getRange(lastRow + 1, referralDateColIndex).setValue(referralDate);
-          
+
           // Add reason with inadequate months if available
           if (reasonColIndex !== -1 && newInadequateMonths && newInadequateMonths.length > 0) {
             const reason = `Inadequate contributions for: ${newInadequateMonths.join(', ')}`;
@@ -1364,17 +1401,23 @@ function collectAnonymousScoreData(monthName, submissionWindowStart, submissionW
         }
       }
 
+      // Convert individual scores and final score to Adequate/Inadequate text labels
+      const rawScore1 = score1ColIndex > 0 ? row[score1ColIndex - 1] : '';
+      const rawScore2 = score2ColIndex > 0 ? row[score2ColIndex - 1] : '';
+      const rawScore3 = score3ColIndex > 0 ? row[score3ColIndex - 1] : '';
+      const rawFinalScore = finalScoreColIndex > 0 ? row[finalScoreColIndex - 1] : '';
+
       const scoreRow = {
         Submitter: submitterHandle,
         'Primary Team': primaryTeam || '',
         Contributions: contributionDetails || '',
-        'Score-1': score1ColIndex > 0 ? row[score1ColIndex - 1] || '' : '',
+        'Score-1': convertIndividualScoreToLabel(rawScore1),
         'Remarks-1': remarks1ColIndex > 0 ? row[remarks1ColIndex - 1] || '' : '',
-        'Score-2': score2ColIndex > 0 ? row[score2ColIndex - 1] || '' : '',
+        'Score-2': convertIndividualScoreToLabel(rawScore2),
         'Remarks-2': remarks2ColIndex > 0 ? row[remarks2ColIndex - 1] || '' : '',
-        'Score-3': score3ColIndex > 0 ? row[score3ColIndex - 1] || '' : '',
+        'Score-3': convertIndividualScoreToLabel(rawScore3),
         'Remarks-3': remarks3ColIndex > 0 ? row[remarks3ColIndex - 1] || '' : '',
-        'Final Score': finalScoreColIndex > 0 ? row[finalScoreColIndex - 1] || '' : '',
+        'Published Score': convertIndividualScoreToLabel(rawFinalScore),
       };
 
       anonymousScores.push(scoreRow);
@@ -1425,7 +1468,7 @@ function createAnonymousScoresSheet(monthName, anonymousScores) {
       'Remarks-2',
       'Score-3',
       'Remarks-3',
-      'Final Score',
+      'Published Score',
     ];
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
@@ -1447,7 +1490,7 @@ function createAnonymousScoresSheet(monthName, anonymousScores) {
         score['Remarks-2'] || '',
         score['Score-3'] || '',
         score['Remarks-3'] || '',
-        score['Final Score'] || '',
+        score['Published Score'] || '',
       ]);
 
       sheet.getRange(2, 1, dataRows.length, headers.length).setValues(dataRows);
@@ -1528,10 +1571,26 @@ function wasAssignedButDidNotEvaluate(email, assignments, validEvaluators) {
 }
 
 /**
- * Checks if a score value is below the inadequate contribution threshold.
+ * Converts a numeric individual score to an Adequate/Inadequate text label.
+ * Non-numeric values (empty, string, etc.) are passed through unchanged.
+ * @param {*} score - The score value to convert
+ * @returns {*} Text label if numeric, original value otherwise
+ */
+function convertIndividualScoreToLabel(score) {
+  if (typeof score !== 'number' || isNaN(score)) return score || '';
+  return score >= INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD ? SCORE_ADEQUATE_LABEL : SCORE_INADEQUATE_LABEL;
+}
+
+/**
+ * Checks if a score value indicates inadequate contribution.
+ * Handles both text labels (new system) and numeric values (legacy data).
  * @param {*} scoreValue - Score value to check
- * @returns {boolean} True if score is a number below threshold
+ * @returns {boolean} True if score indicates inadequate contribution
  */
 function isInadequateContributionScore(scoreValue) {
+  if (typeof scoreValue === 'string') {
+    return scoreValue.trim().toLowerCase() === SCORE_INADEQUATE_LABEL.toLowerCase();
+  }
+  // Legacy numeric support for historical data
   return typeof scoreValue === 'number' && scoreValue < INADEQUATE_CONTRIBUTION_SCORE_THRESHOLD;
 }
